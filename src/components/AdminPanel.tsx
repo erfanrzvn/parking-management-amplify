@@ -259,15 +259,19 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const getResidentInfo = (residentId: string) => {
     const resident = residents.find(r => r.id === residentId);
     return resident ? {
-      email: resident.email,
+      name: resident.building && resident.unitNumber 
+        ? `${resident.building} - Unit ${resident.unitNumber}`
+        : resident.email.split('@')[0],
       code: resident.residentCode,
       floor: resident.floor,
-      building: resident.building
+      building: resident.building,
+      unitNumber: resident.unitNumber
     } : {
-      email: 'Unknown',
+      name: 'Unknown',
       code: residentId,
       floor: undefined,
-      building: undefined
+      building: undefined,
+      unitNumber: undefined
     };
   };
 
@@ -497,11 +501,11 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           </td>
                           <td>
                             <div className="resident-info">
-                              <div><strong>{residentInfo.email}</strong></div>
-                              <small>Code: {residentInfo.code}</small>
+                              <div><strong>{residentInfo.name}</strong></div>
                               {residentInfo.floor && (
-                                <small>Floor: {residentInfo.floor}</small>
+                                <small>Floor {residentInfo.floor}</small>
                               )}
+                              <small>Code: {residentInfo.code}</small>
                             </div>
                           </td>
                           <td>
@@ -589,11 +593,11 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                         </td>
                         <td>
                           <div className="resident-info">
-                            <div><strong>{residentInfo.email}</strong></div>
-                            <small>Code: {residentInfo.code}</small>
+                            <div><strong>{residentInfo.name}</strong></div>
                             {residentInfo.floor && (
-                              <small>Floor: {residentInfo.floor}</small>
+                              <small>Floor {residentInfo.floor}</small>
                             )}
+                            <small>Code: {residentInfo.code}</small>
                           </div>
                         </td>
                         <td>{start.toLocaleString()}</td>
