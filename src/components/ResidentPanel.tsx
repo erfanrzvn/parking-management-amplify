@@ -11,8 +11,15 @@ interface ResidentPanelProps {
   signOut?: () => void;
 }
 
+interface Building {
+  id: string;
+  totalSpots: number;
+}
+
 export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
   const [residentData, setResidentData] = useState<any>(null);
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [selectedBuilding, setSelectedBuilding] = useState('');
   const [floor, setFloor] = useState('');
   const [plate, setPlate] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,8 +27,23 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
   const [isSetup, setIsSetup] = useState(false);
 
   useEffect(() => {
+    loadBuildings();
     loadResidentData();
   }, []);
+
+  const loadBuildings = async () => {
+    try {
+      const { data } = await client.models.ParkingConfig.list();
+      if (data) {
+        setBuildings(data.map((item: any) => ({
+          id: item.id,
+          totalSpots: item.totalSpots || 0
+        })));
+      }
+    } catch (error) {
+      setMessage('Error loading buildings');
+    }
+  };
 
   const loadResidentData = async () => {
     try {
@@ -31,13 +53,14 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
         setIsSetup(true);
         setResidentData({
           email: attributes.email,
+          building: attributes['custom:building'],
           floor: attributes['custom:floor'],
           plate: attributes['custom:plate'],
           residentCode: attributes['custom:residentCode'],
         });
       }
     } catch (error) {
-      setMessage('خطا در بارگذاری اطلاعات');
+      setMessage('Error loading resident data');
     }
   };
 
@@ -53,6 +76,7 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
       // Update user attributes
       await updateUserAttributes({
         userAttributes: {
+          'custom:building': selectedBuilding,
           'custom:floor': floor,
           'custom:plate': plate,
           'custom:residentCode': residentCode,
@@ -70,10 +94,10 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
         createdAt: new Date().toISOString(),
       });
 
-      setMessage('✅ اطلاعات شما ثبت شد');
+      setMessage('✅ Your information has been registered');
       loadResidentData();
     } catch (error: any) {
-      setMessage(`❌ خطا: ${error.message}`);
+      setMessage(`❌ Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -87,35 +111,51 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
     return (
       <div className="panel resident-panel">
         <div className="panel-header">
-          <h2>تکمیل اطلاعات ساکن</h2>
-          <button onClick={signOut} className="btn-secondary">خروج</button>
+          <h2>Complete Resident Information</h2>
+          <button onClick={signOut} className="btn-secondary">Sign Out</button>
         </div>
 
         <form onSubmit={handleSetup} className="form">
           <div className="form-group">
-            <label>طبقه:</label>
+            <label>Building:</label>
+            <select
+              value={selectedBuilding}
+              onChange={(e) => setSelectedBuilding(e.target.value)}
+              required
+            >
+              <option value="">Select Building</option>
+              {buildings.map((building) => (
+                <option key={building.id} value={building.id}>
+                  {building.id} ({building.totalSpots} spots)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Floor:</label>
             <input
               type="text"
               value={floor}
               onChange={(e) => setFloor(e.target.value)}
-              placeholder="مثال: 5"
+              placeholder="e.g. 5, G, B1"
               required
             />
           </div>
 
           <div className="form-group">
-            <label>پلاک خودرو:</label>
+            <label>License Plate:</label>
             <input
               type="text"
               value={plate}
               onChange={(e) => setPlate(e.target.value)}
-              placeholder="مثال: 12 ب 345 ایران 67"
+              placeholder="e.g. ABC-1234"
               required
             />
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? 'در حال ثبت...' : 'ثبت اطلاعات'}
+            {loading ? 'Registering...' : 'Register Information'}
           </button>
         </form>
 
@@ -130,6 +170,7 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
 
   const qrData = JSON.stringify({
     residentCode: residentData?.residentCode,
+    building: residentData?.building,
     floor: residentData?.floor,
     plate: residentData?.plate,
   });
@@ -137,8 +178,8 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
   return (
     <div className="panel resident-panel">
       <div className="panel-header">
-        <h2>پنل ساکن</h2>
-        <button onClick={signOut} className="btn-secondary">خروج</button>
+        <h2>Resident Panel</h2>
+        <button onClick={signOut} className="btn-secondary">Sign Out</button>
       </div>
 
       <div className="user-info">
@@ -146,19 +187,20 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
       </div>
 
       <div className="resident-info">
-        <h3>اطلاعات شما</h3>
+        <h3>Your Information</h3>
         <div className="info-box">
-          <p><strong>طبقه:</strong> {residentData?.floor}</p>
-          <p><strong>پلاک:</strong> {residentData?.plate}</p>
-          <p><strong>کد اختصاصی:</strong> <code>{residentData?.residentCode}</code></p>
+          <p><strong>Building:</strong> {residentData?.building}</p>
+          <p><strong>Floor:</strong> {residentData?.floor}</p>
+          <p><strong>License Plate:</strong> {residentData?.plate}</p>
+          <p><strong>Resident Code:</strong> <code className="code-highlight">{residentData?.residentCode}</code></p>
         </div>
 
         <div className="qr-section">
-          <h3>QR Code برای مهمان‌ها</h3>
+          <h3>QR Code for Guests</h3>
           <div className="qr-container">
             <QRCode value={qrData} size={256} level="H" />
           </div>
-          <p className="hint">مهمان‌ها می‌توانند این QR Code را اسکن کنند یا از کد اختصاصی شما استفاده کنند</p>
+          <p className="hint">Guests can scan this QR code or use your resident code</p>
         </div>
       </div>
     </div>

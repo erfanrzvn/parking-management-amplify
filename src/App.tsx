@@ -10,9 +10,9 @@ function App() {
   const [activeTab, setActiveTab] = useState<'admin' | 'resident' | 'guest'>('guest');
 
   return (
-    <div className="app" dir="rtl">
+    <div className="app">
       <header className="app-header">
-        <h1>🅿️ سیستم مدیریت پارکینگ</h1>
+        <h1>🅿️ Parking Management System</h1>
       </header>
 
       <nav className="tabs">
@@ -20,19 +20,19 @@ function App() {
           className={activeTab === 'guest' ? 'active' : ''}
           onClick={() => setActiveTab('guest')}
         >
-          مهمان (رزرو)
+          Guest (Reserve)
         </button>
         <button
           className={activeTab === 'resident' ? 'active' : ''}
           onClick={() => setActiveTab('resident')}
         >
-          ساکنین
+          Residents
         </button>
         <button
           className={activeTab === 'admin' ? 'active' : ''}
           onClick={() => setActiveTab('admin')}
         >
-          مدیر
+          Admin
         </button>
       </nav>
 

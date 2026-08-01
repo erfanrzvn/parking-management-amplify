@@ -5,7 +5,14 @@ import type { Schema } from '../../amplify/data/resource';
 
 const client = generateClient<Schema>();
 
+interface Building {
+  id: string;
+  totalSpots: number;
+}
+
 export default function GuestPanel() {
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [selectedBuilding, setSelectedBuilding] = useState('');
   const [residentCode, setResidentCode] = useState('');
   const [plate, setPlate] = useState('');
   const [mobile, setMobile] = useState('');
@@ -17,8 +24,14 @@ export default function GuestPanel() {
   const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
-    checkAvailability();
+    loadBuildings();
   }, []);
+
+  useEffect(() => {
+    if (selectedBuilding) {
+      checkAvailability(selectedBuilding);
+    }
+  }, [selectedBuilding]);
 
   useEffect(() => {
     if (showScanner) {
@@ -33,11 +46,12 @@ export default function GuestPanel() {
           try {
             const data = JSON.parse(decodedText);
             setResidentCode(data.residentCode || '');
-            setMessage('✅ QR Code اسکن شد');
+            setSelectedBuilding(data.building || '');
+            setMessage('✅ QR Code scanned successfully');
             scanner.clear();
             setShowScanner(false);
           } catch (error) {
-            setMessage('❌ QR Code نامعتبر است');
+            setMessage('❌ Invalid QR Code');
           }
         },
         () => {
@@ -51,16 +65,32 @@ export default function GuestPanel() {
     }
   }, [showScanner]);
 
-  const checkAvailability = async () => {
+  const loadBuildings = async () => {
+    try {
+      const { data } = await client.models.ParkingConfig.list();
+      if (data) {
+        setBuildings(data.map((item: any) => ({
+          id: item.id,
+          totalSpots: item.totalSpots || 0
+        })));
+      }
+    } catch (error) {
+      setMessage('Error loading buildings');
+    }
+  };
+
+  const checkAvailability = async (buildingId: string) => {
     try {
       const { data: reservations } = await client.models.Reservation.list();
-      const { data: configs } = await client.models.ParkingConfig.list();
+      const building = buildings.find(b => b.id === buildingId);
+      
+      if (!building) return;
 
-      const totalSpots = configs && configs.length > 0 ? configs[0].totalSpots : 20;
+      const totalSpots = building.totalSpots;
       const now = new Date();
 
       const activeReservations = reservations?.filter(
-        (r: any) => new Date(r.endTime) > now
+        (r: any) => r.residentId?.startsWith(buildingId) && new Date(r.endTime) > now
       ) || [];
 
       const availableSpots = totalSpots - activeReservations.length;
@@ -70,7 +100,7 @@ export default function GuestPanel() {
           available: true,
           availableSpots,
           totalSpots,
-          message: `${availableSpots} جای پارک خالی است`,
+          message: `${availableSpots} parking spot(s) available`,
         });
       } else {
         const sorted = [...activeReservations].sort(
@@ -82,11 +112,11 @@ export default function GuestPanel() {
           availableSpots: 0,
           totalSpots,
           nextAvailableTime: sorted[0]?.endTime,
-          message: 'همه جاهای پارک پر است',
+          message: 'All parking spots are full',
         });
       }
     } catch (error) {
-      setMessage('خطا در بررسی موجودی');
+      setMessage('Error checking availability');
     }
   };
 
@@ -101,18 +131,22 @@ export default function GuestPanel() {
       const resident = residents?.find((r: any) => r.residentCode === residentCode);
 
       if (!resident) {
-        throw new Error('کد ساکن نامعتبر است');
+        throw new Error('Invalid resident code');
       }
 
       // Check availability again
       const { data: reservations } = await client.models.Reservation.list();
-      const { data: configs } = await client.models.ParkingConfig.list();
+      const building = buildings.find(b => b.id === selectedBuilding);
+      
+      if (!building) {
+        throw new Error('Invalid building');
+      }
 
-      const totalSpots = configs && configs.length > 0 ? configs[0].totalSpots : 20;
+      const totalSpots = building.totalSpots;
       const now = new Date();
 
       const activeReservations = reservations?.filter(
-        (r: any) => new Date(r.endTime) > now
+        (r: any) => r.residentId?.startsWith(selectedBuilding) && new Date(r.endTime) > now
       ) || [];
 
       if (activeReservations.length >= totalSpots) {
@@ -121,13 +155,13 @@ export default function GuestPanel() {
         );
 
         throw new Error(
-          `همه جاهای پارک پر است. اولین جای خالی: ${new Date(sorted[0].endTime).toLocaleString('fa-IR')}`
+          `All parking spots are full. Next available: ${new Date(sorted[0].endTime).toLocaleString()}`
         );
       }
 
       // Create reservation
       await client.models.Reservation.create({
-        residentId: resident.id,
+        residentId: `${selectedBuilding}-${resident.id}`,
         residentCode,
         residentFloor: resident.floor,
         residentPlate: resident.plate,
@@ -139,7 +173,7 @@ export default function GuestPanel() {
         createdAt: now.toISOString(),
       });
 
-      setMessage('✅ رزرو شما با موفقیت ثبت شد');
+      setMessage('✅ Your reservation has been confirmed');
       
       // Reset form
       setResidentCode('');
@@ -149,7 +183,7 @@ export default function GuestPanel() {
       setEndTime('');
 
       // Refresh availability
-      checkAvailability();
+      checkAvailability(selectedBuilding);
     } catch (error: any) {
       setMessage(`❌ ${error.message}`);
     } finally {
@@ -159,91 +193,109 @@ export default function GuestPanel() {
 
   return (
     <div className="panel guest-panel">
-      <h2>رزرو پارکینگ</h2>
+      <h2>Reserve Parking</h2>
 
-      {availability && (
+      <div className="form-group">
+        <label>Select Building:</label>
+        <select
+          value={selectedBuilding}
+          onChange={(e) => setSelectedBuilding(e.target.value)}
+          required
+        >
+          <option value="">Select Building</option>
+          {buildings.map((building) => (
+            <option key={building.id} value={building.id}>
+              {building.id} ({building.totalSpots} total spots)
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {selectedBuilding && availability && (
         <div className={`availability-status ${availability.available ? 'available' : 'full'}`}>
           <h3>{availability.message}</h3>
           <p>
-            {availability.availableSpots} / {availability.totalSpots} جای خالی
+            {availability.availableSpots} / {availability.totalSpots} spots available
           </p>
           {!availability.available && availability.nextAvailableTime && (
             <p className="next-available">
-              اولین جای خالی: {new Date(availability.nextAvailableTime).toLocaleString('fa-IR')}
+              Next available: {new Date(availability.nextAvailableTime).toLocaleString()}
             </p>
           )}
         </div>
       )}
 
-      <form onSubmit={handleReservation} className="form">
-        <div className="form-group">
-          <label>کد ساکن:</label>
-          <input
-            type="text"
-            value={residentCode}
-            onChange={(e) => setResidentCode(e.target.value)}
-            placeholder="کد 8 رقمی ساکن"
-            required
-          />
-        </div>
+      {selectedBuilding && (
+        <form onSubmit={handleReservation} className="form">
+          <div className="form-group">
+            <label>Resident Code:</label>
+            <input
+              type="text"
+              value={residentCode}
+              onChange={(e) => setResidentCode(e.target.value)}
+              placeholder="8-character resident code"
+              required
+            />
+          </div>
 
-        <button
-          type="button"
-          onClick={() => setShowScanner(!showScanner)}
-          className="btn-secondary"
-        >
-          {showScanner ? 'بستن اسکنر' : '📷 اسکن QR Code'}
-        </button>
+          <button
+            type="button"
+            onClick={() => setShowScanner(!showScanner)}
+            className="btn-secondary"
+          >
+            {showScanner ? 'Close Scanner' : '📷 Scan QR Code'}
+          </button>
 
-        {showScanner && <div id="qr-reader"></div>}
+          {showScanner && <div id="qr-reader"></div>}
 
-        <div className="form-group">
-          <label>پلاک خودرو:</label>
-          <input
-            type="text"
-            value={plate}
-            onChange={(e) => setPlate(e.target.value)}
-            placeholder="مثال: 12 ب 345 ایران 67"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Your License Plate:</label>
+            <input
+              type="text"
+              value={plate}
+              onChange={(e) => setPlate(e.target.value)}
+              placeholder="e.g. ABC-1234"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label>شماره موبایل:</label>
-          <input
-            type="tel"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
-            placeholder="09123456789"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Mobile Number:</label>
+            <input
+              type="tel"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+              placeholder="+1234567890"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label>ایمیل:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="example@email.com"
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Email:</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label>تا چه ساعتی پارک می‌کنید:</label>
-          <input
-            type="datetime-local"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label>Until When (End Time):</label>
+            <input
+              type="datetime-local"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              required
+            />
+          </div>
 
-        <button type="submit" disabled={loading} className="btn-primary">
-          {loading ? 'در حال ثبت...' : 'رزرو پارکینگ'}
-        </button>
-      </form>
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? 'Reserving...' : 'Reserve Parking'}
+          </button>
+        </form>
+      )}
 
       {message && (
         <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
