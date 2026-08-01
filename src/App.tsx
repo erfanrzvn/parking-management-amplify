@@ -3,7 +3,7 @@ import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import AdminPanel from './components/AdminPanel';
 import ResidentPanel from './components/ResidentPanel';
-import GuestPanel from './components/GuestPanel';
+import GuestReservation from './components/GuestReservation';
 import LoginPage from './components/LoginPage';
 import './App.css';
 
@@ -131,30 +131,7 @@ function App() {
   console.log('Showing guest home page');
   return (
     <div className="app">
-      <div className="hero-section">
-        <div className="hero-content">
-          <h1 className="hero-title">
-            <span className="icon">🅿️</span>
-            Parking Management System
-          </h1>
-          <p className="hero-subtitle">
-            Reserve your parking spot easily and securely
-          </p>
-          <button 
-            className="btn-login"
-            onClick={() => {
-              console.log('Login button clicked! Setting showLogin to true');
-              setShowLogin(true);
-            }}
-          >
-            🔐 Resident Login
-          </button>
-        </div>
-      </div>
-      
-      <div className="main-content">
-        <GuestPanel />
-      </div>
+      <GuestReservation onLoginClick={() => setShowLogin(true)} />
     </div>
   );
 }
