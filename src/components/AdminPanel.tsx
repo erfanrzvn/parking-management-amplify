@@ -6,7 +6,6 @@ const client = generateClient<Schema>();
 
 interface AdminPanelProps {
   user: any;
-  signOut?: () => void;
 }
 
 interface Building {
@@ -17,7 +16,7 @@ interface Building {
   updatedAt: string;
 }
 
-export default function AdminPanel({ user, signOut }: AdminPanelProps) {
+export default function AdminPanel({ user }: AdminPanelProps) {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [buildingName, setBuildingName] = useState('');
   const [totalSpots, setTotalSpots] = useState<number>(20);
@@ -73,8 +72,7 @@ export default function AdminPanel({ user, signOut }: AdminPanelProps) {
   return (
     <div className="panel admin-panel">
       <div className="panel-header">
-        <h2>Admin Panel</h2>
-        <button onClick={signOut} className="btn-secondary">Sign Out</button>
+        <h2>Admin Dashboard</h2>
       </div>
 
       <div className="user-info">

@@ -8,7 +8,6 @@ const client = generateClient<Schema>();
 
 interface ResidentPanelProps {
   user: any;
-  signOut?: () => void;
 }
 
 interface Building {
@@ -16,7 +15,7 @@ interface Building {
   totalSpots: number;
 }
 
-export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
+export default function ResidentPanel({ user }: ResidentPanelProps) {
   const [residentData, setResidentData] = useState<any>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuilding, setSelectedBuilding] = useState('');
@@ -111,8 +110,7 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
     return (
       <div className="panel resident-panel">
         <div className="panel-header">
-          <h2>Complete Resident Information</h2>
-          <button onClick={signOut} className="btn-secondary">Sign Out</button>
+          <h2>Complete Your Profile</h2>
         </div>
 
         <form onSubmit={handleSetup} className="form">
@@ -178,8 +176,7 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
   return (
     <div className="panel resident-panel">
       <div className="panel-header">
-        <h2>Resident Panel</h2>
-        <button onClick={signOut} className="btn-secondary">Sign Out</button>
+        <h2>Resident Dashboard</h2>
       </div>
 
       <div className="user-info">
