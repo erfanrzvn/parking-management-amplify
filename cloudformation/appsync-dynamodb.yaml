@@ -1,0 +1,818 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Parking Management System - AppSync API and DynamoDB Tables'
+
+Parameters:
+  CognitoUserPoolId:
+    Type: String
+    Default: ca-central-1_dBeo5yZXq
+    Description: Cognito User Pool ID (already created)
+  
+  CognitoUserPoolArn:
+    Type: String
+    Default: arn:aws:cognito-idp:ca-central-1:103103683543:userpool/ca-central-1_dBeo5yZXq
+    Description: Cognito User Pool ARN
+
+Resources:
+  # DynamoDB Tables
+  ParkingConfigTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ParkingConfig
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      Tags:
+        - Key: Name
+          Value: ParkingConfig
+        - Key: Project
+          Value: parking-management
+
+  ResidentTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Resident
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: byUserId
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Name
+          Value: Resident
+        - Key: Project
+          Value: parking-management
+
+  ReservationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Reservation
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: residentId
+          AttributeType: S
+        - AttributeName: endTime
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: byResidentId
+          KeySchema:
+            - AttributeName: residentId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: byEndTime
+          KeySchema:
+            - AttributeName: endTime
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Name
+          Value: Reservation
+        - Key: Project
+          Value: parking-management
+
+  # AppSync GraphQL API
+  GraphQLApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: parking-management-api
+      AuthenticationType: API_KEY
+      AdditionalAuthenticationProviders:
+        - AuthenticationType: AMAZON_COGNITO_USER_POOLS
+          UserPoolConfig:
+            UserPoolId: !Ref CognitoUserPoolId
+            AwsRegion: ca-central-1
+        - AuthenticationType: AWS_IAM
+      Tags:
+        - Key: Name
+          Value: parking-management-api
+        - Key: Project
+          Value: parking-management
+
+  # API Key
+  ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Description: API Key for guest access
+      Expires: 1798761600
+
+  # GraphQL Schema
+  GraphQLSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Definition: |
+        type ParkingConfig {
+          id: ID!
+          totalSpots: Int!
+          updatedBy: String
+          createdAt: AWSDateTime!
+          updatedAt: AWSDateTime!
+        }
+
+        type Resident {
+          id: ID!
+          email: AWSEmail!
+          floor: String!
+          plate: String!
+          residentCode: String!
+          userId: String!
+          createdAt: AWSDateTime!
+          updatedAt: AWSDateTime!
+        }
+
+        type Reservation {
+          id: ID!
+          residentId: String!
+          residentCode: String!
+          residentFloor: String
+          residentPlate: String
+          guestPlate: String!
+          guestMobile: AWSPhone!
+          guestEmail: AWSEmail!
+          startTime: AWSDateTime!
+          endTime: AWSDateTime!
+          createdAt: AWSDateTime!
+          updatedAt: AWSDateTime!
+        }
+
+        type Query {
+          getParkingConfig(id: ID!): ParkingConfig
+          listParkingConfigs: [ParkingConfig]
+          getResident(id: ID!): Resident
+          listResidents: [Resident]
+          getReservation(id: ID!): Reservation
+          listReservations: [Reservation]
+          checkAvailability: AvailabilityResponse
+        }
+
+        type Mutation {
+          createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig
+          updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
+          deleteParkingConfig(id: ID!): ParkingConfig
+          createResident(input: CreateResidentInput!): Resident
+          updateResident(input: UpdateResidentInput!): Resident
+          deleteResident(id: ID!): Resident
+          createReservation(input: CreateReservationInput!): Reservation
+          updateReservation(input: UpdateReservationInput!): Reservation
+          deleteReservation(id: ID!): Reservation
+        }
+
+        input CreateParkingConfigInput {
+          totalSpots: Int!
+          updatedBy: String
+        }
+
+        input UpdateParkingConfigInput {
+          id: ID!
+          totalSpots: Int
+          updatedBy: String
+        }
+
+        input CreateResidentInput {
+          email: AWSEmail!
+          floor: String!
+          plate: String!
+          residentCode: String!
+          userId: String!
+        }
+
+        input UpdateResidentInput {
+          id: ID!
+          email: AWSEmail
+          floor: String
+          plate: String
+        }
+
+        input CreateReservationInput {
+          residentId: String!
+          residentCode: String!
+          residentFloor: String
+          residentPlate: String
+          guestPlate: String!
+          guestMobile: AWSPhone!
+          guestEmail: AWSEmail!
+          startTime: AWSDateTime!
+          endTime: AWSDateTime!
+        }
+
+        input UpdateReservationInput {
+          id: ID!
+          endTime: AWSDateTime
+        }
+
+        type AvailabilityResponse {
+          available: Boolean!
+          availableSpots: Int!
+          totalSpots: Int!
+          nextAvailableTime: AWSDateTime
+          message: String!
+        }
+
+        schema {
+          query: Query
+          mutation: Mutation
+        }
+
+  # IAM Role for AppSync to access DynamoDB
+  AppSyncServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: appsync.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt ParkingConfigTable.Arn
+                  - !GetAtt ResidentTable.Arn
+                  - !GetAtt ReservationTable.Arn
+                  - !Sub '${ParkingConfigTable.Arn}/index/*'
+                  - !Sub '${ResidentTable.Arn}/index/*'
+                  - !Sub '${ReservationTable.Arn}/index/*'
+
+  # Data Sources
+  ParkingConfigDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Name: ParkingConfigDataSource
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt AppSyncServiceRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref ParkingConfigTable
+        AwsRegion: ca-central-1
+
+  ResidentDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Name: ResidentDataSource
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt AppSyncServiceRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref ResidentTable
+        AwsRegion: ca-central-1
+
+  ReservationDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Name: ReservationDataSource
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt AppSyncServiceRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref ReservationTable
+        AwsRegion: ca-central-1
+
+  # Resolvers - ParkingConfig
+  GetParkingConfigResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: getParkingConfig
+      DataSourceName: !GetAtt ParkingConfigDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return {
+            operation: 'GetItem',
+            key: util.dynamodb.toMapValues({id: ctx.args.id}),
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  ListParkingConfigsResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: listParkingConfigs
+      DataSourceName: !GetAtt ParkingConfigDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return { operation: 'Scan' };
+        }
+        export function response(ctx) {
+          return ctx.result.items;
+        }
+
+  CreateParkingConfigResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: createParkingConfig
+      DataSourceName: !GetAtt ParkingConfigDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          const id = util.autoId();
+          const now = util.time.nowISO8601();
+          return {
+            operation: 'PutItem',
+            key: util.dynamodb.toMapValues({id}),
+            attributeValues: util.dynamodb.toMapValues({
+              ...ctx.args.input,
+              id,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  UpdateParkingConfigResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: updateParkingConfig
+      DataSourceName: !GetAtt ParkingConfigDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          const { id, ...values } = ctx.args.input;
+          return {
+            operation: 'UpdateItem',
+            key: util.dynamodb.toMapValues({id}),
+            update: {
+              expression: 'SET #updatedAt = :updatedAt' + 
+                (values.totalSpots ? ', totalSpots = :totalSpots' : '') +
+                (values.updatedBy ? ', updatedBy = :updatedBy' : ''),
+              expressionNames: { '#updatedAt': 'updatedAt' },
+              expressionValues: util.dynamodb.toMapValues({
+                ':updatedAt': util.time.nowISO8601(),
+                ...(values.totalSpots && { ':totalSpots': values.totalSpots }),
+                ...(values.updatedBy && { ':updatedBy': values.updatedBy }),
+              }),
+            },
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  # Resolvers - Resident
+  GetResidentResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: getResident
+      DataSourceName: !GetAtt ResidentDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return {
+            operation: 'GetItem',
+            key: util.dynamodb.toMapValues({id: ctx.args.id}),
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  ListResidentsResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: listResidents
+      DataSourceName: !GetAtt ResidentDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return { operation: 'Scan' };
+        }
+        export function response(ctx) {
+          return ctx.result.items;
+        }
+
+  CreateResidentResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: createResident
+      DataSourceName: !GetAtt ResidentDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          const id = util.autoId();
+          const now = util.time.nowISO8601();
+          return {
+            operation: 'PutItem',
+            key: util.dynamodb.toMapValues({id}),
+            attributeValues: util.dynamodb.toMapValues({
+              ...ctx.args.input,
+              id,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  UpdateResidentResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: updateResident
+      DataSourceName: !GetAtt ResidentDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          const { id, ...values } = ctx.args.input;
+          const updates = [];
+          const names = { '#updatedAt': 'updatedAt' };
+          const vals = { ':updatedAt': util.time.nowISO8601() };
+          
+          if (values.email) { updates.push('email = :email'); vals[':email'] = values.email; }
+          if (values.floor) { updates.push('floor = :floor'); vals[':floor'] = values.floor; }
+          if (values.plate) { updates.push('plate = :plate'); vals[':plate'] = values.plate; }
+          
+          return {
+            operation: 'UpdateItem',
+            key: util.dynamodb.toMapValues({id}),
+            update: {
+              expression: 'SET #updatedAt = :updatedAt' + (updates.length ? ', ' + updates.join(', ') : ''),
+              expressionNames: names,
+              expressionValues: util.dynamodb.toMapValues(vals),
+            },
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  # Resolvers - Reservation
+  GetReservationResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: getReservation
+      DataSourceName: !GetAtt ReservationDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return {
+            operation: 'GetItem',
+            key: util.dynamodb.toMapValues({id: ctx.args.id}),
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  ListReservationsResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: listReservations
+      DataSourceName: !GetAtt ReservationDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return { operation: 'Scan' };
+        }
+        export function response(ctx) {
+          return ctx.result.items;
+        }
+
+  CreateReservationResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: createReservation
+      DataSourceName: !GetAtt ReservationDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          const id = util.autoId();
+          const now = util.time.nowISO8601();
+          return {
+            operation: 'PutItem',
+            key: util.dynamodb.toMapValues({id}),
+            attributeValues: util.dynamodb.toMapValues({
+              ...ctx.args.input,
+              id,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  UpdateReservationResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: updateReservation
+      DataSourceName: !GetAtt ReservationDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          const { id, endTime } = ctx.args.input;
+          return {
+            operation: 'UpdateItem',
+            key: util.dynamodb.toMapValues({id}),
+            update: {
+              expression: 'SET #updatedAt = :updatedAt, endTime = :endTime',
+              expressionNames: { '#updatedAt': 'updatedAt' },
+              expressionValues: util.dynamodb.toMapValues({
+                ':updatedAt': util.time.nowISO8601(),
+                ':endTime': endTime,
+              }),
+            },
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+  # Lambda for checkAvailability
+  CheckAvailabilityLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt ParkingConfigTable.Arn
+                  - !GetAtt ReservationTable.Arn
+                  - !Sub '${ReservationTable.Arn}/index/*'
+
+  CheckAvailabilityLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: parking-checkAvailability
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Role: !GetAtt CheckAvailabilityLambdaRole.Arn
+      Environment:
+        Variables:
+          PARKING_CONFIG_TABLE: !Ref ParkingConfigTable
+          RESERVATION_TABLE: !Ref ReservationTable
+      Code:
+        ZipFile: |
+          const { DynamoDBClient, ScanCommand, GetItemCommand } = require('@aws-sdk/client-dynamodb');
+          const { unmarshall } = require('@aws-sdk/util-dynamodb');
+          
+          const dynamodb = new DynamoDBClient({});
+          
+          exports.handler = async (event) => {
+            try {
+              const now = new Date().toISOString();
+              
+              // Get total spots
+              const configScan = await dynamodb.send(new ScanCommand({
+                TableName: process.env.PARKING_CONFIG_TABLE,
+                Limit: 1
+              }));
+              
+              const totalSpots = configScan.Items?.[0] ? unmarshall(configScan.Items[0]).totalSpots : 10;
+              
+              // Get active reservations
+              const reservationScan = await dynamodb.send(new ScanCommand({
+                TableName: process.env.RESERVATION_TABLE,
+                FilterExpression: 'endTime > :now',
+                ExpressionAttributeValues: {
+                  ':now': { S: now }
+                }
+              }));
+              
+              const activeReservations = reservationScan.Items?.length || 0;
+              const availableSpots = totalSpots - activeReservations;
+              const available = availableSpots > 0;
+              
+              let nextAvailableTime = null;
+              let message = '';
+              
+              if (available) {
+                message = `${availableSpots} parking spot(s) available`;
+              } else {
+                // Find earliest endTime
+                const allReservations = await dynamodb.send(new ScanCommand({
+                  TableName: process.env.RESERVATION_TABLE
+                }));
+                
+                if (allReservations.Items?.length) {
+                  const times = allReservations.Items
+                    .map(item => unmarshall(item).endTime)
+                    .filter(time => time > now)
+                    .sort();
+                  nextAvailableTime = times[0] || null;
+                  message = `Parking full. Next available: ${nextAvailableTime}`;
+                } else {
+                  message = 'Parking full';
+                }
+              }
+              
+              return {
+                available,
+                availableSpots,
+                totalSpots,
+                nextAvailableTime,
+                message
+              };
+            } catch (error) {
+              console.error('Error:', error);
+              throw error;
+            }
+          };
+
+  CheckAvailabilityDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Name: CheckAvailabilityDataSource
+      Type: AWS_LAMBDA
+      ServiceRoleArn: !GetAtt CheckAvailabilityLambdaRole.Arn
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt CheckAvailabilityLambda.Arn
+
+  CheckAvailabilityLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CheckAvailabilityLambda
+      Action: lambda:InvokeFunction
+      Principal: appsync.amazonaws.com
+      SourceArn: !Sub 'arn:aws:appsync:ca-central-1:103103683543:apis/${GraphQLApi.ApiId}/*'
+
+  CheckAvailabilityResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: checkAvailability
+      DataSourceName: !GetAtt CheckAvailabilityDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return {
+            operation: 'Invoke',
+            payload: {},
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
+Outputs:
+  GraphQLApiId:
+    Description: GraphQL API ID
+    Value: !GetAtt GraphQLApi.ApiId
+    Export:
+      Name: !Sub '${AWS::StackName}-GraphQLApiId'
+
+  GraphQLApiUrl:
+    Description: GraphQL API URL
+    Value: !GetAtt GraphQLApi.GraphQLUrl
+    Export:
+      Name: !Sub '${AWS::StackName}-GraphQLApiUrl'
+
+  GraphQLApiKey:
+    Description: GraphQL API Key
+    Value: !GetAtt ApiKey.ApiKey
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiKey'
+
+  ParkingConfigTableName:
+    Description: ParkingConfig Table Name
+    Value: !Ref ParkingConfigTable
+
+  ResidentTableName:
+    Description: Resident Table Name
+    Value: !Ref ResidentTable
+
+  ReservationTableName:
+    Description: Reservation Table Name
+    Value: !Ref ReservationTable
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref CognitoUserPoolId
+
+  Region:
+    Description: AWS Region
+    Value: ca-central-1

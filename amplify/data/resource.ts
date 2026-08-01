@@ -51,25 +51,25 @@ const schema = a.schema({
       allow.group('ADMIN'),
     ]),
 
-  // Custom Queries
-  checkAvailability: a
-    .query()
-    .returns(
-      a.customType({
-        available: a.boolean().required(),
-        availableSpots: a.integer().required(),
-        totalSpots: a.integer().required(),
-        nextAvailableTime: a.datetime(),
-        message: a.string().required(),
-      })
-    )
-    .authorization((allow) => [allow.publicApiKey()])
-    .handler(
-      a.handler.custom({
-        dataSource: 'ReservationTable',
-        entry: './checkAvailability.js',
-      })
-    ),
+  // Custom Queries - Temporarily disabled for deploy
+  // checkAvailability: a
+  //   .query()
+  //   .returns(
+  //     a.customType({
+  //       available: a.boolean().required(),
+  //       availableSpots: a.integer().required(),
+  //       totalSpots: a.integer().required(),
+  //       nextAvailableTime: a.datetime(),
+  //       message: a.string().required(),
+  //     })
+  //   )
+  //   .authorization((allow) => [allow.publicApiKey()])
+  //   .handler(
+  //     a.handler.custom({
+  //       dataSource: 'ReservationTable',
+  //       entry: './checkAvailability.js',
+  //     })
+  //   ),
 });
 
 export type Schema = ClientSchema<typeof schema>;
