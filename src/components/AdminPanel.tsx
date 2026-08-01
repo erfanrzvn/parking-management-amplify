@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { listParkingConfigs, createParkingConfig, listReservations } from '../lib/graphql';
+import { generateClient } from 'aws-amplify/api';
+
+const graphqlClient = generateClient();
 
 interface AdminPanelProps {
   user: any;
@@ -34,20 +37,31 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'parkings' | 'reservations'>('reservations');
+  const [showAddTimeModal, setShowAddTimeModal] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [additionalHours, setAdditionalHours] = useState<number>(1);
+  const [activeTab, setActiveTab] = useState<'reservations' | 'parkings' | 'logs'>('reservations');
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [sortBy, setSortBy] = useState<'time-remaining' | 'plate' | 'start'>('time-remaining');
 
   useEffect(() => {
     loadData();
     
+    // Update current time every second for countdown
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
     // Auto-refresh every 30 seconds
-    const interval = setInterval(() => {
+    const dataInterval = setInterval(() => {
       loadReservations();
     }, 30000);
-    setRefreshInterval(interval);
+    setRefreshInterval(dataInterval);
 
     return () => {
-      if (interval) clearInterval(interval);
+      clearInterval(timeInterval);
+      if (dataInterval) clearInterval(dataInterval);
     };
   }, []);
 
@@ -121,26 +135,141 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     }
   };
 
+  const handleEndReservation = async (reservation: Reservation) => {
+    if (!confirm(`End parking for ${reservation.guestPlate}?`)) return;
+    
+    setLoading(true);
+    try {
+      const mutation = `
+        mutation UpdateReservation($input: UpdateReservationInput!) {
+          updateReservation(input: $input) {
+            id
+            endTime
+          }
+        }
+      `;
+      
+      await graphqlClient.graphql({
+        query: mutation,
+        variables: {
+          input: {
+            id: reservation.id,
+            endTime: new Date().toISOString()
+          }
+        }
+      });
+      
+      setMessage('✅ Reservation ended successfully');
+      loadReservations();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error ending reservation:', error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddTime = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReservation) return;
+    
+    setLoading(true);
+    try {
+      const currentEnd = new Date(selectedReservation.endTime);
+      const newEnd = new Date(currentEnd.getTime() + additionalHours * 3600000);
+      
+      const mutation = `
+        mutation UpdateReservation($input: UpdateReservationInput!) {
+          updateReservation(input: $input) {
+            id
+            endTime
+          }
+        }
+      `;
+      
+      await graphqlClient.graphql({
+        query: mutation,
+        variables: {
+          input: {
+            id: selectedReservation.id,
+            endTime: newEnd.toISOString()
+          }
+        }
+      });
+      
+      setMessage(`✅ Added ${additionalHours}h to ${selectedReservation.guestPlate}`);
+      setShowAddTimeModal(false);
+      setSelectedReservation(null);
+      setAdditionalHours(1);
+      loadReservations();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error adding time:', error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getReservationStatus = (endTime: string) => {
     const now = new Date();
     const end = new Date(endTime);
     
     if (end < now) {
       return 'expired';
-    } else if (end.getTime() - now.getTime() < 3600000) { // Less than 1 hour
+    } else if (end.getTime() - now.getTime() < 3600000) {
       return 'ending-soon';
     }
     return 'active';
   };
 
-  const getActiveReservations = () => {
-    const now = new Date();
-    return reservations.filter(r => new Date(r.endTime) > now);
+  const getTimeRemaining = (endTime: string) => {
+    const now = currentTime;
+    const end = new Date(endTime);
+    const diff = end.getTime() - now.getTime();
+    
+    if (diff <= 0) {
+      return 'Expired';
+    }
+    
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
   };
 
-  const getExpiredReservations = () => {
+  const getActiveReservations = () => {
     const now = new Date();
-    return reservations.filter(r => new Date(r.endTime) <= now);
+    let active = reservations.filter(r => new Date(r.endTime) > now);
+    
+    // Sort by selected criteria
+    if (sortBy === 'time-remaining') {
+      active = active.sort((a, b) => 
+        new Date(a.endTime).getTime() - new Date(b.endTime).getTime()
+      );
+    } else if (sortBy === 'plate') {
+      active = active.sort((a, b) => a.guestPlate.localeCompare(b.guestPlate));
+    } else if (sortBy === 'start') {
+      active = active.sort((a, b) => 
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+      );
+    }
+    
+    return active;
+  };
+
+  const getAllReservationsForLogs = () => {
+    return [...reservations].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   };
 
   const getParkingStats = () => {
@@ -160,7 +289,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
   const stats = getParkingStats();
   const activeReservations = getActiveReservations();
-  const expiredReservations = getExpiredReservations();
+  const allReservations = getAllReservationsForLogs();
 
   return (
     <div className="admin-dashboard">
@@ -243,6 +372,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           🚗 Active Reservations ({activeReservations.length})
         </button>
         <button 
+          className={`tab ${activeTab === 'logs' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('logs')}
+        >
+          📋 All Logs ({allReservations.length})
+        </button>
+        <button 
           className={`tab ${activeTab === 'parkings' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('parkings')}
         >
@@ -256,9 +391,20 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           <div className="reservations-section">
             <div className="section-header">
               <h2>Active Reservations</h2>
-              <button className="btn-refresh" onClick={loadReservations}>
-                🔄 Refresh
-              </button>
+              <div className="header-actions">
+                <select 
+                  className="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                >
+                  <option value="time-remaining">⏱️ Time Remaining</option>
+                  <option value="plate">🚗 Plate Number</option>
+                  <option value="start">📅 Recently Added</option>
+                </select>
+                <button className="btn-refresh" onClick={loadReservations}>
+                  🔄 Refresh
+                </button>
+              </div>
             </div>
 
             {activeReservations.length === 0 ? (
@@ -272,27 +418,30 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <table className="reservations-table">
                   <thead>
                     <tr>
+                      <th>Time Left</th>
                       <th>Status</th>
                       <th>Guest Plate</th>
                       <th>Resident</th>
                       <th>Contact</th>
-                      <th>Start Time</th>
                       <th>End Time</th>
-                      <th>Duration</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {activeReservations.map((reservation) => {
                       const status = getReservationStatus(reservation.endTime);
-                      const start = new Date(reservation.startTime);
-                      const end = new Date(reservation.endTime);
-                      const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+                      const timeRemaining = getTimeRemaining(reservation.endTime);
                       
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
+                          <td className="time-remaining-cell">
+                            <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`}>
+                              {timeRemaining}
+                            </div>
+                          </td>
                           <td>
                             <span className={`status-badge status-${status}`}>
-                              {status === 'active' ? '🟢 Active' : '🟡 Ending Soon'}
+                              {status === 'active' ? '🟢 Active' : status === 'ending-soon' ? '🟡 Ending Soon' : '🔴 Expired'}
                             </span>
                           </td>
                           <td className="plate-cell">
@@ -312,11 +461,30 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               <div>📱 {reservation.guestMobile}</div>
                             </div>
                           </td>
-                          <td>{start.toLocaleString()}</td>
                           <td className="end-time-cell">
-                            {end.toLocaleString()}
+                            {new Date(reservation.endTime).toLocaleString()}
                           </td>
-                          <td>{duration}h</td>
+                          <td>
+                            <div className="action-buttons">
+                              <button
+                                className="btn-action btn-add-time"
+                                onClick={() => {
+                                  setSelectedReservation(reservation);
+                                  setShowAddTimeModal(true);
+                                }}
+                                title="Add more time"
+                              >
+                                ⏱️ +Time
+                              </button>
+                              <button
+                                className="btn-action btn-end"
+                                onClick={() => handleEndReservation(reservation)}
+                                title="End parking now"
+                              >
+                                🔴 End
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
@@ -324,26 +492,77 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 </table>
               </div>
             )}
+          </div>
+        ) : activeTab === 'logs' ? (
+          <div className="logs-section">
+            <div className="section-header">
+              <h2>All Reservation Logs</h2>
+              <p className="section-subtitle">Complete history of all parking reservations</p>
+            </div>
 
-            {/* Expired Reservations */}
-            {expiredReservations.length > 0 && (
-              <>
-                <div className="section-header" style={{ marginTop: '2rem' }}>
-                  <h3>Recently Expired ({expiredReservations.length})</h3>
-                </div>
-                <div className="expired-list">
-                  {expiredReservations.slice(0, 5).map((reservation) => (
-                    <div key={reservation.id} className="expired-item">
-                      <div className="expired-icon">🔴</div>
-                      <div className="expired-details">
-                        <div><strong>{reservation.guestPlate}</strong> - {reservation.residentCode}</div>
-                        <small>Ended: {new Date(reservation.endTime).toLocaleString()}</small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+            <div className="logs-table-container">
+              <table className="reservations-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Guest Plate</th>
+                    <th>Resident</th>
+                    <th>Started</th>
+                    <th>Ended</th>
+                    <th>Duration</th>
+                    <th>Contact</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allReservations.map((reservation) => {
+                    const start = new Date(reservation.startTime);
+                    const end = new Date(reservation.endTime);
+                    const now = new Date();
+                    const isExpired = end < now;
+                    const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+                    
+                    return (
+                      <tr key={reservation.id} className={`log-row ${isExpired ? 'log-expired' : 'log-active'}`}>
+                        <td>
+                          {isExpired ? (
+                            <span className="status-badge status-expired">
+                              ✅ Completed
+                            </span>
+                          ) : (
+                            <span className="status-badge status-active">
+                              🚗 In Progress
+                            </span>
+                          )}
+                        </td>
+                        <td className="plate-cell">
+                          <strong>{reservation.guestPlate}</strong>
+                        </td>
+                        <td>
+                          <div className="resident-info">
+                            <div>{reservation.residentCode}</div>
+                            {reservation.residentFloor && (
+                              <small>Floor: {reservation.residentFloor}</small>
+                            )}
+                          </div>
+                        </td>
+                        <td>{start.toLocaleString()}</td>
+                        <td className={isExpired ? '' : 'in-progress'}>
+                          {end.toLocaleString()}
+                          {!isExpired && <span className="pulse-dot"></span>}
+                        </td>
+                        <td>{duration}h</td>
+                        <td>
+                          <div className="contact-info-compact">
+                            <div title={reservation.guestEmail}>📧 {reservation.guestEmail.substring(0, 20)}...</div>
+                            <div>📱 {reservation.guestMobile}</div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="parkings-section">
@@ -468,6 +687,69 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Time Modal */}
+      {showAddTimeModal && selectedReservation && (
+        <div className="modal-overlay" onClick={() => setShowAddTimeModal(false)}>
+          <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add Time</h2>
+              <button className="modal-close" onClick={() => setShowAddTimeModal(false)}>
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="selected-car-info">
+                <div className="car-plate">{selectedReservation.guestPlate}</div>
+                <div className="car-details">
+                  <div>Current end: {new Date(selectedReservation.endTime).toLocaleString()}</div>
+                  <div>Time left: {getTimeRemaining(selectedReservation.endTime)}</div>
+                </div>
+              </div>
+
+              <form onSubmit={handleAddTime} className="modal-form">
+                <div className="form-group">
+                  <label>Additional Hours</label>
+                  <input
+                    type="number"
+                    min="0.5"
+                    max="24"
+                    step="0.5"
+                    value={additionalHours}
+                    onChange={(e) => setAdditionalHours(Number(e.target.value))}
+                    required
+                    autoFocus
+                  />
+                  <small>How many hours to add to this reservation</small>
+                </div>
+
+                <div className="new-end-time">
+                  New end time: {new Date(new Date(selectedReservation.endTime).getTime() + additionalHours * 3600000).toLocaleString()}
+                </div>
+
+                <div className="modal-actions">
+                  <button 
+                    type="button" 
+                    className="btn-cancel"
+                    onClick={() => setShowAddTimeModal(false)}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-submit"
+                    disabled={loading}
+                  >
+                    {loading ? 'Adding...' : `Add ${additionalHours}h`}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
