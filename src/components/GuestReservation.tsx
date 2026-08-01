@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { createReservation } from '../lib/graphql';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { addHours, differenceInHours, differenceInMinutes, format } from 'date-fns';
 
 interface GuestReservationProps {
   onLoginClick?: () => void;
@@ -13,11 +10,17 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
   const [guestPlate, setGuestPlate] = useState('');
   const [guestMobile, setGuestMobile] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
-  const [endDateTime, setEndDateTime] = useState<Date>(addHours(new Date(), 2));
+  const [durationHours, setDurationHours] = useState<number>(2);
+  const [durationMinutes, setDurationMinutes] = useState<number>(0);
   const [startDateTime] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const getEndDateTime = (): Date => {
+    const totalMinutes = (durationHours * 60) + durationMinutes;
+    return new Date(startDateTime.getTime() + totalMinutes * 60 * 1000);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +28,17 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     setMessage('');
 
     try {
+      const endDateTime = getEndDateTime();
+      
       // Validation
       if (endDateTime <= startDateTime) {
-        setMessage('❌ End time must be after start time');
+        setMessage('❌ Duration must be greater than 0');
         setLoading(false);
         return;
       }
 
-      const durationHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
-      if (durationHours > 24) {
+      const totalHours = (durationHours + durationMinutes / 60);
+      if (totalHours > 24) {
         setMessage('❌ Maximum parking duration is 24 hours');
         setLoading(false);
         return;
@@ -61,7 +66,8 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         setGuestPlate('');
         setGuestMobile('');
         setGuestEmail('');
-        setEndDateTime(addHours(new Date(), 2));
+        setDurationHours(2);
+        setDurationMinutes(0);
         setSuccess(false);
         setMessage('');
       }, 3000);
@@ -73,24 +79,36 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     }
   };
 
-  const getDuration = (): string => {
-    if (!startDateTime || !endDateTime) return '';
+  const getDurationText = (): string => {
+    if (durationHours === 0 && durationMinutes === 0) return '0 minutes';
     
-    const diffMs = endDateTime.getTime() - startDateTime.getTime();
-    
-    if (diffMs <= 0) return 'Invalid duration';
-    
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 0 && minutes > 0) {
-      return `${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''}`;
-    } else {
-      return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+    const parts = [];
+    if (durationHours > 0) {
+      parts.push(`${durationHours} hour${durationHours > 1 ? 's' : ''}`);
     }
+    if (durationMinutes > 0) {
+      parts.push(`${durationMinutes} minute${durationMinutes > 1 ? 's' : ''}`);
+    }
+    
+    return parts.join(' ');
   };
+
+  const formatDateTime = (date: Date): string => {
+    return date.toLocaleString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  // Generate hours array (0-23)
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  
+  // Generate minutes array (0-59)
+  const minutes = Array.from({ length: 60 }, (_, i) => i);
 
   return (
     <div className="guest-reservation">
@@ -182,7 +200,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
               </div>
             </div>
 
-            {/* Parking Duration with DatePicker */}
+            {/* Parking Duration */}
             <div className="form-section">
               <h3>Parking Duration</h3>
               
@@ -193,7 +211,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 </label>
                 <div className="datetime-display disabled">
                   <span className="datetime-icon">🕐</span>
-                  <span className="datetime-text">{format(startDateTime, 'PPpp')}</span>
+                  <span className="datetime-text">{formatDateTime(startDateTime)}</span>
                   <span className="datetime-badge">Current Time</span>
                 </div>
                 <small>🔒 Fixed to current time</small>
@@ -202,36 +220,61 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
               <div className="form-group">
                 <label>
                   <span className="label-icon">⏰</span>
-                  End Date & Time
+                  Parking Duration
                 </label>
-                <DatePicker
-                  selected={endDateTime}
-                  onChange={(date: Date) => setEndDateTime(date)}
-                  showTimeSelect
-                  showTimeInput
-                  timeInputLabel="Time:"
-                  timeFormat="HH:mm"
-                  timeIntervals={15}
-                  dateFormat="MMMM d, yyyy h:mm aa"
-                  minDate={startDateTime}
-                  maxDate={addHours(startDateTime, 24)}
-                  className="custom-datepicker"
-                  calendarClassName="custom-calendar"
-                  inline={false}
-                  required
-                />
-                <small>Select date and type exact time (max 24 hours)</small>
-              </div>
+                <div className="time-picker-container">
+                  <div className="time-picker-group">
+                    <label className="time-picker-label">Hours</label>
+                    <select
+                      value={durationHours}
+                      onChange={(e) => setDurationHours(Number(e.target.value))}
+                      className="time-picker-select"
+                      required
+                    >
+                      {hours.map(hour => (
+                        <option key={hour} value={hour}>
+                          {hour.toString().padStart(2, '0')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {endDateTime && (
-                <div className="duration-display">
-                  <div className="duration-icon">⏱️</div>
-                  <div className="duration-content">
-                    <span className="duration-label">Total Duration:</span>
-                    <span className="duration-value">{getDuration()}</span>
+                  <div className="time-picker-separator">:</div>
+
+                  <div className="time-picker-group">
+                    <label className="time-picker-label">Minutes</label>
+                    <select
+                      value={durationMinutes}
+                      onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                      className="time-picker-select"
+                      required
+                    >
+                      {minutes.map(minute => (
+                        <option key={minute} value={minute}>
+                          {minute.toString().padStart(2, '0')}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              )}
+                <small>Select how long you need to park (max 24 hours)</small>
+              </div>
+
+              <div className="duration-display">
+                <div className="duration-icon">⏱️</div>
+                <div className="duration-content">
+                  <span className="duration-label">Total Duration:</span>
+                  <span className="duration-value">{getDurationText()}</span>
+                </div>
+              </div>
+
+              <div className="end-time-display">
+                <div className="end-time-icon">🏁</div>
+                <div className="end-time-content">
+                  <span className="end-time-label">End Time:</span>
+                  <span className="end-time-value">{formatDateTime(getEndDateTime())}</span>
+                </div>
+              </div>
             </div>
 
             {/* Message */}
@@ -268,7 +311,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
               </div>
               <div className="detail-item">
                 <span className="detail-label">Duration:</span>
-                <span className="detail-value">{getDuration()}</span>
+                <span className="detail-value">{getDurationText()}</span>
               </div>
             </div>
           </div>
