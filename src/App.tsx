@@ -117,17 +117,17 @@ function App() {
           <p className="hero-subtitle">
             Reserve your parking spot easily and securely
           </p>
-          
-          <GuestPanel />
-          
           <button 
             className="btn-login"
             onClick={() => setShowLogin(true)}
-            style={{ marginTop: '2rem' }}
           >
             🔐 Resident Login
           </button>
         </div>
+      </div>
+      
+      <div className="main-content">
+        <GuestPanel />
       </div>
     </div>
   );
