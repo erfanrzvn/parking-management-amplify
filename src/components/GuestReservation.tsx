@@ -208,6 +208,8 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                   selected={endDateTime}
                   onChange={(date: Date) => setEndDateTime(date)}
                   showTimeSelect
+                  showTimeInput
+                  timeInputLabel="Time:"
                   timeFormat="HH:mm"
                   timeIntervals={15}
                   dateFormat="MMMM d, yyyy h:mm aa"
@@ -218,7 +220,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                   inline={false}
                   required
                 />
-                <small>Select when you plan to leave (max 24 hours)</small>
+                <small>Select date and type exact time (max 24 hours)</small>
               </div>
 
               {endDateTime && (
