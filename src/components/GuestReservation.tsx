@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createReservation } from '../lib/graphql';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { addHours, differenceInHours, differenceInMinutes, format } from 'date-fns';
 
 interface GuestReservationProps {
   onLoginClick?: () => void;
@@ -10,30 +13,11 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
   const [guestPlate, setGuestPlate] = useState('');
   const [guestMobile, setGuestMobile] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
-  const [endDateTime, setEndDateTime] = useState('');
-  const [startDateTime, setStartDateTime] = useState('');
+  const [endDateTime, setEndDateTime] = useState<Date>(addHours(new Date(), 2));
+  const [startDateTime] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    // Set start time to now (fixed, non-editable)
-    const now = new Date();
-    setStartDateTime(formatDateTimeLocal(now));
-    
-    // Set default end time to 2 hours from now
-    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-    setEndDateTime(formatDateTimeLocal(twoHoursLater));
-  }, []);
-
-  const formatDateTimeLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,17 +25,14 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     setMessage('');
 
     try {
-      const startDate = new Date(startDateTime);
-      const endDate = new Date(endDateTime);
-
       // Validation
-      if (endDate <= startDate) {
+      if (endDateTime <= startDateTime) {
         setMessage('❌ End time must be after start time');
         setLoading(false);
         return;
       }
 
-      const durationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+      const durationHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
       if (durationHours > 24) {
         setMessage('❌ Maximum parking duration is 24 hours');
         setLoading(false);
@@ -67,8 +48,8 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         guestPlate: guestPlate.toUpperCase(),
         guestMobile,
         guestEmail,
-        startTime: startDate.toISOString(),
-        endTime: endDate.toISOString(),
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
       });
 
       setMessage('✅ Reservation created successfully!');
@@ -80,10 +61,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         setGuestPlate('');
         setGuestMobile('');
         setGuestEmail('');
-        const now = new Date();
-        setStartDateTime(formatDateTimeLocal(now));
-        const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-        setEndDateTime(formatDateTimeLocal(twoHoursLater));
+        setEndDateTime(addHours(new Date(), 2));
         setSuccess(false);
         setMessage('');
       }, 3000);
@@ -98,9 +76,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
   const getDuration = (): string => {
     if (!startDateTime || !endDateTime) return '';
     
-    const start = new Date(startDateTime);
-    const end = new Date(endDateTime);
-    const diffMs = end.getTime() - start.getTime();
+    const diffMs = endDateTime.getTime() - startDateTime.getTime();
     
     if (diffMs <= 0) return 'Invalid duration';
     
@@ -206,40 +182,43 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
               </div>
             </div>
 
-            {/* Parking Duration */}
+            {/* Parking Duration with DatePicker */}
             <div className="form-section">
               <h3>Parking Duration</h3>
               
               <div className="form-group">
-                <label htmlFor="startDateTime">
+                <label>
                   <span className="label-icon">📅</span>
                   Start Date & Time
                 </label>
-                <input
-                  id="startDateTime"
-                  type="datetime-local"
-                  value={startDateTime}
-                  readOnly
-                  className="datetime-input disabled"
-                />
+                <div className="datetime-display disabled">
+                  <span className="datetime-icon">🕐</span>
+                  <span className="datetime-text">{format(startDateTime, 'PPpp')}</span>
+                  <span className="datetime-badge">Current Time</span>
+                </div>
                 <small>🔒 Fixed to current time</small>
               </div>
 
               <div className="form-group">
-                <label htmlFor="endDateTime">
+                <label>
                   <span className="label-icon">⏰</span>
                   End Date & Time
                 </label>
-                <input
-                  id="endDateTime"
-                  type="datetime-local"
-                  value={endDateTime}
-                  onChange={(e) => setEndDateTime(e.target.value)}
-                  min={startDateTime}
+                <DatePicker
+                  selected={endDateTime}
+                  onChange={(date: Date) => setEndDateTime(date)}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat="MMMM d, yyyy h:mm aa"
+                  minDate={startDateTime}
+                  maxDate={addHours(startDateTime, 24)}
+                  className="custom-datepicker"
+                  calendarClassName="custom-calendar"
+                  inline={false}
                   required
-                  className="datetime-input"
                 />
-                <small>Select when you plan to leave</small>
+                <small>Select when you plan to leave (max 24 hours)</small>
               </div>
 
               {endDateTime && (
