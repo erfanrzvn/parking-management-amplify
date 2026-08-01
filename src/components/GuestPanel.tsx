@@ -179,128 +179,128 @@ export default function GuestPanel() {
 
   return (
     <div className="panel guest-panel">
-      <h2>Reserve Parking</h2>
+      <form onSubmit={handleReservation} className="form">
+        {!parkingFromQR && (
+          <div className="form-group">
+            <label>Select Parking:</label>
+            <select
+              value={selectedParking}
+              onChange={(e) => setSelectedParking(e.target.value)}
+              required
+            >
+              <option value="">Select Parking</option>
+              {parkings.map((parking) => (
+                <option key={parking.id} value={parking.id}>
+                  {parking.id} ({parking.totalSpots} total spots)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      {!parkingFromQR && (
-        <div className="form-group">
-          <label>Select Parking:</label>
-          <select
-            value={selectedParking}
-            onChange={(e) => setSelectedParking(e.target.value)}
-            required
-          >
-            <option value="">Select Parking</option>
-            {parkings.map((parking) => (
-              <option key={parking.id} value={parking.id}>
-                {parking.id} ({parking.totalSpots} total spots)
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+        {parkingFromQR && selectedParking && (
+          <div className="info-box" style={{ marginBottom: '1.5rem' }}>
+            <p><strong>Selected Parking:</strong> {selectedParking}</p>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setParkingFromQR(false);
+                setSelectedParking('');
+                setResidentCode('');
+              }}
+            >
+              Change Parking
+            </button>
+          </div>
+        )}
 
-      {parkingFromQR && selectedParking && (
-        <div className="info-box" style={{ marginBottom: '1.5rem' }}>
-          <p><strong>Selected Parking:</strong> {selectedParking}</p>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => {
-              setParkingFromQR(false);
-              setSelectedParking('');
-              setResidentCode('');
-            }}
-          >
-            Change Parking
-          </button>
-        </div>
-      )}
-
-      {selectedParking && availability && (
-        <div className={`availability-status ${availability.available ? 'available' : 'full'}`}>
-          <h3>{availability.message}</h3>
-          <p>
-            {availability.availableSpots} / {availability.totalSpots} spots available
-          </p>
-          {!availability.available && availability.nextAvailableTime && (
-            <p className="next-available">
-              Next available: {new Date(availability.nextAvailableTime).toLocaleString()}
+        {selectedParking && availability && (
+          <div className={`availability-status ${availability.available ? 'available' : 'full'}`}>
+            <h3>{availability.message}</h3>
+            <p>
+              {availability.availableSpots} / {availability.totalSpots} spots available
             </p>
-          )}
-        </div>
-      )}
-
-      {selectedParking && (
-        <form onSubmit={handleReservation} className="form">
-          <div className="form-group">
-            <label>Resident Code:</label>
-            <input
-              type="text"
-              value={residentCode}
-              onChange={(e) => setResidentCode(e.target.value)}
-              placeholder="8-character resident code"
-              required
-            />
+            {!availability.available && availability.nextAvailableTime && (
+              <p className="next-available">
+                Next available: {new Date(availability.nextAvailableTime).toLocaleString()}
+              </p>
+            )}
           </div>
+        )}
 
-          <div className="form-group">
-            <label>Your License Plate:</label>
-            <input
-              type="text"
-              value={plate}
-              onChange={(e) => setPlate(e.target.value)}
-              placeholder="e.g. ABC-1234"
-              required
-            />
+        {selectedParking && (
+          <>
+            <div className="form-group">
+              <label>Resident Code:</label>
+              <input
+                type="text"
+                value={residentCode}
+                onChange={(e) => setResidentCode(e.target.value)}
+                placeholder="8-character resident code"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Your License Plate:</label>
+              <input
+                type="text"
+                value={plate}
+                onChange={(e) => setPlate(e.target.value)}
+                placeholder="e.g. ABC-1234"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Mobile Number:</label>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="+1234567890"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Email:</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@email.com"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>End Time:</label>
+              <input
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                required
+              />
+              <small style={{ color: '#888', marginTop: '0.5rem', display: 'block' }}>
+                Start time: Now ({new Date().toLocaleString()})
+              </small>
+            </div>
+
+            <button type="submit" disabled={loading} className="btn-primary">
+              {loading ? 'Reserving...' : 'Reserve Parking'}
+            </button>
+          </>
+        )}
+
+        {message && (
+          <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
+            {message}
           </div>
-
-          <div className="form-group">
-            <label>Mobile Number:</label>
-            <input
-              type="tel"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-              placeholder="+1234567890"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@email.com"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>End Time:</label>
-            <input
-              type="datetime-local"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-              required
-            />
-            <small style={{ color: '#888', marginTop: '0.5rem', display: 'block' }}>
-              Start time: Now ({new Date().toLocaleString()})
-            </small>
-          </div>
-
-          <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? 'Reserving...' : 'Reserve Parking'}
-          </button>
-        </form>
-      )}
-
-      {message && (
-        <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
-          {message}
-        </div>
-      )}
+        )}
+      </form>
     </div>
   );
 }
