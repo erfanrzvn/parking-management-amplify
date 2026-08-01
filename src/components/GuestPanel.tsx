@@ -180,40 +180,29 @@ export default function GuestPanel() {
   return (
     <div className="panel guest-panel">
       <form onSubmit={handleReservation} className="form">
-        {!parkingFromQR && (
-          <div className="form-group">
-            <label>Select Parking:</label>
-            <select
-              value={selectedParking}
-              onChange={(e) => setSelectedParking(e.target.value)}
-              required
-            >
-              <option value="">Select Parking</option>
-              {parkings.map((parking) => (
-                <option key={parking.id} value={parking.id}>
-                  {parking.id} ({parking.totalSpots} total spots)
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {parkingFromQR && selectedParking && (
-          <div className="info-box" style={{ marginBottom: '1.5rem' }}>
-            <p><strong>Selected Parking:</strong> {selectedParking}</p>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => {
-                setParkingFromQR(false);
-                setSelectedParking('');
-                setResidentCode('');
-              }}
-            >
-              Change Parking
-            </button>
-          </div>
-        )}
+        <div className="form-group">
+          <label>Select Parking:</label>
+          <select
+            value={selectedParking}
+            onChange={(e) => {
+              setSelectedParking(e.target.value);
+              setParkingFromQR(false);
+            }}
+            required
+          >
+            <option value="">Select Parking</option>
+            {parkings.map((parking) => (
+              <option key={parking.id} value={parking.id}>
+                {parking.id} ({parking.totalSpots} total spots)
+              </option>
+            ))}
+          </select>
+          {parkingFromQR && selectedParking && (
+            <small style={{ color: '#4CAF50', marginTop: '0.5rem', display: 'block' }}>
+              ✓ Pre-selected from QR code/URL
+            </small>
+          )}
+        </div>
 
         {selectedParking && availability && (
           <div className={`availability-status ${availability.available ? 'available' : 'full'}`}>
