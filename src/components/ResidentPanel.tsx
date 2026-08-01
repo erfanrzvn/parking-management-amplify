@@ -24,7 +24,8 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
         email: attributes.email || user?.signInDetails?.loginId || 'N/A',
         building: attributes['custom:parking'] || 'Building A',
         floor: attributes['custom:floor'] || '5',
-        plate: attributes['custom:plate'] || 'ABC-1234',
+        unitNumber: attributes['custom:unitNumber'] || '502',
+        licensePlate: attributes['custom:plate'] || 'ABC-1234',
         residentCode: attributes['custom:residentCode'] || generateDefaultCode(),
       });
     } catch (error) {
@@ -34,7 +35,8 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
         email: user?.signInDetails?.loginId || 'N/A',
         building: 'Building A',
         floor: '5',
-        plate: 'ABC-1234',
+        unitNumber: '502',
+        licensePlate: 'ABC-1234',
         residentCode: generateDefaultCode(),
       });
     } finally {
@@ -95,8 +97,12 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
               <span className="info-value">{residentData?.floor}</span>
             </div>
             <div className="info-item">
+              <span className="info-label">🚪 Unit Number:</span>
+              <span className="info-value">{residentData?.unitNumber}</span>
+            </div>
+            <div className="info-item">
               <span className="info-label">🚗 License Plate:</span>
-              <span className="info-value">{residentData?.plate}</span>
+              <span className="info-value">{residentData?.licensePlate}</span>
             </div>
           </div>
           <div className="info-note">
