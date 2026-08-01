@@ -6,7 +6,6 @@ dist/
 build/
 
 # Amplify
-amplify_outputs.json
 .amplify/
 
 # Environment variables

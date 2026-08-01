@@ -1,0 +1,87 @@
+2026-08-01T12:20:15.264Z [INFO]: # Build environment configured with Standard build compute type: 8GiB Memory, 4vCPUs, 128GB Disk Space
+2026-08-01T12:20:15.802Z [INFO]: # Cloning repository: git@github.com:erfanrzvn/parking-management-amplify.git
+2026-08-01T12:20:16.252Z [INFO]: 
+2026-08-01T12:20:16.253Z [INFO]: Cloning into 'parking-management-amplify'...
+2026-08-01T12:20:16.253Z [INFO]: # Switching to commit: eddc8b07a716d1222a083000b0f8627427d5c068
+2026-08-01T12:20:16.267Z [INFO]: Note: switching to 'eddc8b07a716d1222a083000b0f8627427d5c068'.
+                                 You are in 'detached HEAD' state. You can look around, make experimental
+                                 changes and commit them, and you can discard any commits you make in this
+                                 state without impacting any branches by switching back to a branch.
+                                 If you want to create a new branch to retain commits you create, you may
+                                 do so (now or later) by using -c with the switch command. Example:
+                                 git switch -c <new-branch-name>
+                                 Or undo this operation with:
+                                 git switch -
+                                 Turn off this advice by setting config variable advice.detachedHead to false
+                                 HEAD is now at eddc8b0 fix: regenerate package-lock.json to sync with package.json
+2026-08-01T12:20:16.281Z [INFO]: Successfully cleaned up Git credentials
+2026-08-01T12:20:16.282Z [INFO]: # Checking for Git submodules at: /codebuild/output/src2598201632/src/parking-management-amplify/.gitmodules
+2026-08-01T12:20:16.289Z [INFO]: # Retrieving environment cache...
+2026-08-01T12:20:16.319Z [WARNING]: ! Unable to write cache: {"code":"ERR_BAD_REQUEST","message":"Request failed with status code 404"})}
+2026-08-01T12:20:16.319Z [INFO]: ---- Setting Up SSM Secrets ----
+2026-08-01T12:20:16.319Z [INFO]: SSM params {"Path":"/amplify/d1b6dmf1w1balm/master/","WithDecryption":true}
+2026-08-01T12:20:16.356Z [WARNING]: !Failed to set up process.env.secrets
+2026-08-01T12:20:17.110Z [INFO]: # No package override configuration found.
+2026-08-01T12:20:17.114Z [INFO]: # Retrieving cache...
+2026-08-01T12:20:17.148Z [INFO]: # Retrieved cache
+2026-08-01T12:20:20.777Z [INFO]: ## Starting Backend Build
+                                 ## Checking for associated backend environment...
+                                 ## No backend environment association found, continuing...
+                                 ## Completed Backend Build
+2026-08-01T12:20:20.788Z [INFO]: ## Starting Frontend Build
+                                 # Starting phase: preBuild
+                                 # Executing command: npm ci
+2026-08-01T12:20:35.259Z [WARNING]: npm warn ERESOLVE overriding peer dependency
+2026-08-01T12:20:35.268Z [WARNING]: npm warn While resolving: @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn Found: zod@3.25.17
+                                    npm warn node_modules/@aws-amplify/data-construct/node_modules/@aws-amplify/backend-output-schemas/node_modules/zod
+                                    npm warn
+                                    npm warn Could not resolve dependency:
+                                    npm warn peer zod@"3.25.17" from @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn node_modules/@aws-amplify/data-construct/node_modules/@aws-amplify/backend-output-schemas
+                                    npm warn   bundled @aws-amplify/backend-output-schemas@"^1.0.0" from @aws-amplify/data-construct@1.17.7
+                                    npm warn   node_modules/@aws-amplify/data-construct
+                                    npm warn   2 more (@aws-amplify/ai-constructs, @aws-amplify/backend-output-storage)
+2026-08-01T12:20:35.671Z [WARNING]: npm warn ERESOLVE overriding peer dependency
+2026-08-01T12:20:35.671Z [WARNING]: npm warn While resolving: @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn Found: zod@3.25.17
+                                    npm warn node_modules/@aws-amplify/graphql-api-construct/node_modules/@aws-amplify/backend-output-schemas/node_modules/zod
+                                    npm warn
+                                    npm warn Could not resolve dependency:
+                                    npm warn peer zod@"3.25.17" from @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn node_modules/@aws-amplify/graphql-api-construct/node_modules/@aws-amplify/backend-output-schemas
+                                    npm warn   bundled @aws-amplify/backend-output-schemas@"^1.0.0" from @aws-amplify/graphql-api-construct@1.22.2
+                                    npm warn   node_modules/@aws-amplify/graphql-api-construct
+                                    npm warn   2 more (@aws-amplify/ai-constructs, @aws-amplify/backend-output-storage)
+2026-08-01T12:20:35.758Z [WARNING]: npm error code EUSAGE
+2026-08-01T12:20:35.758Z [WARNING]: npm error
+                                    npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+                                    npm error
+                                    npm error Missing: @opentelemetry/core@2.0.0 from lock file
+                                    npm error Missing: @opentelemetry/core@2.0.0 from lock file
+                                    npm error Missing: @opentelemetry/core@2.0.0 from lock file
+                                    npm error Missing: @opentelemetry/core@2.0.0 from lock file
+                                    npm error
+                                    npm error Clean install a project
+                                    npm error
+                                    npm error Usage:
+                                    npm error npm ci
+                                    npm error
+                                    npm error Options:
+                                    npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+                                    npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+                                    npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+                                    npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+                                    npm error [--no-bin-links] [--no-fund] [--dry-run]
+                                    npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+                                    npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+                                    npm error
+                                    npm error aliases: clean-install, ic, install-clean, isntall-clean
+                                    npm error
+                                    npm error Run "npm help ci" for more info
+2026-08-01T12:20:35.759Z [WARNING]: npm error A complete log of this run can be found in: /root/.npm/_logs/2026-08-01T12_20_23_855Z-debug-0.log
+2026-08-01T12:20:35.766Z [ERROR]: !!! Build failed
+2026-08-01T12:20:35.767Z [ERROR]: !!! Error: Command failed with exit code 1
+2026-08-01T12:20:35.767Z [INFO]: # Starting environment caching...
+2026-08-01T12:20:35.767Z [INFO]: # Environment caching completed
+
