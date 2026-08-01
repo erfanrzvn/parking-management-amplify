@@ -14,12 +14,15 @@ function App() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
+    console.log('App mounted, checking auth status...');
     checkAuthStatus();
   }, []);
 
   const checkAuthStatus = async () => {
     try {
       const session = await fetchAuthSession();
+      console.log('Auth session:', session);
+      
       if (session.tokens) {
         setIsAuthenticated(true);
         setShowLogin(false);
@@ -29,6 +32,7 @@ function App() {
         setUserRole(null);
       }
     } catch (error) {
+      console.log('Not authenticated:', error);
       setIsAuthenticated(false);
       setUserRole(null);
     }
@@ -38,6 +42,8 @@ function App() {
     try {
       const session = await fetchAuthSession();
       const groups = session.tokens?.accessToken?.payload['cognito:groups'] as string[] | undefined;
+      
+      console.log('User groups:', groups);
       
       if (groups?.includes('Admin')) {
         setUserRole('admin');
@@ -59,6 +65,7 @@ function App() {
   };
 
   const handleSignOut = async () => {
+    console.log('Signing out...');
     const { signOut } = await import('aws-amplify/auth');
     await signOut();
     setIsAuthenticated(false);
@@ -67,18 +74,28 @@ function App() {
     setUser(null);
   };
 
+  console.log('App state:', { isAuthenticated, userRole, showLogin });
+
+  // Show login page
   if (showLogin && !isAuthenticated) {
+    console.log('Showing login page');
     return (
       <LoginPage 
         onLoginSuccess={() => {
+          console.log('Login success callback');
           checkAuthStatus();
         }}
-        onBack={() => setShowLogin(false)}
+        onBack={() => {
+          console.log('Back to home');
+          setShowLogin(false);
+        }}
       />
     );
   }
 
+  // Show authenticated dashboard
   if (isAuthenticated && userRole) {
+    console.log('Showing authenticated dashboard');
     return (
       <div className="app">
         <header className="app-header">
@@ -106,6 +123,8 @@ function App() {
     );
   }
 
+  // Show guest home page
+  console.log('Showing guest home page');
   return (
     <div className="app">
       <div className="hero-section">
@@ -119,7 +138,10 @@ function App() {
           </p>
           <button 
             className="btn-login"
-            onClick={() => setShowLogin(true)}
+            onClick={() => {
+              console.log('Login button clicked! Setting showLogin to true');
+              setShowLogin(true);
+            }}
           >
             🔐 Resident Login
           </button>

@@ -12,7 +12,6 @@ interface Parking {
 export default function GuestPanel() {
   const [parkings, setParkings] = useState<Parking[]>([]);
   const [selectedParking, setSelectedParking] = useState('');
-  const [parkingFromQR, setParkingFromQR] = useState(false);
   const [residentCode, setResidentCode] = useState('');
   const [plate, setPlate] = useState('');
   const [mobile, setMobile] = useState('');
@@ -20,18 +19,11 @@ export default function GuestPanel() {
   const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [availability, setAvailability] = useState<any>(null);
 
   useEffect(() => {
     loadParkings();
     checkURLParams();
   }, []);
-
-  useEffect(() => {
-    if (selectedParking) {
-      checkAvailability(selectedParking);
-    }
-  }, [selectedParking]);
 
   const checkURLParams = () => {
     const params = new URLSearchParams(window.location.search);
@@ -40,7 +32,6 @@ export default function GuestPanel() {
     
     if (parkingParam) {
       setSelectedParking(parkingParam);
-      setParkingFromQR(true);
     }
     
     if (residentCodeParam) {
@@ -50,56 +41,28 @@ export default function GuestPanel() {
 
   const loadParkings = async () => {
     try {
-      const { data } = await client.models.ParkingConfig.list();
-      if (data) {
+      console.log('Loading parkings...');
+      const { data, errors } = await client.models.ParkingConfig.list();
+      
+      if (errors) {
+        console.error('GraphQL errors:', errors);
+        setMessage('Error loading parkings: ' + errors[0]?.message);
+        return;
+      }
+      
+      console.log('Parkings loaded:', data);
+      
+      if (data && data.length > 0) {
         setParkings(data.map((item: any) => ({
           id: item.id,
           totalSpots: item.totalSpots || 0
         })));
-      }
-    } catch (error) {
-      setMessage('Error loading parkings');
-    }
-  };
-
-  const checkAvailability = async (parkingId: string) => {
-    try {
-      const { data: reservations } = await client.models.Reservation.list();
-      const parking = parkings.find(p => p.id === parkingId);
-      
-      if (!parking) return;
-
-      const totalSpots = parking.totalSpots;
-      const now = new Date();
-
-      const activeReservations = reservations?.filter(
-        (r: any) => r.residentId?.startsWith(parkingId) && new Date(r.endTime) > now
-      ) || [];
-
-      const availableSpots = totalSpots - activeReservations.length;
-
-      if (availableSpots > 0) {
-        setAvailability({
-          available: true,
-          availableSpots,
-          totalSpots,
-          message: `${availableSpots} parking spot(s) available`,
-        });
       } else {
-        const sorted = [...activeReservations].sort(
-          (a: any, b: any) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime()
-        );
-        
-        setAvailability({
-          available: false,
-          availableSpots: 0,
-          totalSpots,
-          nextAvailableTime: sorted[0]?.endTime,
-          message: 'All parking spots are full',
-        });
+        setMessage('No parkings available. Please ask admin to create parkings.');
       }
-    } catch (error) {
-      setMessage('Error checking availability');
+    } catch (error: any) {
+      console.error('Error loading parkings:', error);
+      setMessage('Error: ' + error.message);
     }
   };
 
@@ -117,31 +80,6 @@ export default function GuestPanel() {
         throw new Error('Invalid resident code');
       }
 
-      // Check availability again
-      const { data: reservations } = await client.models.Reservation.list();
-      const parking = parkings.find(p => p.id === selectedParking);
-      
-      if (!parking) {
-        throw new Error('Invalid parking');
-      }
-
-      const totalSpots = parking.totalSpots;
-      const now = new Date();
-
-      const activeReservations = reservations?.filter(
-        (r: any) => r.residentId?.startsWith(selectedParking) && new Date(r.endTime) > now
-      ) || [];
-
-      if (activeReservations.length >= totalSpots) {
-        const sorted = [...activeReservations].sort(
-          (a: any, b: any) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime()
-        );
-
-        throw new Error(
-          `All parking spots are full. Next available: ${new Date(sorted[0].endTime).toLocaleString()}`
-        );
-      }
-
       // Create reservation - start time is now, end time from input
       const startTime = new Date();
       const endTimeDate = new Date(endTime);
@@ -149,8 +87,8 @@ export default function GuestPanel() {
       await client.models.Reservation.create({
         residentId: `${selectedParking}-${resident.id}`,
         residentCode,
-        residentFloor: resident.floor,
-        residentPlate: resident.plate,
+        residentFloor: resident.floor || '',
+        residentPlate: resident.plate || '',
         guestPlate: plate,
         guestMobile: mobile,
         guestEmail: email,
@@ -159,7 +97,7 @@ export default function GuestPanel() {
         createdAt: startTime.toISOString(),
       });
 
-      setMessage('✅ Your reservation has been confirmed');
+      setMessage('✅ Your reservation has been confirmed!');
       
       // Reset form
       setResidentCode('');
@@ -167,10 +105,8 @@ export default function GuestPanel() {
       setMobile('');
       setEmail('');
       setEndTime('');
-
-      // Refresh availability
-      checkAvailability(selectedParking);
     } catch (error: any) {
+      console.error('Reservation error:', error);
       setMessage(`❌ ${error.message}`);
     } finally {
       setLoading(false);
@@ -179,44 +115,24 @@ export default function GuestPanel() {
 
   return (
     <div className="panel guest-panel">
+      <h2>Reserve Parking Spot</h2>
+      
       <form onSubmit={handleReservation} className="form">
         <div className="form-group">
           <label>Select Parking:</label>
           <select
             value={selectedParking}
-            onChange={(e) => {
-              setSelectedParking(e.target.value);
-              setParkingFromQR(false);
-            }}
+            onChange={(e) => setSelectedParking(e.target.value)}
             required
           >
-            <option value="">Select Parking</option>
+            <option value="">-- Select Parking --</option>
             {parkings.map((parking) => (
               <option key={parking.id} value={parking.id}>
-                {parking.id} ({parking.totalSpots} total spots)
+                {parking.id} ({parking.totalSpots} spots)
               </option>
             ))}
           </select>
-          {parkingFromQR && selectedParking && (
-            <small style={{ color: '#4CAF50', marginTop: '0.5rem', display: 'block' }}>
-              ✓ Pre-selected from QR code/URL
-            </small>
-          )}
         </div>
-
-        {selectedParking && availability && (
-          <div className={`availability-status ${availability.available ? 'available' : 'full'}`}>
-            <h3>{availability.message}</h3>
-            <p>
-              {availability.availableSpots} / {availability.totalSpots} spots available
-            </p>
-            {!availability.available && availability.nextAvailableTime && (
-              <p className="next-available">
-                Next available: {new Date(availability.nextAvailableTime).toLocaleString()}
-              </p>
-            )}
-          </div>
-        )}
 
         {selectedParking && (
           <>
@@ -226,7 +142,8 @@ export default function GuestPanel() {
                 type="text"
                 value={residentCode}
                 onChange={(e) => setResidentCode(e.target.value)}
-                placeholder="8-character resident code"
+                placeholder="8-character code"
+                maxLength={8}
                 required
               />
             </div>
@@ -237,7 +154,7 @@ export default function GuestPanel() {
                 type="text"
                 value={plate}
                 onChange={(e) => setPlate(e.target.value)}
-                placeholder="e.g. ABC-1234"
+                placeholder="ABC-1234"
                 required
               />
             </div>
@@ -259,7 +176,7 @@ export default function GuestPanel() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@email.com"
+                placeholder="guest@email.com"
                 required
               />
             </div>
@@ -279,17 +196,24 @@ export default function GuestPanel() {
             </div>
 
             <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? 'Reserving...' : 'Reserve Parking'}
+              {loading ? 'Reserving...' : '🅿️ Reserve Parking'}
             </button>
           </>
         )}
-
-        {message && (
-          <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
-            {message}
-          </div>
-        )}
       </form>
+
+      {message && (
+        <div className={`message ${message.includes('✅') ? 'success' : 'error'}`} style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          borderRadius: '8px',
+          backgroundColor: message.includes('✅') ? '#d4edda' : '#f8d7da',
+          color: message.includes('✅') ? '#155724' : '#721c24',
+          border: `1px solid ${message.includes('✅') ? '#c3e6cb' : '#f5c6cb'}`
+        }}>
+          {message}
+        </div>
+      )}
     </div>
   );
 }
