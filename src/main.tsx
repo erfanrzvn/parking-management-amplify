@@ -7,14 +7,19 @@ import './index.css';
 
 console.log('Configuring Amplify with outputs:', outputs);
 
-Amplify.configure(outputs, {
-  ssr: false
-});
+// Configure Amplify FIRST
+try {
+  Amplify.configure(outputs);
+  console.log('Amplify configured successfully!');
+} catch (error) {
+  console.error('Failed to configure Amplify:', error);
+}
 
-console.log('Amplify configured successfully!');
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Small delay to ensure Amplify is ready
+setTimeout(() => {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}, 100);

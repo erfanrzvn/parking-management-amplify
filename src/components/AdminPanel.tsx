@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../amplify/data/resource';
+import { getClient } from '../lib/client';
 
 interface AdminPanelProps {
   user: any;
@@ -26,7 +25,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
   const loadParkings = async () => {
     try {
-      const client = generateClient<Schema>();
+      const client = getClient();
       const { data } = await client.models.ParkingConfig.list();
       if (data) {
         setParkings(data.map((item: any) => ({
@@ -47,7 +46,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     setMessage('');
 
     try {
-      const client = generateClient<Schema>();
+      const client = getClient();
       await client.models.ParkingConfig.create({
         id: parkingName.toLowerCase().replace(/\s+/g, '-'),
         totalSpots,
