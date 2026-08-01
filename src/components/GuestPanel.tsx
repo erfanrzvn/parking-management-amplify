@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 
-const client = generateClient<Schema>();
-
 interface Parking {
   id: string;
   totalSpots: number;
@@ -42,6 +40,7 @@ export default function GuestPanel() {
   const loadParkings = async () => {
     try {
       console.log('Loading parkings...');
+      const client = generateClient<Schema>();
       const { data, errors } = await client.models.ParkingConfig.list();
       
       if (errors) {
@@ -72,6 +71,8 @@ export default function GuestPanel() {
     setMessage('');
 
     try {
+      const client = generateClient<Schema>();
+      
       // Verify resident code exists
       const { data: residents } = await client.models.Resident.list();
       const resident = residents?.find((r: any) => r.residentCode === residentCode);

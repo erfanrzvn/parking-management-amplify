@@ -4,8 +4,6 @@ import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
 import QRCode from 'qrcode.react';
 import type { Schema } from '../../amplify/data/resource';
 
-const client = generateClient<Schema>();
-
 interface ResidentPanelProps {
   user: any;
 }
@@ -32,6 +30,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
 
   const loadParkings = async () => {
     try {
+      const client = generateClient<Schema>();
       const { data } = await client.models.ParkingConfig.list();
       if (data) {
         setParkings(data.map((item: any) => ({
@@ -71,6 +70,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
     try {
       // Generate unique resident code
       const residentCode = generateResidentCode();
+      const client = generateClient<Schema>();
 
       // Update user attributes
       await updateUserAttributes({
@@ -85,11 +85,11 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
 
       // Create resident record
       await client.models.Resident.create({
-        email: user.signInDetails?.loginId || '',
+        email: user?.signInDetails?.loginId || '',
         floor,
         plate,
         residentCode,
-        userId: user.userId,
+        userId: user?.userId || '',
         createdAt: new Date().toISOString(),
       });
 

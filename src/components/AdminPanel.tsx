@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 
-const client = generateClient<Schema>();
-
 interface AdminPanelProps {
   user: any;
 }
@@ -28,6 +26,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
   const loadParkings = async () => {
     try {
+      const client = generateClient<Schema>();
       const { data } = await client.models.ParkingConfig.list();
       if (data) {
         setParkings(data.map((item: any) => ({
@@ -48,11 +47,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     setMessage('');
 
     try {
+      const client = generateClient<Schema>();
       await client.models.ParkingConfig.create({
         id: parkingName.toLowerCase().replace(/\s+/g, '-'),
         totalSpots,
         updatedAt: new Date().toISOString(),
-        updatedBy: user.userId,
+        updatedBy: user?.userId || 'unknown',
       });
 
       setMessage(`✅ Parking "${parkingName}" created successfully`);
@@ -73,7 +73,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       </div>
 
       <div className="user-info">
-        <p>👤 {user.signInDetails?.loginId}</p>
+        <p>👤 {user?.signInDetails?.loginId || 'Admin'}</p>
       </div>
 
       <div className="section">
