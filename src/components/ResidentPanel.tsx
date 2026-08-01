@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { getResidentByUserId } from '../lib/graphql';
 
 interface ResidentPanelProps {
   user: any;
@@ -17,17 +17,37 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
   const loadResidentData = async () => {
     try {
       setLoading(true);
-      const attributes = await fetchUserAttributes();
       
-      // Set resident data from Cognito attributes
-      setResidentData({
-        email: attributes.email || user?.signInDetails?.loginId || 'N/A',
-        building: attributes['custom:parking'] || 'Building A',
-        floor: attributes['custom:floor'] || '5',
-        unitNumber: attributes['custom:unitNumber'] || '502',
-        licensePlate: attributes['custom:plate'] || 'ABC-1234',
-        residentCode: attributes['custom:residentCode'] || generateDefaultCode(),
-      });
+      // Get userId from user object
+      const userId = user?.userId || user?.username;
+      
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+      
+      // Fetch resident data from database
+      const resident = await getResidentByUserId(userId);
+      
+      if (resident) {
+        setResidentData({
+          email: resident.email || user?.signInDetails?.loginId || 'N/A',
+          building: resident.building || 'Building A',
+          floor: resident.floor || '5',
+          unitNumber: resident.unitNumber || '502',
+          licensePlate: resident.plate || 'ABC-1234',
+          residentCode: resident.residentCode || generateDefaultCode(),
+        });
+      } else {
+        // No resident record found - show default data
+        setResidentData({
+          email: user?.signInDetails?.loginId || 'N/A',
+          building: 'Building A',
+          floor: '5',
+          unitNumber: '502',
+          licensePlate: 'ABC-1234',
+          residentCode: generateDefaultCode(),
+        });
+      }
     } catch (error) {
       console.error('Error loading resident data:', error);
       // Set default data if error

@@ -134,7 +134,9 @@ Resources:
         type Resident {
           id: ID!
           email: AWSEmail!
+          building: String!
           floor: String!
+          unitNumber: String!
           plate: String!
           residentCode: String!
           userId: String!
@@ -161,6 +163,7 @@ Resources:
           getParkingConfig(id: ID!): ParkingConfig
           listParkingConfigs: [ParkingConfig]
           getResident(id: ID!): Resident
+          getResidentByUserId(userId: String!): Resident
           listResidents: [Resident]
           getReservation(id: ID!): Reservation
           listReservations: [Reservation]
@@ -192,7 +195,9 @@ Resources:
 
         input CreateResidentInput {
           email: AWSEmail!
+          building: String!
           floor: String!
+          unitNumber: String!
           plate: String!
           residentCode: String!
           userId: String!
@@ -201,7 +206,9 @@ Resources:
         input UpdateResidentInput {
           id: ID!
           email: AWSEmail
+          building: String
           floor: String
+          unitNumber: String
           plate: String
         }
 
@@ -455,6 +462,38 @@ Resources:
           return ctx.result.items;
         }
 
+  GetResidentByUserIdResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Query
+      FieldName: getResidentByUserId
+      DataSourceName: !GetAtt ResidentDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return {
+            operation: 'Query',
+            index: 'byUserId',
+            query: {
+              expression: 'userId = :userId',
+              expressionValues: util.dynamodb.toMapValues({
+                ':userId': ctx.args.userId,
+              }),
+            },
+          };
+        }
+        export function response(ctx) {
+          if (ctx.result.items.length > 0) {
+            return ctx.result.items[0];
+          }
+          return null;
+        }
+
   CreateResidentResolver:
     Type: AWS::AppSync::Resolver
     DependsOn: GraphQLSchema
@@ -506,7 +545,9 @@ Resources:
           const vals = { ':updatedAt': util.time.nowISO8601() };
           
           if (values.email) { updates.push('email = :email'); vals[':email'] = values.email; }
+          if (values.building) { updates.push('building = :building'); vals[':building'] = values.building; }
           if (values.floor) { updates.push('floor = :floor'); vals[':floor'] = values.floor; }
+          if (values.unitNumber) { updates.push('unitNumber = :unitNumber'); vals[':unitNumber'] = values.unitNumber; }
           if (values.plate) { updates.push('plate = :plate'); vals[':plate'] = values.plate; }
           
           return {
