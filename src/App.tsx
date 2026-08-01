@@ -22,10 +22,15 @@ function App() {
       const session = await fetchAuthSession();
       if (session.tokens) {
         setIsAuthenticated(true);
+        setShowLogin(false);
         await determineUserRole();
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
       }
     } catch (error) {
       setIsAuthenticated(false);
+      setUserRole(null);
     }
   };
 
@@ -38,11 +43,17 @@ function App() {
         setUserRole('admin');
       } else if (groups?.includes('Resident')) {
         setUserRole('resident');
+      } else {
+        setUserRole(null);
       }
       
       const attributes = await fetchUserAttributes();
-      setUser({ signInDetails: { loginId: attributes.email } });
+      setUser({ 
+        signInDetails: { loginId: attributes.email },
+        userId: attributes.sub 
+      });
     } catch (error) {
+      console.error('Error determining role:', error);
       setUserRole(null);
     }
   };

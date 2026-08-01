@@ -18,12 +18,17 @@ export default function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
     setError('');
 
     try {
-      await signIn({
+      const result = await signIn({
         username: email,
         password: password,
       });
       
-      onLoginSuccess();
+      // Check if sign in was successful
+      if (result.isSignedIn) {
+        // Wait a moment for Cognito to sync
+        await new Promise(resolve => setTimeout(resolve, 500));
+        onLoginSuccess();
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       
@@ -36,7 +41,6 @@ export default function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
       } else {
         setError(err.message || 'An error occurred during sign in');
       }
-    } finally {
       setLoading(false);
     }
   };
