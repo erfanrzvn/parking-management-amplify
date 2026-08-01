@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getClient } from '../lib/client';
+import { listParkingConfigs, listResidents, createReservation, listReservations } from '../lib/graphql';
 
 interface Parking {
   id: string;
@@ -38,19 +38,8 @@ export default function GuestPanel() {
 
   const loadParkings = async () => {
     try {
-      console.log('Loading parkings...');
-      const client = getClient();
-      console.log('Client:', client);
-      console.log('Client models:', client.models);
-      
-      const { data, errors } = await client.models.ParkingConfig.list();
-      
-      if (errors) {
-        console.error('GraphQL errors:', errors);
-        setMessage('Error loading parkings: ' + errors[0]?.message);
-        return;
-      }
-      
+      console.log('Loading parkings with GraphQL...');
+      const data = await listParkingConfigs();
       console.log('Parkings loaded:', data);
       
       if (data && data.length > 0) {
@@ -73,10 +62,8 @@ export default function GuestPanel() {
     setMessage('');
 
     try {
-      const client = getClient();
-      
       // Verify resident code exists
-      const { data: residents } = await client.models.Resident.list();
+      const residents = await listResidents();
       const resident = residents?.find((r: any) => r.residentCode === residentCode);
 
       if (!resident) {
@@ -87,7 +74,7 @@ export default function GuestPanel() {
       const startTime = new Date();
       const endTimeDate = new Date(endTime);
 
-      await client.models.Reservation.create({
+      await createReservation({
         residentId: `${selectedParking}-${resident.id}`,
         residentCode,
         residentFloor: resident.floor || '',

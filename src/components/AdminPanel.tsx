@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getClient } from '../lib/client';
+import { listParkingConfigs, createParkingConfig } from '../lib/graphql';
 
 interface AdminPanelProps {
   user: any;
@@ -25,14 +25,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
   const loadParkings = async () => {
     try {
-      const client = getClient();
-      const { data } = await client.models.ParkingConfig.list();
+      const data = await listParkingConfigs();
       if (data) {
         setParkings(data.map((item: any) => ({
           id: item.id,
           totalSpots: item.totalSpots || 0,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: item.updatedAt || new Date().toISOString()
         })));
       }
     } catch (error) {
@@ -46,8 +45,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     setMessage('');
 
     try {
-      const client = getClient();
-      await client.models.ParkingConfig.create({
+      await createParkingConfig({
         id: parkingName.toLowerCase().replace(/\s+/g, '-'),
         totalSpots,
         updatedAt: new Date().toISOString(),

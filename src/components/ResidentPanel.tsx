@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getClient } from '../lib/client';
+import { listParkingConfigs, createResident } from '../lib/graphql';
 import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
 import QRCode from 'qrcode.react';
 
@@ -29,8 +29,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
 
   const loadParkings = async () => {
     try {
-      const client = getClient();
-      const { data } = await client.models.ParkingConfig.list();
+      const data = await listParkingConfigs();
       if (data) {
         setParkings(data.map((item: any) => ({
           id: item.id,
@@ -69,7 +68,6 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
     try {
       // Generate unique resident code
       const residentCode = generateResidentCode();
-      const client = getClient();
 
       // Update user attributes
       await updateUserAttributes({
@@ -83,7 +81,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
       });
 
       // Create resident record
-      await client.models.Resident.create({
+      await createResident({
         email: user?.signInDetails?.loginId || '',
         floor,
         plate,
