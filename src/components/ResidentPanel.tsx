@@ -37,7 +37,7 @@ export default function ResidentPanel({ user, signOut }: ResidentPanelProps) {
         });
       }
     } catch (error) {
-      console.error('Error loading resident data:', error);
+      setMessage('خطا در بارگذاری اطلاعات');
     }
   };
 

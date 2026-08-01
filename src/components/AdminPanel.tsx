@@ -27,7 +27,7 @@ export default function AdminPanel({ user, signOut }: AdminPanelProps) {
         setTotalSpots(data[0].totalSpots || 20);
       }
     } catch (error) {
-      console.error('Error loading config:', error);
+      setMessage('خطا در بارگذاری تنظیمات');
     }
   };
 

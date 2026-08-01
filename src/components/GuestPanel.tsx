@@ -40,8 +40,8 @@ export default function GuestPanel() {
             setMessage('❌ QR Code نامعتبر است');
           }
         },
-        (error) => {
-          console.log(error);
+        () => {
+          // QR scanning error - ignore
         }
       );
 
@@ -86,7 +86,7 @@ export default function GuestPanel() {
         });
       }
     } catch (error) {
-      console.error('Error checking availability:', error);
+      setMessage('خطا در بررسی موجودی');
     }
   };
 
