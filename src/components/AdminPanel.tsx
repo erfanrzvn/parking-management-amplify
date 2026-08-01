@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listParkingConfigs, createParkingConfig, listReservations } from '../lib/graphql';
+import { listParkingConfigs, createParkingConfig, listReservations, listResidents } from '../lib/graphql';
 import { generateClient } from 'aws-amplify/api';
 
 const graphqlClient = generateClient();
@@ -13,6 +13,17 @@ interface Parking {
   totalSpots: number;
   createdAt: string;
   updatedAt: string;
+}
+
+interface Resident {
+  id: string;
+  email: string;
+  building?: string;
+  floor?: string;
+  unitNumber?: string;
+  plate?: string;
+  residentCode: string;
+  userId: string;
 }
 
 interface Reservation {
@@ -32,6 +43,7 @@ interface Reservation {
 export default function AdminPanel({ user }: AdminPanelProps) {
   const [parkings, setParkings] = useState<Parking[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [residents, setResidents] = useState<Resident[]>([]);
   const [parkingName, setParkingName] = useState('');
   const [totalSpots, setTotalSpots] = useState<number>(20);
   const [loading, setLoading] = useState(false);
@@ -66,7 +78,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   }, []);
 
   const loadData = async () => {
-    await Promise.all([loadParkings(), loadReservations()]);
+    await Promise.all([loadParkings(), loadReservations(), loadResidents()]);
   };
 
   const loadParkings = async () => {
@@ -82,6 +94,26 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       }
     } catch (error) {
       console.error('Error loading parkings:', error);
+    }
+  };
+
+  const loadResidents = async () => {
+    try {
+      const data = await listResidents();
+      if (data) {
+        setResidents(data.map((item: any) => ({
+          id: item.id,
+          email: item.email || '',
+          building: item.building,
+          floor: item.floor,
+          unitNumber: item.unitNumber,
+          plate: item.plate,
+          residentCode: item.residentCode || '',
+          userId: item.userId || ''
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading residents:', error);
     }
   };
 
@@ -222,6 +254,21 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       return 'ending-soon';
     }
     return 'active';
+  };
+
+  const getResidentInfo = (residentId: string) => {
+    const resident = residents.find(r => r.id === residentId);
+    return resident ? {
+      email: resident.email,
+      code: resident.residentCode,
+      floor: resident.floor,
+      building: resident.building
+    } : {
+      email: 'Unknown',
+      code: residentId,
+      floor: undefined,
+      building: undefined
+    };
   };
 
   const getTimeRemaining = (endTime: string) => {
@@ -431,6 +478,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                     {activeReservations.map((reservation) => {
                       const status = getReservationStatus(reservation.endTime);
                       const timeRemaining = getTimeRemaining(reservation.endTime);
+                      const residentInfo = getResidentInfo(reservation.residentId);
                       
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
@@ -449,9 +497,10 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           </td>
                           <td>
                             <div className="resident-info">
-                              <div>{reservation.residentCode}</div>
-                              {reservation.residentFloor && (
-                                <small>Floor: {reservation.residentFloor}</small>
+                              <div><strong>{residentInfo.email}</strong></div>
+                              <small>Code: {residentInfo.code}</small>
+                              {residentInfo.floor && (
+                                <small>Floor: {residentInfo.floor}</small>
                               )}
                             </div>
                           </td>
@@ -520,6 +569,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                     const now = new Date();
                     const isExpired = end < now;
                     const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+                    const residentInfo = getResidentInfo(reservation.residentId);
                     
                     return (
                       <tr key={reservation.id} className={`log-row ${isExpired ? 'log-expired' : 'log-active'}`}>
@@ -539,9 +589,10 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                         </td>
                         <td>
                           <div className="resident-info">
-                            <div>{reservation.residentCode}</div>
-                            {reservation.residentFloor && (
-                              <small>Floor: {reservation.residentFloor}</small>
+                            <div><strong>{residentInfo.email}</strong></div>
+                            <small>Code: {residentInfo.code}</small>
+                            {residentInfo.floor && (
+                              <small>Floor: {residentInfo.floor}</small>
                             )}
                           </div>
                         </td>

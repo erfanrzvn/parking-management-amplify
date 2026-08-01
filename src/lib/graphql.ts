@@ -84,6 +84,30 @@ export async function getResidentByUserId(userId: string) {
   return result.data.getResidentByUserId;
 }
 
+export async function getResident(id: string) {
+  const query = `
+    query GetResident($id: ID!) {
+      getResident(id: $id) {
+        id
+        email
+        building
+        floor
+        unitNumber
+        plate
+        residentCode
+        userId
+        createdAt
+      }
+    }
+  `;
+  
+  const result: any = await client.graphql({
+    query,
+    variables: { id }
+  });
+  return result.data.getResident;
+}
+
 export async function createResident(input: any) {
   const mutation = `
     mutation CreateResident($input: CreateResidentInput!) {
@@ -141,8 +165,14 @@ export async function listReservations() {
         id
         residentId
         residentCode
-        endTime
+        residentFloor
+        residentPlate
+        guestPlate
+        guestMobile
+        guestEmail
         startTime
+        endTime
+        createdAt
       }
     }
   `;

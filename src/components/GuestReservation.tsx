@@ -104,12 +104,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     });
   };
 
-  // Generate hours array (0-23)
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  
-  // Generate minutes array (0-59)
-  const minutes = Array.from({ length: 60 }, (_, i) => i);
-
   return (
     <div className="guest-reservation">
       <div className="reservation-container">
@@ -225,39 +219,33 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 <div className="time-picker-container">
                   <div className="time-picker-group">
                     <label className="time-picker-label">Hours</label>
-                    <select
+                    <input
+                      type="number"
+                      min="0"
+                      max="23"
                       value={durationHours}
-                      onChange={(e) => setDurationHours(Number(e.target.value))}
-                      className="time-picker-select"
+                      onChange={(e) => setDurationHours(Math.min(23, Math.max(0, Number(e.target.value))))}
+                      className="time-picker-input"
                       required
-                    >
-                      {hours.map(hour => (
-                        <option key={hour} value={hour}>
-                          {hour.toString().padStart(2, '0')}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div className="time-picker-separator">:</div>
 
                   <div className="time-picker-group">
                     <label className="time-picker-label">Minutes</label>
-                    <select
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
                       value={durationMinutes}
-                      onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                      className="time-picker-select"
+                      onChange={(e) => setDurationMinutes(Math.min(59, Math.max(0, Number(e.target.value))))}
+                      className="time-picker-input"
                       required
-                    >
-                      {minutes.map(minute => (
-                        <option key={minute} value={minute}>
-                          {minute.toString().padStart(2, '0')}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
-                <small>Select how long you need to park (max 24 hours)</small>
+                <small>Type how long you need to park (max 24 hours total)</small>
               </div>
 
               <div className="duration-display">
