@@ -1663,48 +1663,19 @@ body {
   padding: 2rem;
 }
 
-/* Setup Container */
-.setup-container {
-  max-width: 600px;
-  margin: 0 auto;
-  background: var(--surface);
-  border-radius: 20px;
-  padding: 3rem;
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border);
-}
-
-.setup-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-}
-
-.setup-header h1 {
-  color: var(--text-primary);
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.setup-subtitle {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.setup-form {
+/* Loading State */
+.loading-state {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
 }
 
-.warning-box {
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  border-radius: 10px;
-  padding: 1rem;
-  color: #fbbf24;
-  font-size: 0.9rem;
-  line-height: 1.6;
+.loading-state p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
 }
 
 /* Dashboard Container */
@@ -1787,7 +1758,7 @@ body {
 }
 
 .info-note small {
-  color: var(--warning);
+  color: var(--text-secondary);
 }
 
 /* Guest Code Card */
@@ -1947,14 +1918,6 @@ body {
 @media (max-width: 768px) {
   .resident-panel {
     padding: 1rem;
-  }
-
-  .setup-container {
-    padding: 2rem 1.5rem;
-  }
-
-  .setup-header h1 {
-    font-size: 1.5rem;
   }
 
   .dashboard-container .dashboard-header {
