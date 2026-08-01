@@ -46,7 +46,6 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
     try {
       await createParkingConfig({
-        id: parkingName.toLowerCase().replace(/\s+/g, '-'),
         totalSpots,
         updatedAt: new Date().toISOString(),
         updatedBy: user?.userId || 'unknown',
@@ -57,7 +56,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       setTotalSpots(20);
       loadParkings();
     } catch (error: any) {
-      setMessage(`❌ Error: ${error.message}`);
+      console.error('Create parking error:', error);
+      setMessage(`❌ Error: ${error.errors?.[0]?.message || error.message}`);
     } finally {
       setLoading(false);
     }

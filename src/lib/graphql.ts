@@ -6,21 +6,20 @@ export async function listParkingConfigs() {
   const query = `
     query ListParkingConfigs {
       listParkingConfigs {
-        items {
-          id
-          totalSpots
-          updatedAt
-          updatedBy
-        }
+        id
+        totalSpots
+        updatedAt
+        updatedBy
+        createdAt
       }
     }
   `;
   
-  const result = await client.graphql({ query });
-  return result.data.listParkingConfigs.items;
+  const result: any = await client.graphql({ query });
+  return result.data.listParkingConfigs;
 }
 
-export async function createParkingConfig(input: { id: string; totalSpots: number; updatedAt: string; updatedBy: string }) {
+export async function createParkingConfig(input: { id?: string; totalSpots: number; updatedAt: string; updatedBy: string }) {
   const mutation = `
     mutation CreateParkingConfig($input: CreateParkingConfigInput!) {
       createParkingConfig(input: $input) {
@@ -28,11 +27,12 @@ export async function createParkingConfig(input: { id: string; totalSpots: numbe
         totalSpots
         updatedAt
         updatedBy
+        createdAt
       }
     }
   `;
   
-  const result = await client.graphql({
+  const result: any = await client.graphql({
     query: mutation,
     variables: { input }
   });
@@ -43,21 +43,19 @@ export async function listResidents() {
   const query = `
     query ListResidents {
       listResidents {
-        items {
-          id
-          email
-          floor
-          plate
-          residentCode
-          userId
-          createdAt
-        }
+        id
+        email
+        floor
+        plate
+        residentCode
+        userId
+        createdAt
       }
     }
   `;
   
-  const result = await client.graphql({ query });
-  return result.data.listResidents.items;
+  const result: any = await client.graphql({ query });
+  return result.data.listResidents;
 }
 
 export async function createResident(input: any) {
@@ -75,7 +73,7 @@ export async function createResident(input: any) {
     }
   `;
   
-  const result = await client.graphql({
+  const result: any = await client.graphql({
     query: mutation,
     variables: { input }
   });
@@ -101,7 +99,7 @@ export async function createReservation(input: any) {
     }
   `;
   
-  const result = await client.graphql({
+  const result: any = await client.graphql({
     query: mutation,
     variables: { input }
   });
@@ -112,17 +110,15 @@ export async function listReservations() {
   const query = `
     query ListReservations {
       listReservations {
-        items {
-          id
-          residentId
-          residentCode
-          endTime
-          startTime
-        }
+        id
+        residentId
+        residentCode
+        endTime
+        startTime
       }
     }
   `;
   
-  const result = await client.graphql({ query });
-  return result.data.listReservations.items;
+  const result: any = await client.graphql({ query });
+  return result.data.listReservations;
 }
