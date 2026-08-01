@@ -121,7 +121,7 @@ function App() {
             className="btn-login"
             onClick={() => setShowLogin(true)}
           >
-            🔐 Staff Login
+            🔐 Resident Login
           </button>
         </div>
       </div>

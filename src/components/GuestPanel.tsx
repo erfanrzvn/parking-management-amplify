@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 import type { Schema } from '../../amplify/data/resource';
 
 const client = generateClient<Schema>();
@@ -22,7 +21,6 @@ export default function GuestPanel() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [availability, setAvailability] = useState<any>(null);
-  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     loadParkings();
@@ -34,41 +32,6 @@ export default function GuestPanel() {
       checkAvailability(selectedParking);
     }
   }, [selectedParking]);
-
-  useEffect(() => {
-    if (showScanner) {
-      const scanner = new Html5QrcodeScanner(
-        'qr-reader',
-        { fps: 10, qrbox: 250 },
-        false
-      );
-
-      scanner.render(
-        (decodedText) => {
-          try {
-            const data = JSON.parse(decodedText);
-            setResidentCode(data.residentCode || '');
-            if (data.parking) {
-              setSelectedParking(data.parking);
-              setParkingFromQR(true);
-            }
-            setMessage('✅ QR Code scanned successfully');
-            scanner.clear();
-            setShowScanner(false);
-          } catch (error) {
-            setMessage('❌ Invalid QR Code');
-          }
-        },
-        () => {
-          // QR scanning error - ignore
-        }
-      );
-
-      return () => {
-        scanner.clear();
-      };
-    }
-  }, [showScanner]);
 
   const checkURLParams = () => {
     const params = new URLSearchParams(window.location.search);
@@ -179,7 +142,10 @@ export default function GuestPanel() {
         );
       }
 
-      // Create reservation
+      // Create reservation - start time is now, end time from input
+      const startTime = new Date();
+      const endTimeDate = new Date(endTime);
+
       await client.models.Reservation.create({
         residentId: `${selectedParking}-${resident.id}`,
         residentCode,
@@ -188,9 +154,9 @@ export default function GuestPanel() {
         guestPlate: plate,
         guestMobile: mobile,
         guestEmail: email,
-        startTime: now.toISOString(),
-        endTime: new Date(endTime).toISOString(),
-        createdAt: now.toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: endTimeDate.toISOString(),
+        createdAt: startTime.toISOString(),
       });
 
       setMessage('✅ Your reservation has been confirmed');
@@ -277,16 +243,6 @@ export default function GuestPanel() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowScanner(!showScanner)}
-            className="btn-secondary"
-          >
-            {showScanner ? 'Close Scanner' : '📷 Scan QR Code'}
-          </button>
-
-          {showScanner && <div id="qr-reader"></div>}
-
           <div className="form-group">
             <label>Your License Plate:</label>
             <input
@@ -321,13 +277,17 @@ export default function GuestPanel() {
           </div>
 
           <div className="form-group">
-            <label>Until When (End Time):</label>
+            <label>End Time:</label>
             <input
               type="datetime-local"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
               required
             />
+            <small style={{ color: '#888', marginTop: '0.5rem', display: 'block' }}>
+              Start time: Now ({new Date().toLocaleString()})
+            </small>
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary">
