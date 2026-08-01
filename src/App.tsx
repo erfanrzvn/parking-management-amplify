@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Authenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import AdminPanel from './components/AdminPanel';
 import ResidentPanel from './components/ResidentPanel';
 import GuestPanel from './components/GuestPanel';
+import LoginPage from './components/LoginPage';
 import './App.css';
 
 function App() {
@@ -48,6 +48,8 @@ function App() {
   };
 
   const handleSignOut = async () => {
+    const { signOut } = await import('aws-amplify/auth');
+    await signOut();
     setIsAuthenticated(false);
     setUserRole(null);
     setShowLogin(false);
@@ -56,44 +58,12 @@ function App() {
 
   if (showLogin && !isAuthenticated) {
     return (
-      <div className="app">
-        <div className="auth-container">
-          <div className="auth-card">
-            <button 
-              className="back-button"
-              onClick={() => setShowLogin(false)}
-            >
-              ← Back to Guest
-            </button>
-            <h1>🅿️ Parking Management</h1>
-            <p className="auth-subtitle">Sign in to access your dashboard</p>
-            <Authenticator
-              hideSignUp={true}
-              components={{
-                SignIn: {
-                  Header() {
-                    return (
-                      <div className="auth-header">
-                        <h3>Welcome Back</h3>
-                      </div>
-                    );
-                  }
-                }
-              }}
-            >
-              {({ signOut, user: authUser }) => {
-                if (authUser) {
-                  setIsAuthenticated(true);
-                  setUser(authUser);
-                  determineUserRole();
-                  return null;
-                }
-                return null;
-              }}
-            </Authenticator>
-          </div>
-        </div>
-      </div>
+      <LoginPage 
+        onLoginSuccess={() => {
+          checkAuthStatus();
+        }}
+        onBack={() => setShowLogin(false)}
+      />
     );
   }
 
