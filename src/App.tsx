@@ -45,11 +45,15 @@ function App() {
       
       console.log('User groups:', groups);
       
-      if (groups?.includes('Admin')) {
+      // Check for both uppercase and proper case
+      if (groups?.some(g => g.toLowerCase() === 'admin')) {
+        console.log('User is Admin');
         setUserRole('admin');
-      } else if (groups?.includes('Resident')) {
+      } else if (groups?.some(g => g.toLowerCase() === 'resident')) {
+        console.log('User is Resident');
         setUserRole('resident');
       } else {
+        console.log('User has no recognized role');
         setUserRole(null);
       }
       

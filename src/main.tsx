@@ -5,7 +5,13 @@ import outputs from '../amplify_outputs.json';
 import App from './App';
 import './index.css';
 
-Amplify.configure(outputs);
+console.log('Configuring Amplify with outputs:', outputs);
+
+Amplify.configure(outputs, {
+  ssr: false
+});
+
+console.log('Amplify configured successfully!');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
