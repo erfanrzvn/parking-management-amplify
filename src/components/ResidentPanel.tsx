@@ -10,15 +10,15 @@ interface ResidentPanelProps {
   user: any;
 }
 
-interface Building {
+interface Parking {
   id: string;
   totalSpots: number;
 }
 
 export default function ResidentPanel({ user }: ResidentPanelProps) {
   const [residentData, setResidentData] = useState<any>(null);
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [selectedBuilding, setSelectedBuilding] = useState('');
+  const [parkings, setParkings] = useState<Parking[]>([]);
+  const [selectedParking, setSelectedParking] = useState('');
   const [floor, setFloor] = useState('');
   const [plate, setPlate] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,21 +26,21 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
   const [isSetup, setIsSetup] = useState(false);
 
   useEffect(() => {
-    loadBuildings();
+    loadParkings();
     loadResidentData();
   }, []);
 
-  const loadBuildings = async () => {
+  const loadParkings = async () => {
     try {
       const { data } = await client.models.ParkingConfig.list();
       if (data) {
-        setBuildings(data.map((item: any) => ({
+        setParkings(data.map((item: any) => ({
           id: item.id,
           totalSpots: item.totalSpots || 0
         })));
       }
     } catch (error) {
-      setMessage('Error loading buildings');
+      setMessage('Error loading parkings');
     }
   };
 
@@ -52,7 +52,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
         setIsSetup(true);
         setResidentData({
           email: attributes.email,
-          building: attributes['custom:building'],
+          parking: attributes['custom:parking'],
           floor: attributes['custom:floor'],
           plate: attributes['custom:plate'],
           residentCode: attributes['custom:residentCode'],
@@ -75,7 +75,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
       // Update user attributes
       await updateUserAttributes({
         userAttributes: {
-          'custom:building': selectedBuilding,
+          'custom:parking': selectedParking,
           'custom:floor': floor,
           'custom:plate': plate,
           'custom:residentCode': residentCode,
@@ -115,16 +115,16 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
 
         <form onSubmit={handleSetup} className="form">
           <div className="form-group">
-            <label>Building:</label>
+            <label>Parking:</label>
             <select
-              value={selectedBuilding}
-              onChange={(e) => setSelectedBuilding(e.target.value)}
+              value={selectedParking}
+              onChange={(e) => setSelectedParking(e.target.value)}
               required
             >
-              <option value="">Select Building</option>
-              {buildings.map((building) => (
-                <option key={building.id} value={building.id}>
-                  {building.id} ({building.totalSpots} spots)
+              <option value="">Select Parking</option>
+              {parkings.map((parking) => (
+                <option key={parking.id} value={parking.id}>
+                  {parking.id} ({parking.totalSpots} spots)
                 </option>
               ))}
             </select>
@@ -168,7 +168,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
 
   const qrData = JSON.stringify({
     residentCode: residentData?.residentCode,
-    building: residentData?.building,
+    parking: residentData?.parking,
     floor: residentData?.floor,
     plate: residentData?.plate,
   });
@@ -186,7 +186,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
       <div className="resident-info">
         <h3>Your Information</h3>
         <div className="info-box">
-          <p><strong>Building:</strong> {residentData?.building}</p>
+          <p><strong>Parking:</strong> {residentData?.parking}</p>
           <p><strong>Floor:</strong> {residentData?.floor}</p>
           <p><strong>License Plate:</strong> {residentData?.plate}</p>
           <p><strong>Resident Code:</strong> <code className="code-highlight">{residentData?.residentCode}</code></p>

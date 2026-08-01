@@ -5,14 +5,15 @@ import type { Schema } from '../../amplify/data/resource';
 
 const client = generateClient<Schema>();
 
-interface Building {
+interface Parking {
   id: string;
   totalSpots: number;
 }
 
 export default function GuestPanel() {
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [selectedBuilding, setSelectedBuilding] = useState('');
+  const [parkings, setParkings] = useState<Parking[]>([]);
+  const [selectedParking, setSelectedParking] = useState('');
+  const [parkingFromQR, setParkingFromQR] = useState(false);
   const [residentCode, setResidentCode] = useState('');
   const [plate, setPlate] = useState('');
   const [mobile, setMobile] = useState('');
@@ -24,14 +25,15 @@ export default function GuestPanel() {
   const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
-    loadBuildings();
+    loadParkings();
+    checkURLParams();
   }, []);
 
   useEffect(() => {
-    if (selectedBuilding) {
-      checkAvailability(selectedBuilding);
+    if (selectedParking) {
+      checkAvailability(selectedParking);
     }
-  }, [selectedBuilding]);
+  }, [selectedParking]);
 
   useEffect(() => {
     if (showScanner) {
@@ -46,7 +48,10 @@ export default function GuestPanel() {
           try {
             const data = JSON.parse(decodedText);
             setResidentCode(data.residentCode || '');
-            setSelectedBuilding(data.building || '');
+            if (data.parking) {
+              setSelectedParking(data.parking);
+              setParkingFromQR(true);
+            }
             setMessage('✅ QR Code scanned successfully');
             scanner.clear();
             setShowScanner(false);
@@ -65,32 +70,47 @@ export default function GuestPanel() {
     }
   }, [showScanner]);
 
-  const loadBuildings = async () => {
+  const checkURLParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    const parkingParam = params.get('parking');
+    const residentCodeParam = params.get('code');
+    
+    if (parkingParam) {
+      setSelectedParking(parkingParam);
+      setParkingFromQR(true);
+    }
+    
+    if (residentCodeParam) {
+      setResidentCode(residentCodeParam);
+    }
+  };
+
+  const loadParkings = async () => {
     try {
       const { data } = await client.models.ParkingConfig.list();
       if (data) {
-        setBuildings(data.map((item: any) => ({
+        setParkings(data.map((item: any) => ({
           id: item.id,
           totalSpots: item.totalSpots || 0
         })));
       }
     } catch (error) {
-      setMessage('Error loading buildings');
+      setMessage('Error loading parkings');
     }
   };
 
-  const checkAvailability = async (buildingId: string) => {
+  const checkAvailability = async (parkingId: string) => {
     try {
       const { data: reservations } = await client.models.Reservation.list();
-      const building = buildings.find(b => b.id === buildingId);
+      const parking = parkings.find(p => p.id === parkingId);
       
-      if (!building) return;
+      if (!parking) return;
 
-      const totalSpots = building.totalSpots;
+      const totalSpots = parking.totalSpots;
       const now = new Date();
 
       const activeReservations = reservations?.filter(
-        (r: any) => r.residentId?.startsWith(buildingId) && new Date(r.endTime) > now
+        (r: any) => r.residentId?.startsWith(parkingId) && new Date(r.endTime) > now
       ) || [];
 
       const availableSpots = totalSpots - activeReservations.length;
@@ -136,17 +156,17 @@ export default function GuestPanel() {
 
       // Check availability again
       const { data: reservations } = await client.models.Reservation.list();
-      const building = buildings.find(b => b.id === selectedBuilding);
+      const parking = parkings.find(p => p.id === selectedParking);
       
-      if (!building) {
-        throw new Error('Invalid building');
+      if (!parking) {
+        throw new Error('Invalid parking');
       }
 
-      const totalSpots = building.totalSpots;
+      const totalSpots = parking.totalSpots;
       const now = new Date();
 
       const activeReservations = reservations?.filter(
-        (r: any) => r.residentId?.startsWith(selectedBuilding) && new Date(r.endTime) > now
+        (r: any) => r.residentId?.startsWith(selectedParking) && new Date(r.endTime) > now
       ) || [];
 
       if (activeReservations.length >= totalSpots) {
@@ -161,7 +181,7 @@ export default function GuestPanel() {
 
       // Create reservation
       await client.models.Reservation.create({
-        residentId: `${selectedBuilding}-${resident.id}`,
+        residentId: `${selectedParking}-${resident.id}`,
         residentCode,
         residentFloor: resident.floor,
         residentPlate: resident.plate,
@@ -183,7 +203,7 @@ export default function GuestPanel() {
       setEndTime('');
 
       // Refresh availability
-      checkAvailability(selectedBuilding);
+      checkAvailability(selectedParking);
     } catch (error: any) {
       setMessage(`❌ ${error.message}`);
     } finally {
@@ -195,23 +215,42 @@ export default function GuestPanel() {
     <div className="panel guest-panel">
       <h2>Reserve Parking</h2>
 
-      <div className="form-group">
-        <label>Select Building:</label>
-        <select
-          value={selectedBuilding}
-          onChange={(e) => setSelectedBuilding(e.target.value)}
-          required
-        >
-          <option value="">Select Building</option>
-          {buildings.map((building) => (
-            <option key={building.id} value={building.id}>
-              {building.id} ({building.totalSpots} total spots)
-            </option>
-          ))}
-        </select>
-      </div>
+      {!parkingFromQR && (
+        <div className="form-group">
+          <label>Select Parking:</label>
+          <select
+            value={selectedParking}
+            onChange={(e) => setSelectedParking(e.target.value)}
+            required
+          >
+            <option value="">Select Parking</option>
+            {parkings.map((parking) => (
+              <option key={parking.id} value={parking.id}>
+                {parking.id} ({parking.totalSpots} total spots)
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-      {selectedBuilding && availability && (
+      {parkingFromQR && selectedParking && (
+        <div className="info-box" style={{ marginBottom: '1.5rem' }}>
+          <p><strong>Selected Parking:</strong> {selectedParking}</p>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setParkingFromQR(false);
+              setSelectedParking('');
+              setResidentCode('');
+            }}
+          >
+            Change Parking
+          </button>
+        </div>
+      )}
+
+      {selectedParking && availability && (
         <div className={`availability-status ${availability.available ? 'available' : 'full'}`}>
           <h3>{availability.message}</h3>
           <p>
@@ -225,7 +264,7 @@ export default function GuestPanel() {
         </div>
       )}
 
-      {selectedBuilding && (
+      {selectedParking && (
         <form onSubmit={handleReservation} className="form">
           <div className="form-group">
             <label>Resident Code:</label>

@@ -8,60 +8,57 @@ interface AdminPanelProps {
   user: any;
 }
 
-interface Building {
+interface Parking {
   id: string;
-  name: string;
   totalSpots: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export default function AdminPanel({ user }: AdminPanelProps) {
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [buildingName, setBuildingName] = useState('');
+  const [parkings, setParkings] = useState<Parking[]>([]);
+  const [parkingName, setParkingName] = useState('');
   const [totalSpots, setTotalSpots] = useState<number>(20);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    loadBuildings();
+    loadParkings();
   }, []);
 
-  const loadBuildings = async () => {
+  const loadParkings = async () => {
     try {
-      // For now, we'll use ParkingConfig as buildings
       const { data } = await client.models.ParkingConfig.list();
       if (data) {
-        setBuildings(data.map((item: any) => ({
+        setParkings(data.map((item: any) => ({
           id: item.id,
-          name: item.id, // Using ID as name for now
           totalSpots: item.totalSpots || 0,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt
         })));
       }
     } catch (error) {
-      setMessage('Error loading buildings');
+      setMessage('Error loading parkings');
     }
   };
 
-  const handleCreateBuilding = async (e: React.FormEvent) => {
+  const handleCreateParking = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
     try {
       await client.models.ParkingConfig.create({
-        id: buildingName.toLowerCase().replace(/\s+/g, '-'),
+        id: parkingName.toLowerCase().replace(/\s+/g, '-'),
         totalSpots,
         updatedAt: new Date().toISOString(),
         updatedBy: user.userId,
       });
 
-      setMessage(`✅ Building "${buildingName}" created successfully`);
-      setBuildingName('');
+      setMessage(`✅ Parking "${parkingName}" created successfully`);
+      setParkingName('');
       setTotalSpots(20);
-      loadBuildings();
+      loadParkings();
     } catch (error: any) {
       setMessage(`❌ Error: ${error.message}`);
     } finally {
@@ -80,15 +77,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       </div>
 
       <div className="section">
-        <h3>Create New Building</h3>
-        <form onSubmit={handleCreateBuilding} className="form">
+        <h3>Create New Parking</h3>
+        <form onSubmit={handleCreateParking} className="form">
           <div className="form-group">
-            <label>Building Name:</label>
+            <label>Parking Name:</label>
             <input
               type="text"
-              value={buildingName}
-              onChange={(e) => setBuildingName(e.target.value)}
-              placeholder="e.g. Building A, Tower 1"
+              value={parkingName}
+              onChange={(e) => setParkingName(e.target.value)}
+              placeholder="e.g. Parking A, Tower 1"
               required
             />
           </div>
@@ -105,7 +102,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? 'Creating...' : 'Create Building'}
+            {loading ? 'Creating...' : 'Create Parking'}
           </button>
         </form>
 
@@ -117,16 +114,16 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       </div>
 
       <div className="section">
-        <h3>Buildings</h3>
-        {buildings.length === 0 ? (
-          <p className="hint">No buildings created yet</p>
+        <h3>Parkings</h3>
+        {parkings.length === 0 ? (
+          <p className="hint">No parkings created yet</p>
         ) : (
           <div className="buildings-list">
-            {buildings.map((building) => (
-              <div key={building.id} className="building-card">
-                <h4>{building.id}</h4>
-                <p><strong>Total Spots:</strong> {building.totalSpots}</p>
-                <p className="hint">Created: {new Date(building.createdAt).toLocaleString()}</p>
+            {parkings.map((parking) => (
+              <div key={parking.id} className="building-card">
+                <h4>{parking.id}</h4>
+                <p><strong>Total Spots:</strong> {parking.totalSpots}</p>
+                <p className="hint">Created: {new Date(parking.createdAt).toLocaleString()}</p>
               </div>
             ))}
           </div>
