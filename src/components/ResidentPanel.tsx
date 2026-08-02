@@ -20,32 +20,43 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
       
       // Get userId from user object
       const userId = user?.userId || user?.username;
+      const email = user?.signInDetails?.loginId || '';
       
       if (!userId) {
         throw new Error('User ID not found');
       }
       
       // Fetch resident data from database
-      const resident = await getResidentByUserId(userId);
+      let resident = await getResidentByUserId(userId);
+      
+      // If no resident found, create one with default data
+      if (!resident) {
+        console.log('No resident found, creating default record...');
+        
+        const newResident = {
+          email: email,
+          userId: userId,
+          building: 'Building A',
+          floor: '5',
+          unitNumber: '502',
+          plate: 'ABC-1234',
+          residentCode: generateUniqueCode(),
+        };
+        
+        // Import createResident
+        const { createResident } = await import('../lib/graphql');
+        resident = await createResident(newResident);
+        console.log('Created resident record:', resident);
+      }
       
       if (resident) {
         setResidentData({
-          email: resident.email || user?.signInDetails?.loginId || 'N/A',
+          email: resident.email || email,
           building: resident.building || 'Building A',
           floor: resident.floor || '5',
           unitNumber: resident.unitNumber || '502',
           licensePlate: resident.plate || 'ABC-1234',
-          residentCode: resident.residentCode || generateDefaultCode(),
-        });
-      } else {
-        // No resident record found - show default data
-        setResidentData({
-          email: user?.signInDetails?.loginId || 'N/A',
-          building: 'Building A',
-          floor: '5',
-          unitNumber: '502',
-          licensePlate: 'ABC-1234',
-          residentCode: generateDefaultCode(),
+          residentCode: resident.residentCode || generateUniqueCode(),
         });
       }
     } catch (error) {
@@ -57,17 +68,30 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
         floor: '5',
         unitNumber: '502',
         licensePlate: 'ABC-1234',
-        residentCode: generateDefaultCode(),
+        residentCode: generateUniqueCode(),
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const generateDefaultCode = (): string => {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return (timestamp + random).substring(0, 6).toUpperCase();
+  const generateUniqueCode = (): string => {
+    // Generate a 6-character code: ABC123
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const nums = '0123456789';
+    let code = '';
+    
+    // 3 letters
+    for (let i = 0; i < 3; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // 3 numbers
+    for (let i = 0; i < 3; i++) {
+      code += nums.charAt(Math.floor(Math.random() * nums.length));
+    }
+    
+    return code;
   };
 
   const handleCopyCode = async () => {

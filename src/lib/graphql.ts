@@ -132,6 +132,46 @@ export async function createResident(input: any) {
   return result.data.createResident;
 }
 
+export async function updateResident(input: any) {
+  const mutation = `
+    mutation UpdateResident($input: UpdateResidentInput!) {
+      updateResident(input: $input) {
+        id
+        email
+        building
+        floor
+        unitNumber
+        plate
+        residentCode
+        userId
+        createdAt
+      }
+    }
+  `;
+  
+  const result: any = await client.graphql({
+    query: mutation,
+    variables: { input }
+  });
+  return result.data.updateResident;
+}
+
+export async function deleteResident(id: string) {
+  const mutation = `
+    mutation DeleteResident($id: ID!) {
+      deleteResident(id: $id) {
+        id
+      }
+    }
+  `;
+  
+  const result: any = await client.graphql({
+    query: mutation,
+    variables: { id }
+  });
+  return result.data.deleteResident;
+}
+
 export async function createReservation(input: any) {
   const mutation = `
     mutation CreateReservation($input: CreateReservationInput!) {

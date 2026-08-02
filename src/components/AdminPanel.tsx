@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listParkingConfigs, createParkingConfig, listReservations, listResidents } from '../lib/graphql';
+import { listParkingConfigs, createParkingConfig, listReservations, listResidents, createResident, updateResident, deleteResident } from '../lib/graphql';
 import { generateClient } from 'aws-amplify/api';
 
 const graphqlClient = generateClient();
@@ -52,10 +52,23 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const [showAddTimeModal, setShowAddTimeModal] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [additionalHours, setAdditionalHours] = useState<number>(1);
-  const [activeTab, setActiveTab] = useState<'reservations' | 'parkings' | 'logs'>('reservations');
+  const [activeTab, setActiveTab] = useState<'reservations' | 'parkings' | 'logs' | 'residents'>('reservations');
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sortBy, setSortBy] = useState<'time-remaining' | 'plate' | 'start'>('time-remaining');
+  
+  // Resident management states
+  const [showResidentModal, setShowResidentModal] = useState(false);
+  const [editingResident, setEditingResident] = useState<Resident | null>(null);
+  const [residentForm, setResidentForm] = useState({
+    email: '',
+    building: '',
+    floor: '',
+    unitNumber: '',
+    plate: '',
+    residentCode: '',
+    userId: ''
+  });
 
   useEffect(() => {
     loadData();
@@ -238,6 +251,124 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       setTimeout(() => setMessage(''), 3000);
     } catch (error: any) {
       console.error('Error adding time:', error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resident Management Functions
+  const generateResidentCode = (): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const nums = '0123456789';
+    let code = '';
+    for (let i = 0; i < 3; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    for (let i = 0; i < 3; i++) {
+      code += nums.charAt(Math.floor(Math.random() * nums.length));
+    }
+    return code;
+  };
+
+  const handleOpenResidentModal = (resident?: Resident) => {
+    if (resident) {
+      // Edit mode
+      setEditingResident(resident);
+      setResidentForm({
+        email: resident.email,
+        building: resident.building || '',
+        floor: resident.floor || '',
+        unitNumber: resident.unitNumber || '',
+        plate: resident.plate || '',
+        residentCode: resident.residentCode,
+        userId: resident.userId
+      });
+    } else {
+      // Create mode
+      setEditingResident(null);
+      setResidentForm({
+        email: '',
+        building: '',
+        floor: '',
+        unitNumber: '',
+        plate: '',
+        residentCode: generateResidentCode(),
+        userId: ''
+      });
+    }
+    setShowResidentModal(true);
+  };
+
+  const handleCloseResidentModal = () => {
+    setShowResidentModal(false);
+    setEditingResident(null);
+    setResidentForm({
+      email: '',
+      building: '',
+      floor: '',
+      unitNumber: '',
+      plate: '',
+      residentCode: '',
+      userId: ''
+    });
+  };
+
+  const handleSaveResident = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      if (editingResident) {
+        // Update existing resident
+        await updateResident({
+          id: editingResident.id,
+          email: residentForm.email,
+          building: residentForm.building,
+          floor: residentForm.floor,
+          unitNumber: residentForm.unitNumber,
+          plate: residentForm.plate,
+          residentCode: residentForm.residentCode,
+          userId: residentForm.userId
+        });
+        setMessage('✅ Resident updated successfully');
+      } else {
+        // Create new resident
+        await createResident({
+          email: residentForm.email,
+          building: residentForm.building,
+          floor: residentForm.floor,
+          unitNumber: residentForm.unitNumber,
+          plate: residentForm.plate,
+          residentCode: residentForm.residentCode,
+          userId: residentForm.userId || `user_${Date.now()}`
+        });
+        setMessage('✅ Resident created successfully');
+      }
+
+      handleCloseResidentModal();
+      loadResidents();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error saving resident:', error);
+      setMessage(`❌ Error: ${error.errors?.[0]?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteResident = async (resident: Resident) => {
+    if (!confirm(`Delete resident ${resident.email}?\nThis action cannot be undone.`)) return;
+    
+    setLoading(true);
+    try {
+      await deleteResident(resident.id);
+      setMessage('✅ Resident deleted successfully');
+      loadResidents();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error deleting resident:', error);
       setMessage(`❌ Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -427,6 +558,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           onClick={() => setActiveTab('logs')}
         >
           📋 All Logs ({allReservations.length})
+        </button>
+        <button 
+          className={`tab ${activeTab === 'residents' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('residents')}
+        >
+          👥 Residents ({residents.length})
         </button>
         <button 
           className={`tab ${activeTab === 'parkings' ? 'tab-active' : ''}`}
@@ -619,6 +756,85 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               </table>
             </div>
           </div>
+        ) : activeTab === 'residents' ? (
+          <div className="residents-section">
+            <div className="section-header">
+              <h2>Resident Management</h2>
+              <button 
+                className="btn-create-parking"
+                onClick={() => handleOpenResidentModal()}
+              >
+                + Add Resident
+              </button>
+            </div>
+
+            {residents.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">👥</div>
+                <h3>No Residents</h3>
+                <p>Click "Add Resident" to create your first resident</p>
+              </div>
+            ) : (
+              <div className="residents-table-container">
+                <table className="reservations-table">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Building & Unit</th>
+                      <th>Floor</th>
+                      <th>License Plate</th>
+                      <th>Resident Code</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {residents.map((resident) => (
+                      <tr key={resident.id}>
+                        <td>
+                          <strong>{resident.email}</strong>
+                        </td>
+                        <td>
+                          <div className="resident-info">
+                            {resident.building && resident.unitNumber ? (
+                              <>
+                                <div>{resident.building}</div>
+                                <small>Unit {resident.unitNumber}</small>
+                              </>
+                            ) : (
+                              <span>-</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>{resident.floor || '-'}</td>
+                        <td className="plate-cell">{resident.plate || '-'}</td>
+                        <td>
+                          <span className="code-badge">{resident.residentCode}</span>
+                        </td>
+                        <td>
+                          <div className="action-buttons">
+                            <button
+                              className="btn-action btn-edit"
+                              onClick={() => handleOpenResidentModal(resident)}
+                              title="Edit resident"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              className="btn-action btn-delete"
+                              onClick={() => handleDeleteResident(resident)}
+                              title="Delete resident"
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="parkings-section">
             <h2>Parking Locations</h2>
@@ -805,6 +1021,142 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resident Modal (Add/Edit) */}
+      {showResidentModal && (
+        <div className="modal-overlay" onClick={handleCloseResidentModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingResident ? 'Edit Resident' : 'Add New Resident'}</h2>
+              <button className="modal-close" onClick={handleCloseResidentModal}>
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveResident} className="modal-form">
+              <div className="form-group">
+                <label>Email Address *</label>
+                <input
+                  type="email"
+                  value={residentForm.email}
+                  onChange={(e) => setResidentForm({...residentForm, email: e.target.value})}
+                  placeholder="resident@example.com"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Building *</label>
+                  <input
+                    type="text"
+                    value={residentForm.building}
+                    onChange={(e) => setResidentForm({...residentForm, building: e.target.value})}
+                    placeholder="Building A"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Floor *</label>
+                  <input
+                    type="text"
+                    value={residentForm.floor}
+                    onChange={(e) => setResidentForm({...residentForm, floor: e.target.value})}
+                    placeholder="5"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Unit Number *</label>
+                  <input
+                    type="text"
+                    value={residentForm.unitNumber}
+                    onChange={(e) => setResidentForm({...residentForm, unitNumber: e.target.value})}
+                    placeholder="502"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>License Plate *</label>
+                  <input
+                    type="text"
+                    value={residentForm.plate}
+                    onChange={(e) => setResidentForm({...residentForm, plate: e.target.value.toUpperCase()})}
+                    placeholder="ABC-1234"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Resident Code *</label>
+                <div className="code-input-container">
+                  <input
+                    type="text"
+                    value={residentForm.residentCode}
+                    onChange={(e) => setResidentForm({...residentForm, residentCode: e.target.value.toUpperCase()})}
+                    placeholder="ABC123"
+                    maxLength={6}
+                    required
+                    readOnly={!!editingResident}
+                  />
+                  {!editingResident && (
+                    <button
+                      type="button"
+                      className="btn-regenerate"
+                      onClick={() => setResidentForm({...residentForm, residentCode: generateResidentCode()})}
+                    >
+                      🔄 Generate
+                    </button>
+                  )}
+                </div>
+                <small>
+                  {editingResident 
+                    ? 'Resident code cannot be changed' 
+                    : 'Unique 6-character code for this resident (e.g., ABC123)'}
+                </small>
+              </div>
+
+              {!editingResident && (
+                <div className="form-group">
+                  <label>User ID</label>
+                  <input
+                    type="text"
+                    value={residentForm.userId}
+                    onChange={(e) => setResidentForm({...residentForm, userId: e.target.value})}
+                    placeholder="Leave empty for auto-generate"
+                  />
+                  <small>Optional: Cognito user ID to link this resident</small>
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  onClick={handleCloseResidentModal}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-submit"
+                  disabled={loading}
+                >
+                  {loading ? 'Saving...' : editingResident ? 'Update Resident' : 'Create Resident'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

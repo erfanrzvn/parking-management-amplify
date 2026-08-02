@@ -564,6 +564,29 @@ Resources:
           return ctx.result;
         }
 
+  DeleteResidentResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: deleteResident
+      DataSourceName: !GetAtt ResidentDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          return {
+            operation: 'DeleteItem',
+            key: util.dynamodb.toMapValues({id: ctx.args.id}),
+          };
+        }
+        export function response(ctx) {
+          return ctx.result;
+        }
+
   # Resolvers - Reservation
   GetReservationResolver:
     Type: AWS::AppSync::Resolver
