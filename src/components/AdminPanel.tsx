@@ -161,8 +161,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     try {
       await createParkingConfig({
         totalSpots,
-        updatedAt: new Date().toISOString(),
-        updatedBy: user?.userId || 'unknown',
+        updatedBy: user?.userId || 'admin',
       });
 
       setMessage(`✅ Parking "${parkingName}" created successfully`);
