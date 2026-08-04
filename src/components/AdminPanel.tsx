@@ -394,6 +394,48 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     }
   };
 
+  const handleUpdateParkingSpots = async (parking: Parking, change: number) => {
+    const newTotal = parking.totalSpots + change;
+    
+    if (newTotal < 1) {
+      setMessage('❌ Total spots cannot be less than 1');
+      setTimeout(() => setMessage(''), 2000);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const mutation = `
+        mutation UpdateParkingConfig($input: UpdateParkingConfigInput!) {
+          updateParkingConfig(input: $input) {
+            id
+            name
+            totalSpots
+          }
+        }
+      `;
+      
+      await graphqlClient.graphql({
+        query: mutation,
+        variables: {
+          input: {
+            id: parking.id,
+            totalSpots: newTotal
+          }
+        }
+      });
+      
+      setMessage(`✅ Updated "${parking.name}" spots to ${newTotal}`);
+      loadParkings();
+      setTimeout(() => setMessage(''), 2000);
+    } catch (error: any) {
+      console.error('Error updating parking:', error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getReservationStatus = (endTime: string) => {
     const now = new Date();
     const end = new Date(endTime);
@@ -894,7 +936,24 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       <div className="parking-stats">
                         <div className="parking-stat">
                           <span className="label">Total Spots</span>
-                          <span className="value">{parking.totalSpots}</span>
+                          <div className="spot-controls">
+                            <button
+                              className="btn-spot-control"
+                              onClick={() => handleUpdateParkingSpots(parking, -1)}
+                              disabled={parking.totalSpots <= occupied}
+                              title="Decrease spots"
+                            >
+                              −
+                            </button>
+                            <span className="value">{parking.totalSpots}</span>
+                            <button
+                              className="btn-spot-control"
+                              onClick={() => handleUpdateParkingSpots(parking, 1)}
+                              title="Increase spots"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                         <div className="parking-stat">
                           <span className="label">Occupied</span>

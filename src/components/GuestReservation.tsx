@@ -7,6 +7,7 @@ interface GuestReservationProps {
 
 export default function GuestReservation({ onLoginClick }: GuestReservationProps) {
   const [residentCode, setResidentCode] = useState('');
+  const [unitNumber, setUnitNumber] = useState('');
   const [guestPlate, setGuestPlate] = useState('');
   const [guestMobile, setGuestMobile] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
@@ -44,12 +45,27 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         return;
       }
 
-      // Create reservation
+      // Verify resident code and unit number match
+      const { listResidents } = await import('../lib/graphql');
+      const residents = await listResidents();
+      
+      const matchingResident = residents.find((r: any) => 
+        r.residentCode.toUpperCase() === residentCode.toUpperCase() && 
+        r.unitNumber === unitNumber
+      );
+
+      if (!matchingResident) {
+        setMessage('❌ Invalid resident code or unit number. Please check and try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Create reservation with verified resident info
       await createReservation({
-        residentId: `${residentCode}-${Date.now()}`,
-        residentCode: residentCode.toUpperCase(),
-        residentFloor: 'N/A',
-        residentPlate: 'N/A',
+        residentId: matchingResident.id,
+        residentCode: matchingResident.residentCode,
+        residentFloor: matchingResident.floor || 'N/A',
+        residentPlate: matchingResident.plate || 'N/A',
         guestPlate: guestPlate.toUpperCase(),
         guestMobile,
         guestEmail,
@@ -63,6 +79,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       // Reset form
       setTimeout(() => {
         setResidentCode('');
+        setUnitNumber('');
         setGuestPlate('');
         setGuestMobile('');
         setGuestEmail('');
@@ -123,22 +140,41 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
             {/* Resident Code */}
             <div className="form-section">
               <h3>Resident Information</h3>
-              <div className="form-group">
-                <label htmlFor="residentCode">
-                  <span className="label-icon">🔑</span>
-                  Resident Code
-                </label>
-                <input
-                  id="residentCode"
-                  type="text"
-                  value={residentCode}
-                  onChange={(e) => setResidentCode(e.target.value.toUpperCase())}
-                  placeholder="Enter 6-character code"
-                  maxLength={6}
-                  required
-                  autoFocus
-                />
-                <small>Enter the code provided by your host</small>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="residentCode">
+                    <span className="label-icon">🔑</span>
+                    Resident Code
+                  </label>
+                  <input
+                    id="residentCode"
+                    type="text"
+                    value={residentCode}
+                    onChange={(e) => setResidentCode(e.target.value.toUpperCase())}
+                    placeholder="Enter code"
+                    maxLength={6}
+                    required
+                    autoFocus
+                  />
+                  <small>Code provided by your host</small>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="unitNumber">
+                    <span className="label-icon">🏠</span>
+                    Unit Number
+                  </label>
+                  <input
+                    id="unitNumber"
+                    type="text"
+                    value={unitNumber}
+                    onChange={(e) => setUnitNumber(e.target.value)}
+                    placeholder="e.g. 502"
+                    required
+                  />
+                  <small>Apartment/unit number</small>
+                </div>
               </div>
             </div>
 

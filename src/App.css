@@ -2497,3 +2497,46 @@ body {
   font-size: 0.9rem;
   min-width: auto;
 }
+
+
+/* Spot Controls */
+.spot-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-spot-control {
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-spot-control:hover:not(:disabled) {
+  background: #5b5fc7;
+  transform: scale(1.1);
+}
+
+.btn-spot-control:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.spot-controls .value {
+  min-width: 2.5rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
