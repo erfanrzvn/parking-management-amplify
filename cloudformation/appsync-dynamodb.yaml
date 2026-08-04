@@ -125,7 +125,7 @@ Resources:
       Definition: |
         type ParkingConfig {
           id: ID!
-          name: String!
+          name: String
           totalSpots: Int!
           updatedBy: String
           createdAt: AWSDateTime!
@@ -184,7 +184,7 @@ Resources:
         }
 
         input CreateParkingConfigInput {
-          name: String!
+          name: String
           totalSpots: Int!
           updatedBy: String
         }

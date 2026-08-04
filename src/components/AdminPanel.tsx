@@ -876,7 +876,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                   return (
                     <div key={parking.id} className="parking-card">
                       <div className="parking-card-header">
-                        <h3>{parking.name}</h3>
+                        <h3>{parking.name || 'Unnamed Parking'}</h3>
                         <div className="parking-card-actions">
                           <span className={`parking-status ${available > 0 ? 'available' : 'full'}`}>
                             {available > 0 ? '🟢 Available' : '🔴 Full'}
