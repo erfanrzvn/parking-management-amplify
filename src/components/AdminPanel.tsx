@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listParkingConfigs, createParkingConfig, listReservations, listResidents, createResident, updateResident, deleteResident } from '../lib/graphql';
+import { listParkingConfigs, createParkingConfig, deleteParkingConfig, listReservations, listResidents, createResident, updateResident, deleteResident } from '../lib/graphql';
 import { generateClient } from 'aws-amplify/api';
 
 const graphqlClient = generateClient();
@@ -10,6 +10,7 @@ interface AdminPanelProps {
 
 interface Parking {
   id: string;
+  name: string;
   totalSpots: number;
   createdAt: string;
   updatedAt: string;
@@ -100,6 +101,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       if (data) {
         setParkings(data.map((item: any) => ({
           id: item.id,
+          name: item.name || 'Unnamed Parking',
           totalSpots: item.totalSpots || 0,
           createdAt: item.createdAt || new Date().toISOString(),
           updatedAt: item.updatedAt || new Date().toISOString()
@@ -160,6 +162,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
     try {
       await createParkingConfig({
+        name: parkingName,
         totalSpots,
         updatedBy: user?.userId || 'admin',
       });
@@ -368,6 +371,23 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       setTimeout(() => setMessage(''), 3000);
     } catch (error: any) {
       console.error('Error deleting resident:', error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteParking = async (parking: Parking) => {
+    if (!confirm(`Delete parking "${parking.name}"?\nThis action cannot be undone.`)) return;
+    
+    setLoading(true);
+    try {
+      await deleteParkingConfig(parking.id);
+      setMessage(`✅ Parking "${parking.name}" deleted successfully`);
+      loadParkings();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error deleting parking:', error);
       setMessage(`❌ Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -856,10 +876,19 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                   return (
                     <div key={parking.id} className="parking-card">
                       <div className="parking-card-header">
-                        <h3>{parking.id}</h3>
-                        <span className={`parking-status ${available > 0 ? 'available' : 'full'}`}>
-                          {available > 0 ? '🟢 Available' : '🔴 Full'}
-                        </span>
+                        <h3>{parking.name}</h3>
+                        <div className="parking-card-actions">
+                          <span className={`parking-status ${available > 0 ? 'available' : 'full'}`}>
+                            {available > 0 ? '🟢 Available' : '🔴 Full'}
+                          </span>
+                          <button
+                            className="btn-action btn-delete btn-small"
+                            onClick={() => handleDeleteParking(parking)}
+                            title="Delete parking"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="parking-stats">

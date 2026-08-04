@@ -7,6 +7,7 @@ export async function listParkingConfigs() {
     query ListParkingConfigs {
       listParkingConfigs {
         id
+        name
         totalSpots
         updatedAt
         updatedBy
@@ -19,11 +20,12 @@ export async function listParkingConfigs() {
   return result.data.listParkingConfigs;
 }
 
-export async function createParkingConfig(input: { id?: string; totalSpots: number; updatedAt: string; updatedBy: string }) {
+export async function createParkingConfig(input: { name: string; totalSpots: number; updatedBy?: string }) {
   const mutation = `
     mutation CreateParkingConfig($input: CreateParkingConfigInput!) {
       createParkingConfig(input: $input) {
         id
+        name
         totalSpots
         updatedAt
         updatedBy
@@ -37,6 +39,22 @@ export async function createParkingConfig(input: { id?: string; totalSpots: numb
     variables: { input }
   });
   return result.data.createParkingConfig;
+}
+
+export async function deleteParkingConfig(id: string) {
+  const mutation = `
+    mutation DeleteParkingConfig($id: ID!) {
+      deleteParkingConfig(id: $id) {
+        id
+      }
+    }
+  `;
+  
+  const result: any = await client.graphql({
+    query: mutation,
+    variables: { id }
+  });
+  return result.data.deleteParkingConfig;
 }
 
 export async function listResidents() {

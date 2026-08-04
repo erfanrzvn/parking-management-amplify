@@ -2483,3 +2483,17 @@ body {
   background: #5b5fc7;
   transform: translateY(-2px);
 }
+
+
+/* Parking Card Actions */
+.parking-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-small {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  min-width: auto;
+}
