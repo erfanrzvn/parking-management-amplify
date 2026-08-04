@@ -45,27 +45,44 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         return;
       }
 
-      // Verify resident code and unit number match
-      const { listResidents } = await import('../lib/graphql');
-      const residents = await listResidents();
+      // Verify resident code and unit number match (backend validation)
+      const verifyMutation = `
+        mutation VerifyResidentCredentials($residentCode: String!, $unitNumber: String!) {
+          verifyResidentCredentials(residentCode: $residentCode, unitNumber: $unitNumber) {
+            isValid
+            residentId
+            residentFloor
+            residentPlate
+            message
+          }
+        }
+      `;
       
-      const matchingResident = residents.find((r: any) => 
-        r.residentCode.toUpperCase() === residentCode.toUpperCase() && 
-        r.unitNumber === unitNumber
-      );
+      const { generateClient } = await import('aws-amplify/api');
+      const client = generateClient();
+      
+      const verifyResult: any = await client.graphql({
+        query: verifyMutation,
+        variables: {
+          residentCode: residentCode.toUpperCase(),
+          unitNumber: unitNumber
+        }
+      });
 
-      if (!matchingResident) {
-        setMessage('❌ Invalid resident code or unit number. Please check and try again.');
+      const verification = verifyResult.data.verifyResidentCredentials;
+      
+      if (!verification.isValid) {
+        setMessage(`❌ ${verification.message}`);
         setLoading(false);
         return;
       }
 
       // Create reservation with verified resident info
       await createReservation({
-        residentId: matchingResident.id,
-        residentCode: matchingResident.residentCode,
-        residentFloor: matchingResident.floor || 'N/A',
-        residentPlate: matchingResident.plate || 'N/A',
+        residentId: verification.residentId,
+        residentCode: residentCode.toUpperCase(),
+        residentFloor: verification.residentFloor,
+        residentPlate: verification.residentPlate,
         guestPlate: guestPlate.toUpperCase(),
         guestMobile,
         guestEmail,

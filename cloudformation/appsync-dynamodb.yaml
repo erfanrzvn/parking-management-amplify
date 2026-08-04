@@ -181,6 +181,15 @@ Resources:
           createReservation(input: CreateReservationInput!): Reservation
           updateReservation(input: UpdateReservationInput!): Reservation
           deleteReservation(id: ID!): Reservation
+          verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
+        }
+
+        type ResidentVerificationResult {
+          isValid: Boolean!
+          residentId: String
+          residentFloor: String
+          residentPlate: String
+          message: String
         }
 
         input CreateParkingConfigInput {
@@ -613,6 +622,57 @@ Resources:
         }
         export function response(ctx) {
           return ctx.result;
+        }
+
+  VerifyResidentCredentialsResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: verifyResidentCredentials
+      DataSourceName: !GetAtt ResidentDataSource.Name
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+      Code: |
+        import { util } from '@aws-appsync/utils';
+        export function request(ctx) {
+          const { residentCode, unitNumber } = ctx.args;
+          return {
+            operation: 'Scan',
+            filter: {
+              expression: 'residentCode = :code AND unitNumber = :unit',
+              expressionValues: util.dynamodb.toMapValues({
+                ':code': residentCode.toUpperCase(),
+                ':unit': unitNumber,
+              }),
+            },
+          };
+        }
+        export function response(ctx) {
+          if (ctx.error) {
+            util.error(ctx.error.message, ctx.error.type);
+          }
+          
+          if (ctx.result.items.length === 0) {
+            return {
+              isValid: false,
+              residentId: null,
+              residentFloor: null,
+              residentPlate: null,
+              message: 'Invalid resident code or unit number'
+            };
+          }
+          
+          const resident = ctx.result.items[0];
+          return {
+            isValid: true,
+            residentId: resident.id,
+            residentFloor: resident.floor || 'N/A',
+            residentPlate: resident.plate || 'N/A',
+            message: 'Verified successfully'
+          };
         }
 
   # Resolvers - Reservation
