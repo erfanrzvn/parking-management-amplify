@@ -958,6 +958,32 @@ Resources:
                 throw new Error('Invalid resident ID');
               }
               
+              // Validation 7: Check for time overlap with existing reservations
+              // Get all active reservations for this resident
+              const residentReservations = await dynamodb.send(new ScanCommand({
+                TableName: process.env.RESERVATION_TABLE,
+                FilterExpression: 'residentId = :residentId AND endTime > :now',
+                ExpressionAttributeValues: marshall({
+                  ':residentId': input.residentId,
+                  ':now': nowISO
+                })
+              }));
+              
+              if (residentReservations.Items && residentReservations.Items.length > 0) {
+                // Check for time overlap
+                for (const item of residentReservations.Items) {
+                  const existingRes = unmarshall(item);
+                  const existingStart = new Date(existingRes.startTime);
+                  const existingEnd = new Date(existingRes.endTime);
+                  
+                  // Check if new reservation overlaps with existing one
+                  // Overlap occurs if: newStart < existingEnd AND newEnd > existingStart
+                  if (startTime < existingEnd && endTime > existingStart) {
+                    throw new Error('This resident already has a reservation during this time period. Reservations cannot overlap.');
+                  }
+                }
+              }
+              
               // Create reservation
               const id = `res_${Date.now()}_${Math.random().toString(36).substring(7)}`;
               

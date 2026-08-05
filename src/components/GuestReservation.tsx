@@ -104,6 +104,19 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     return new Date();
   };
 
+  const handleCreateAnother = () => {
+    setResidentCode('');
+    setUnitNumber('');
+    setGuestPlate('');
+    setGuestMobile('');
+    setGuestEmail('');
+    setDurationHours(2);
+    setDurationMinutes(0);
+    setSuccess(false);
+    setMessage('');
+    setValidationErrors({});
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -187,19 +200,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       setMessage('✅ Reservation created successfully!');
       setSuccess(true);
       
-      // Reset form
-      setTimeout(() => {
-        setResidentCode('');
-        setUnitNumber('');
-        setGuestPlate('');
-        setGuestMobile('');
-        setGuestEmail('');
-        setDurationHours(2);
-        setDurationMinutes(0);
-        setSuccess(false);
-        setMessage('');
-        setValidationErrors({});
-      }, 3000);
+      // Don't auto-reset, let user click "Create Another" button
     } catch (error: any) {
       console.error('Reservation error:', error);
       let errorMessage = 'Failed to create reservation';
@@ -227,6 +228,10 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
           errorMessage = 'License plate must contain only letters, numbers, and dashes';
         } else if (backendError.includes('Invalid resident')) {
           errorMessage = 'Resident code and unit number do not match. Please check with your host';
+        } else if (backendError.includes('already has a reservation during this time')) {
+          errorMessage = 'You already have an active reservation. Please wait for it to complete before creating a new one.';
+        } else if (backendError.includes('Reservations cannot overlap')) {
+          errorMessage = 'You already have an active reservation. Reservations cannot overlap in time.';
         } else {
           errorMessage = backendError;
         }
@@ -510,6 +515,12 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 <span className="detail-value">{getDurationText()}</span>
               </div>
             </div>
+            <button 
+              className="btn-submit btn-create-another" 
+              onClick={handleCreateAnother}
+            >
+              ➕ Create Another Reservation
+            </button>
           </div>
         )}
       </div>
