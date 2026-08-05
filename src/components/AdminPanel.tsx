@@ -741,7 +741,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             </div>
                           </td>
                           <td className="end-time-cell">
-                            {new Date(reservation.endTime).toLocaleString()}
+                            {new Date(reservation.endTime).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
                           </td>
                           <td>
                             <div className="action-buttons">
@@ -826,9 +831,19 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             <small>Code: {residentInfo.code}</small>
                           </div>
                         </td>
-                        <td>{start.toLocaleString()}</td>
+                        <td>{start.toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</td>
                         <td className={isExpired ? '' : 'in-progress'}>
-                          {end.toLocaleString()}
+                          {end.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                           {!isExpired && <span className="pulse-dot"></span>}
                         </td>
                         <td>{duration}h</td>
@@ -1090,7 +1105,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               <div className="selected-car-info">
                 <div className="car-plate">{selectedReservation.guestPlate}</div>
                 <div className="car-details">
-                  <div>Current end: {new Date(selectedReservation.endTime).toLocaleString()}</div>
+                  <div>Current end: {new Date(selectedReservation.endTime).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</div>
                   <div>Time left: {getTimeRemaining(selectedReservation.endTime)}</div>
                 </div>
               </div>
@@ -1112,7 +1132,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 </div>
 
                 <div className="new-end-time">
-                  New end time: {new Date(new Date(selectedReservation.endTime).getTime() + additionalHours * 3600000).toLocaleString()}
+                  New end time: {new Date(new Date(selectedReservation.endTime).getTime() + additionalHours * 3600000).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </div>
 
                 <div className="modal-actions">
