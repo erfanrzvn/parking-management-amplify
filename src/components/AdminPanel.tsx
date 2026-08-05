@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listParkingConfigs, createParkingConfig, deleteParkingConfig, listReservations, listResidents, createResident, updateResident, deleteResident } from '../lib/graphql';
+import { listParkingConfigs, createParkingConfig, deleteParkingConfig, listReservations, listResidents, createResident, updateResident, deleteResident, cancelReservation } from '../lib/graphql';
 import { generateClient } from 'aws-amplify/api';
 
 const graphqlClient = generateClient();
@@ -217,6 +217,24 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     }
   };
 
+  const handleCancelReservation = async (reservation: Reservation) => {
+    if (!confirm(`Cancel reservation for ${reservation.guestPlate}?\nThis will mark it as cancelled and free up the spot.`)) return;
+    
+    setLoading(true);
+    try {
+      await cancelReservation(reservation.id);
+      
+      setMessage('✅ Reservation cancelled successfully');
+      loadReservations();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error cancelling reservation:', error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddTime = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedReservation) return;
@@ -334,14 +352,29 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         });
         setMessage('✅ Resident updated successfully');
       } else {
-        // Create new resident WITH Cognito user via Lambda
-        // Lambda will generate unique residentCode and tempPassword
-        const { LambdaClient, InvokeCommand } = await import('@aws-sdk/client-lambda');
+        // Create new resident WITH Cognito user via GraphQL mutation
+        const mutation = `
+          mutation CreateResidentWithCognito($input: CreateResidentWithCognitoInput!) {
+            createResidentWithCognito(input: $input) {
+              id
+              email
+              building
+              floor
+              unitNumber
+              plate
+              residentCode
+              userId
+              tempPassword
+              message
+              createdAt
+              updatedAt
+            }
+          }
+        `;
         
-        const lambdaClient = new LambdaClient({ region: 'ca-central-1' });
-        
-        const payload = {
-          arguments: {
+        const response = await graphqlClient.graphql({
+          query: mutation,
+          variables: {
             input: {
               email: residentForm.email,
               building: residentForm.building,
@@ -350,20 +383,9 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               plate: residentForm.plate,
             }
           }
-        };
-        
-        const command = new InvokeCommand({
-          FunctionName: 'parking-createResidentWithCognito',
-          Payload: new TextEncoder().encode(JSON.stringify(payload)),
         });
         
-        const response = await lambdaClient.send(command);
-        const result = JSON.parse(new TextDecoder().decode(response.Payload));
-        
-        if (result.errorMessage) {
-          throw new Error(result.errorMessage);
-        }
-        
+        const result = response.data.createResidentWithCognito;
         const residentCode = result.residentCode;
         const tempPassword = result.tempPassword;
         
@@ -375,7 +397,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       setTimeout(() => setMessage(''), 15000); // Show for 15 seconds for credentials
     } catch (error: any) {
       console.error('Error saving resident:', error);
-      setMessage(`❌ Error: ${error.message || error}`);
+      setMessage(`❌ Error: ${error.errors?.[0]?.message || error.message || error}`);
     } finally {
       setLoading(false);
     }
@@ -787,6 +809,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                 title="End parking now"
                               >
                                 🔴 End
+                              </button>
+                              <button
+                                className="btn-action btn-cancel"
+                                onClick={() => handleCancelReservation(reservation)}
+                                title="Cancel reservation"
+                              >
+                                ❌ Cancel
                               </button>
                             </div>
                           </td>

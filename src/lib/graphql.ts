@@ -57,25 +57,31 @@ export async function deleteParkingConfig(id: string) {
   return result.data.deleteParkingConfig;
 }
 
-export async function listResidents() {
+export async function listResidents(limit?: number, nextToken?: string) {
   const query = `
-    query ListResidents {
-      listResidents {
-        id
-        email
-        building
-        floor
-        unitNumber
-        plate
-        residentCode
-        userId
-        createdAt
+    query ListResidents($limit: Int, $nextToken: String) {
+      listResidents(limit: $limit, nextToken: $nextToken) {
+        items {
+          id
+          email
+          building
+          floor
+          unitNumber
+          plate
+          residentCode
+          userId
+          createdAt
+        }
+        nextToken
       }
     }
   `;
   
-  const result: any = await client.graphql({ query });
-  return result.data.listResidents;
+  const result: any = await client.graphql({ 
+    query,
+    variables: { limit, nextToken }
+  });
+  return result.data.listResidents.items;
 }
 
 export async function getResidentByUserId(userId: string) {
@@ -216,25 +222,49 @@ export async function createReservation(input: any) {
   return result.data.createReservation;
 }
 
-export async function listReservations() {
+export async function listReservations(limit?: number, nextToken?: string) {
   const query = `
-    query ListReservations {
-      listReservations {
-        id
-        residentId
-        residentCode
-        residentFloor
-        residentPlate
-        guestPlate
-        guestMobile
-        guestEmail
-        startTime
-        endTime
-        createdAt
+    query ListReservations($limit: Int, $nextToken: String) {
+      listReservations(limit: $limit, nextToken: $nextToken) {
+        items {
+          id
+          residentId
+          residentCode
+          residentFloor
+          residentPlate
+          guestPlate
+          guestMobile
+          guestEmail
+          startTime
+          endTime
+          status
+          createdAt
+        }
+        nextToken
       }
     }
   `;
   
-  const result: any = await client.graphql({ query });
-  return result.data.listReservations;
+  const result: any = await client.graphql({ 
+    query,
+    variables: { limit, nextToken }
+  });
+  return result.data.listReservations.items;
+}
+
+export async function cancelReservation(id: string) {
+  const mutation = `
+    mutation CancelReservation($id: ID!) {
+      cancelReservation(id: $id) {
+        id
+        status
+      }
+    }
+  `;
+  
+  const result: any = await client.graphql({
+    query: mutation,
+    variables: { id }
+  });
+  return result.data.cancelReservation;
 }

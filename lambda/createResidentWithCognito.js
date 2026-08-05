@@ -1,13 +1,14 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
-const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { DynamoDBDocumentClient, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminDeleteUserCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { logAction } = require('./auditLogger');
 
-const dynamoClient = new DynamoDBClient({ region: 'ca-central-1' });
+const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-const cognitoClient = new CognitoIdentityProviderClient({ region: 'ca-central-1' });
+const cognitoClient = new CognitoIdentityProviderClient({});
 
-const USER_POOL_ID = 'ca-central-1_dBeo5yZXq';
+const USER_POOL_ID = process.env.USER_POOL_ID || 'ca-central-1_dBeo5yZXq';
 
 // Generate random temporary password (meets Cognito requirements)
 function generateTempPassword() {
@@ -34,7 +35,7 @@ function generateTempPassword() {
   return password.split('').sort(() => Math.random() - 0.5).join('');
 }
 
-// Generate unique resident code (6 characters: 3 letters + 3 numbers)
+// Generate unique resident code using Query on GSI (not Scan!)
 async function generateUniqueResidentCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const nums = '0123456789';
@@ -55,18 +56,19 @@ async function generateUniqueResidentCode() {
       code += nums[Math.floor(Math.random() * nums.length)];
     }
     
-    // Check if code already exists using GSI
-    const scanCommand = new ScanCommand({
-      TableName: 'Resident',
+    // Check if code exists using Query on GSI (not Scan!)
+    const { QueryCommand } = require('@aws-sdk/lib-dynamodb');
+    const queryCommand = new QueryCommand({
+      TableName: process.env.RESIDENT_TABLE || 'Resident',
       IndexName: 'byResidentCode',
-      FilterExpression: 'residentCode = :code',
+      KeyConditionExpression: 'residentCode = :code',
       ExpressionAttributeValues: {
         ':code': code
       },
       Limit: 1
     });
     
-    const result = await docClient.send(scanCommand);
+    const result = await docClient.send(queryCommand);
     
     if (!result.Items || result.Items.length === 0) {
       // Code is unique!
@@ -83,18 +85,21 @@ async function generateUniqueResidentCode() {
 exports.handler = async (event) => {
   console.log('CreateResidentWithCognito input:', JSON.stringify(event, null, 2));
   
+  let cognitoUserId = null;
+  let rollbackCognito = false;
+  
   try {
     const { email, building, floor, unitNumber, plate } = event.arguments.input;
     
     // Validate required fields
     if (!email || !floor || !plate || !building || !unitNumber) {
-      throw new Error('Missing required fields: email, building, floor, unitNumber, plate');
+      throw new Error('Missing required fields');
     }
     
     // Generate unique resident ID
     const residentId = `resident_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     
-    // Generate unique resident code (backend ensures uniqueness)
+    // Generate unique resident code
     const residentCode = await generateUniqueResidentCode();
     console.log(`Generated unique resident code: ${residentCode}`);
     
@@ -104,7 +109,6 @@ exports.handler = async (event) => {
     console.log(`Creating Cognito user for email: ${email}`);
     
     // Step 1: Create Cognito User
-    let cognitoUserId;
     try {
       const createUserCommand = new AdminCreateUserCommand({
         UserPoolId: USER_POOL_ID,
@@ -118,12 +122,13 @@ exports.handler = async (event) => {
           { Name: 'custom:residentCode', Value: residentCode },
         ],
         TemporaryPassword: tempPassword,
-        MessageAction: 'SUPPRESS', // Don't send welcome email automatically
+        MessageAction: 'SUPPRESS',
         DesiredDeliveryMediums: ['EMAIL'],
       });
       
       const createUserResponse = await cognitoClient.send(createUserCommand);
       cognitoUserId = createUserResponse.User.Username;
+      rollbackCognito = true; // Mark for rollback if subsequent steps fail
       
       console.log(`Cognito user created: ${cognitoUserId}`);
       
@@ -140,15 +145,14 @@ exports.handler = async (event) => {
     } catch (cognitoError) {
       console.error('Cognito error:', cognitoError);
       
-      // Handle specific error cases
       if (cognitoError.name === 'UsernameExistsException') {
-        throw new Error(`A user with email ${email} already exists`);
+        throw new Error(`User with email ${email} already exists`);
       }
       
-      throw new Error(`Failed to create Cognito user: ${cognitoError.message}`);
+      throw new Error(`Failed to create user: ${cognitoError.message}`);
     }
     
-    // Step 3: Create Resident in DynamoDB
+    // Step 3: Create Resident in DynamoDB with transaction safety
     const now = new Date().toISOString();
     const resident = {
       id: residentId,
@@ -157,14 +161,14 @@ exports.handler = async (event) => {
       floor: floor,
       unitNumber: unitNumber,
       plate: plate,
-      residentCode: residentCode, // Backend-generated unique code
+      residentCode: residentCode,
       userId: cognitoUserId,
       createdAt: now,
       updatedAt: now,
     };
     
     const putCommand = new PutCommand({
-      TableName: 'Resident',
+      TableName: process.env.RESIDENT_TABLE || 'Resident',
       Item: resident,
       // Conditional write: fail if residentCode already exists
       ConditionExpression: 'attribute_not_exists(residentCode)',
@@ -174,22 +178,61 @@ exports.handler = async (event) => {
       await docClient.send(putCommand);
       console.log(`Resident created in DynamoDB: ${residentId} with code: ${residentCode}`);
     } catch (dbError) {
-      if (dbError.name === 'ConditionalCheckFailedException') {
-        // Race condition: code was taken between check and write
-        throw new Error(`Resident code ${residentCode} is already in use. Please try again.`);
+      console.error('DynamoDB error:', dbError);
+      
+      // ROLLBACK: Delete Cognito user since DynamoDB write failed
+      if (rollbackCognito && cognitoUserId) {
+        console.log(`Rolling back: Deleting Cognito user ${cognitoUserId}`);
+        try {
+          await cognitoClient.send(new AdminDeleteUserCommand({
+            UserPoolId: USER_POOL_ID,
+            Username: cognitoUserId
+          }));
+          console.log(`Rollback successful: Cognito user deleted`);
+        } catch (rollbackError) {
+          console.error(`Rollback failed: ${rollbackError.message}`);
+          // Log for manual cleanup but still throw original error
+        }
       }
-      throw dbError;
+      
+      if (dbError.name === 'ConditionalCheckFailedException') {
+        throw new Error(`Resident code ${residentCode} already exists. Please try again.`);
+      }
+      throw new Error('Failed to create resident record');
     }
     
-    // Return success with temp password and resident code
+    // Validation: email format
+    if (!email.includes('@') || !email.includes('.')) {
+      throw new Error('Invalid email format');
+    }
+    
+    // Audit log
+    await logAction(
+      'CREATE_RESIDENT',
+      email,
+      {
+        email,
+        building,
+        floor,
+        unitNumber,
+        plate
+      },
+      'Resident',
+      residentId
+    );
+    
+    // Return success
     return {
       ...resident,
-      tempPassword: tempPassword, // Return temp password so admin can give it to resident
-      message: `Resident created successfully. Code: ${residentCode}, Password: ${tempPassword}`,
+      tempPassword: tempPassword,
+      message: `Resident created successfully`,
     };
     
   } catch (error) {
     console.error('Error:', error);
-    throw new Error(error.message || 'Failed to create resident');
+    
+    // Sanitize error message (don't expose internal details)
+    const message = error.message || 'Failed to create resident';
+    throw new Error(message);
   }
 };
