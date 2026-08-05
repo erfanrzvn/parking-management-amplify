@@ -17,6 +17,83 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+
+  // Real-time validation functions
+  const validateResidentCode = (code: string): string => {
+    if (!code) return '';
+    if (code.length !== 6) return 'Code must be exactly 6 characters';
+    if (!/^[A-Z0-9]{6}$/.test(code)) return 'Code must contain only letters and numbers';
+    return '';
+  };
+
+  const validateUnitNumber = (unit: string): string => {
+    if (!unit) return '';
+    if (unit.length > 10) return 'Unit number too long';
+    return '';
+  };
+
+  const validatePlate = (plate: string): string => {
+    if (!plate) return '';
+    if (plate.length < 3) return 'License plate too short';
+    if (plate.length > 15) return 'License plate too long';
+    if (!/^[A-Z0-9-]+$/.test(plate)) return 'Only letters, numbers, and dashes allowed';
+    return '';
+  };
+
+  const validateMobile = (mobile: string): string => {
+    if (!mobile) return '';
+    // Remove spaces and dashes for validation
+    const cleaned = mobile.replace(/[\s-]/g, '');
+    
+    if (!cleaned.startsWith('+')) {
+      return 'Phone must start with country code (e.g., +1 or +98)';
+    }
+    
+    if (cleaned.length < 10) {
+      return 'Phone number too short';
+    }
+    
+    if (cleaned.length > 16) {
+      return 'Phone number too long';
+    }
+    
+    if (!/^\+\d+$/.test(cleaned)) {
+      return 'Phone must be in format: +1234567890';
+    }
+    
+    return '';
+  };
+
+  const validateEmail = (email: string): string => {
+    if (!email) return '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return 'Invalid email format';
+    }
+    return '';
+  };
+
+  // Update validation errors on field change
+  useEffect(() => {
+    const errors: {[key: string]: string} = {};
+    
+    const residentCodeError = validateResidentCode(residentCode);
+    if (residentCodeError) errors.residentCode = residentCodeError;
+    
+    const unitError = validateUnitNumber(unitNumber);
+    if (unitError) errors.unitNumber = unitError;
+    
+    const plateError = validatePlate(guestPlate);
+    if (plateError) errors.guestPlate = plateError;
+    
+    const mobileError = validateMobile(guestMobile);
+    if (mobileError) errors.guestMobile = mobileError;
+    
+    const emailError = validateEmail(guestEmail);
+    if (emailError) errors.guestEmail = emailError;
+    
+    setValidationErrors(errors);
+  }, [residentCode, unitNumber, guestPlate, guestMobile, guestEmail]);
 
   const getEndDateTime = (): Date => {
     const totalMinutes = (durationHours * 60) + durationMinutes;
@@ -29,9 +106,17 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     setMessage('');
 
     try {
+      // Client-side validation before submission
+      if (Object.keys(validationErrors).length > 0) {
+        const firstError = Object.values(validationErrors)[0];
+        setMessage(`❌ ${firstError}`);
+        setLoading(false);
+        return;
+      }
+
       const endDateTime = getEndDateTime();
       
-      // Validation
+      // Duration validation
       if (endDateTime <= startDateTime) {
         setMessage('❌ Duration must be greater than 0');
         setLoading(false);
@@ -41,6 +126,12 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       const totalHours = (durationHours + durationMinutes / 60);
       if (totalHours > 24) {
         setMessage('❌ Maximum parking duration is 24 hours');
+        setLoading(false);
+        return;
+      }
+
+      if (totalHours === 0) {
+        setMessage('❌ Duration must be at least 1 minute');
         setLoading(false);
         return;
       }
@@ -77,6 +168,9 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         return;
       }
 
+      // Clean phone number format
+      const cleanedMobile = guestMobile.replace(/[\s-]/g, '');
+
       // Create reservation with verified resident info
       await createReservation({
         residentId: verification.residentId,
@@ -84,8 +178,8 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         residentFloor: verification.residentFloor,
         residentPlate: verification.residentPlate,
         guestPlate: guestPlate.toUpperCase(),
-        guestMobile,
-        guestEmail,
+        guestMobile: cleanedMobile,
+        guestEmail: guestEmail.toLowerCase(),
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
       });
@@ -104,14 +198,38 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         setDurationMinutes(0);
         setSuccess(false);
         setMessage('');
+        setValidationErrors({});
       }, 3000);
     } catch (error: any) {
       console.error('Reservation error:', error);
       let errorMessage = 'Failed to create reservation';
       
-      // Parse backend error messages
+      // Parse backend error messages with user-friendly translations
       if (error.errors && error.errors[0]) {
-        errorMessage = error.errors[0].message;
+        const backendError = error.errors[0].message;
+        
+        // Translate GraphQL validation errors to user-friendly messages
+        if (backendError.includes("Variable 'guestMobile' has an invalid value")) {
+          errorMessage = 'Invalid phone number format. Please use international format (e.g., +1234567890)';
+        } else if (backendError.includes("Variable 'guestEmail' has an invalid value")) {
+          errorMessage = 'Invalid email format. Please enter a valid email address';
+        } else if (backendError.includes('license plate already has an active reservation')) {
+          errorMessage = 'This license plate already has an active parking reservation';
+        } else if (backendError.includes('No parking spots available')) {
+          errorMessage = 'Sorry, all parking spots are currently occupied. Please try again later';
+        } else if (backendError.includes('Maximum parking duration')) {
+          errorMessage = 'Maximum parking duration is 24 hours';
+        } else if (backendError.includes('Invalid email format')) {
+          errorMessage = 'Please enter a valid email address';
+        } else if (backendError.includes('Invalid phone format')) {
+          errorMessage = 'Phone number must be in international format (e.g., +1234567890)';
+        } else if (backendError.includes('Invalid license plate format')) {
+          errorMessage = 'License plate must contain only letters, numbers, and dashes';
+        } else if (backendError.includes('Invalid resident')) {
+          errorMessage = 'Resident code and unit number do not match. Please check with your host';
+        } else {
+          errorMessage = backendError;
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -182,8 +300,13 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                     maxLength={6}
                     required
                     autoFocus
+                    className={validationErrors.residentCode ? 'input-error' : ''}
                   />
-                  <small>Code provided by your host</small>
+                  {validationErrors.residentCode ? (
+                    <small className="error-text">⚠️ {validationErrors.residentCode}</small>
+                  ) : (
+                    <small>Code provided by your host (6 characters)</small>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -198,8 +321,13 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                     onChange={(e) => setUnitNumber(e.target.value)}
                     placeholder="e.g. 502"
                     required
+                    className={validationErrors.unitNumber ? 'input-error' : ''}
                   />
-                  <small>Apartment/unit number</small>
+                  {validationErrors.unitNumber ? (
+                    <small className="error-text">⚠️ {validationErrors.unitNumber}</small>
+                  ) : (
+                    <small>Apartment/unit number</small>
+                  )}
                 </div>
               </div>
             </div>
@@ -220,7 +348,13 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                   onChange={(e) => setGuestPlate(e.target.value.toUpperCase())}
                   placeholder="e.g. ABC-1234"
                   required
+                  className={validationErrors.guestPlate ? 'input-error' : ''}
                 />
+                {validationErrors.guestPlate ? (
+                  <small className="error-text">⚠️ {validationErrors.guestPlate}</small>
+                ) : (
+                  <small>Your vehicle's license plate number</small>
+                )}
               </div>
 
               <div className="form-row">
@@ -236,7 +370,13 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                     onChange={(e) => setGuestMobile(e.target.value)}
                     placeholder="+1234567890"
                     required
+                    className={validationErrors.guestMobile ? 'input-error' : ''}
                   />
+                  {validationErrors.guestMobile ? (
+                    <small className="error-text">⚠️ {validationErrors.guestMobile}</small>
+                  ) : (
+                    <small>Include country code (e.g., +1 or +98)</small>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -251,7 +391,13 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                     onChange={(e) => setGuestEmail(e.target.value)}
                     placeholder="your@email.com"
                     required
+                    className={validationErrors.guestEmail ? 'input-error' : ''}
                   />
+                  {validationErrors.guestEmail ? (
+                    <small className="error-text">⚠️ {validationErrors.guestEmail}</small>
+                  ) : (
+                    <small>We'll send confirmation to this email</small>
+                  )}
                 </div>
               </div>
             </div>

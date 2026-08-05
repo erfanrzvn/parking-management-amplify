@@ -1510,6 +1510,25 @@ body {
   color: #ef4444;
 }
 
+/* Input Validation Errors */
+.input-error {
+  border-color: var(--error) !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+}
+
+.input-error:focus {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.error-text {
+  color: var(--error) !important;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
