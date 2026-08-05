@@ -450,17 +450,35 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
   const getResidentInfo = (residentId: string) => {
     const resident = residents.find(r => r.id === residentId);
-    return resident ? {
-      name: resident.building && resident.unitNumber 
-        ? `${resident.building} - Unit ${resident.unitNumber}`
-        : resident.email.split('@')[0],
-      code: resident.residentCode,
-      floor: resident.floor,
-      building: resident.building,
-      unitNumber: resident.unitNumber
-    } : {
-      name: 'Unknown',
-      code: residentId,
+    if (resident) {
+      return {
+        name: resident.building && resident.unitNumber 
+          ? `${resident.building} - Unit ${resident.unitNumber}`
+          : resident.email.split('@')[0],
+        code: resident.residentCode,
+        floor: resident.floor,
+        building: resident.building,
+        unitNumber: resident.unitNumber
+      };
+    }
+    
+    // If not found in residents, try to get from reservation itself
+    const reservation = reservations.find(r => r.residentId === residentId);
+    if (reservation && reservation.residentCode) {
+      return {
+        name: reservation.residentFloor 
+          ? `Floor ${reservation.residentFloor}` 
+          : 'Resident',
+        code: reservation.residentCode,
+        floor: reservation.residentFloor,
+        building: undefined,
+        unitNumber: undefined
+      };
+    }
+    
+    return {
+      name: 'Unknown Resident',
+      code: residentId.substring(0, 8),
       floor: undefined,
       building: undefined,
       unitNumber: undefined
@@ -481,9 +499,19 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     const seconds = Math.floor((diff % 60000) / 1000);
     
     if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+      return (
+        <div className="time-display">
+          <div className="time-hours">{hours}h {minutes}m</div>
+          <div className="time-seconds">{seconds}s</div>
+        </div>
+      );
     } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
+      return (
+        <div className="time-display">
+          <div className="time-minutes">{minutes}m</div>
+          <div className="time-seconds">{seconds}s</div>
+        </div>
+      );
     } else {
       return `${seconds}s`;
     }
@@ -908,12 +936,10 @@ export default function AdminPanel({ user }: AdminPanelProps) {
             ) : (
               <div className="parkings-grid">
                 {parkings.map((parking) => {
-                  const parkingRes = activeReservations.filter(r => 
-                    r.residentId.startsWith(parking.id)
-                  );
-                  const occupied = parkingRes.length;
+                  // Count all active reservations (not per parking - we don't track that)
+                  const occupied = activeReservations.length;
                   const available = parking.totalSpots - occupied;
-                  const occupancyRate = Math.round((occupied / parking.totalSpots) * 100);
+                  const occupancyRate = parking.totalSpots > 0 ? Math.round((occupied / parking.totalSpots) * 100) : 0;
 
                   return (
                     <div key={parking.id} className="parking-card">

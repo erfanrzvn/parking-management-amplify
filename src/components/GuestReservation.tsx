@@ -107,7 +107,16 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       }, 3000);
     } catch (error: any) {
       console.error('Reservation error:', error);
-      setMessage(`❌ Error: ${error.message || 'Failed to create reservation'}`);
+      let errorMessage = 'Failed to create reservation';
+      
+      // Parse backend error messages
+      if (error.errors && error.errors[0]) {
+        errorMessage = error.errors[0].message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setMessage(`❌ ${errorMessage}`);
     } finally {
       setLoading(false);
     }

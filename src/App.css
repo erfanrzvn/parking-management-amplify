@@ -1436,18 +1436,49 @@ body {
 }
 
 .sort-select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
 }
 
+.sort-select option {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.sort-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .sort-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Time Display */
+.time-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.time-hours,
+.time-minutes {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.time-seconds {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-weight: 500;
 }
 
 /* Time Remaining & Countdown */

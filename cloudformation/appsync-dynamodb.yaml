@@ -410,6 +410,12 @@ Resources:
         import { util } from '@aws-appsync/utils';
         export function request(ctx) {
           const { id, ...values } = ctx.args.input;
+          
+          // Validation: totalSpots must be >= 1
+          if (values.totalSpots !== undefined && values.totalSpots < 1) {
+            util.error('Total spots must be at least 1', 'ValidationError');
+          }
+          
           const updates = [];
           const names = { '#updatedAt': 'updatedAt' };
           const vals = { ':updatedAt': util.time.nowISO8601() };
@@ -547,18 +553,43 @@ Resources:
         export function request(ctx) {
           const id = util.autoId();
           const now = util.time.nowISO8601();
+          
+          const code = ctx.args.input.residentCode || '';
+          const email = ctx.args.input.email || '';
+          
+          // Validation: resident code format (6 characters alphanumeric)
+          if (code.length !== 6) {
+            util.error('Resident code must be exactly 6 characters', 'ValidationError');
+          }
+          
+          // Validation: email contains @ and .
+          if (email.indexOf('@') === -1 || email.indexOf('.') === -1) {
+            util.error('Invalid email format', 'ValidationError');
+          }
+          
           return {
             operation: 'PutItem',
             key: util.dynamodb.toMapValues({id}),
             attributeValues: util.dynamodb.toMapValues({
               ...ctx.args.input,
+              residentCode: code,
+              email: email,
               id,
               createdAt: now,
               updatedAt: now,
             }),
+            condition: {
+              expression: 'attribute_not_exists(id)',
+            },
           };
         }
         export function response(ctx) {
+          if (ctx.error) {
+            if (ctx.error.type === 'DynamoDB:ConditionalCheckFailedException') {
+              util.error('Resident already exists', 'DuplicateError');
+            }
+            util.error(ctx.error.message, ctx.error.type);
+          }
           return ctx.result;
         }
 
@@ -726,27 +757,22 @@ Resources:
       ApiId: !GetAtt GraphQLApi.ApiId
       TypeName: Mutation
       FieldName: createReservation
-      DataSourceName: !GetAtt ReservationDataSource.Name
+      DataSourceName: !GetAtt CreateReservationDataSource.Name
       Runtime:
         Name: APPSYNC_JS
         RuntimeVersion: 1.0.0
       Code: |
         import { util } from '@aws-appsync/utils';
         export function request(ctx) {
-          const id = util.autoId();
-          const now = util.time.nowISO8601();
           return {
-            operation: 'PutItem',
-            key: util.dynamodb.toMapValues({id}),
-            attributeValues: util.dynamodb.toMapValues({
-              ...ctx.args.input,
-              id,
-              createdAt: now,
-              updatedAt: now,
-            }),
+            operation: 'Invoke',
+            payload: ctx,
           };
         }
         export function response(ctx) {
+          if (ctx.error) {
+            util.error(ctx.error.message, ctx.error.type);
+          }
           return ctx.result;
         }
 
@@ -782,6 +808,217 @@ Resources:
           return ctx.result;
         }
 
+  # Lambda for createReservation with validation
+  CreateReservationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - appsync.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt ParkingConfigTable.Arn
+                  - !GetAtt ResidentTable.Arn
+                  - !GetAtt ReservationTable.Arn
+                  - !Sub '${ReservationTable.Arn}/index/*'
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !Sub 'arn:aws:lambda:ca-central-1:103103683543:function:parking-createReservation'
+
+  CreateReservationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: parking-createReservation
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Role: !GetAtt CreateReservationLambdaRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          PARKING_CONFIG_TABLE: !Ref ParkingConfigTable
+          RESIDENT_TABLE: !Ref ResidentTable
+          RESERVATION_TABLE: !Ref ReservationTable
+      Code:
+        ZipFile: |
+          const { DynamoDBClient, ScanCommand, PutItemCommand, QueryCommand } = require('@aws-sdk/client-dynamodb');
+          const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
+          
+          const dynamodb = new DynamoDBClient({});
+          
+          const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+          const validatePhone = (phone) => /^\+?[1-9]\d{1,14}$/.test(phone);
+          const validatePlate = (plate) => /^[A-Z0-9-]{3,15}$/.test(plate);
+          
+          exports.handler = async (event) => {
+            console.log('CreateReservation input:', JSON.stringify(event));
+            
+            try {
+              const input = event.arguments.input;
+              const now = new Date().toISOString();
+              
+              // Validation 1: Duration check
+              const startTime = new Date(input.startTime);
+              const endTime = new Date(input.endTime);
+              const durationHours = (endTime - startTime) / (1000 * 60 * 60);
+              
+              if (durationHours <= 0) {
+                throw new Error('Duration must be greater than 0');
+              }
+              
+              if (durationHours > 24) {
+                throw new Error('Maximum parking duration is 24 hours');
+              }
+              
+              // Validation 2: Not in past
+              if (startTime < new Date()) {
+                throw new Error('Cannot create reservation for past time');
+              }
+              
+              // Validation 3: Format validation
+              if (!validateEmail(input.guestEmail)) {
+                throw new Error('Invalid email format');
+              }
+              
+              if (!validatePhone(input.guestMobile)) {
+                throw new Error('Invalid phone format (use international format: +1234567890)');
+              }
+              
+              if (!validatePlate(input.guestPlate)) {
+                throw new Error('Invalid license plate format');
+              }
+              
+              // Validation 4: Check parking availability
+              const parkingScan = await dynamodb.send(new ScanCommand({
+                TableName: process.env.PARKING_CONFIG_TABLE,
+                Limit: 1
+              }));
+              
+              const totalSpots = parkingScan.Items?.[0] ? unmarshall(parkingScan.Items[0]).totalSpots : 10;
+              
+              // Get active reservations
+              const reservationScan = await dynamodb.send(new ScanCommand({
+                TableName: process.env.RESERVATION_TABLE,
+                FilterExpression: 'endTime > :now',
+                ExpressionAttributeValues: marshall({
+                  ':now': now
+                })
+              }));
+              
+              const activeReservations = reservationScan.Items?.length || 0;
+              
+              if (activeReservations >= totalSpots) {
+                throw new Error('No parking spots available. All spots are currently occupied.');
+              }
+              
+              // Validation 5: Check duplicate active reservation for same plate
+              const plateScan = await dynamodb.send(new ScanCommand({
+                TableName: process.env.RESERVATION_TABLE,
+                FilterExpression: 'guestPlate = :plate AND endTime > :now',
+                ExpressionAttributeValues: marshall({
+                  ':plate': input.guestPlate.toUpperCase(),
+                  ':now': now
+                })
+              }));
+              
+              if (plateScan.Items && plateScan.Items.length > 0) {
+                throw new Error('This license plate already has an active reservation');
+              }
+              
+              // Validation 6: Verify resident exists
+              const residentScan = await dynamodb.send(new ScanCommand({
+                TableName: process.env.RESIDENT_TABLE,
+                FilterExpression: 'id = :id',
+                ExpressionAttributeValues: marshall({
+                  ':id': input.residentId
+                })
+              }));
+              
+              if (!residentScan.Items || residentScan.Items.length === 0) {
+                throw new Error('Invalid resident ID');
+              }
+              
+              // Create reservation
+              const id = `res_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+              
+              await dynamodb.send(new PutItemCommand({
+                TableName: process.env.RESERVATION_TABLE,
+                Item: marshall({
+                  id,
+                  residentId: input.residentId,
+                  residentCode: input.residentCode.toUpperCase(),
+                  residentFloor: input.residentFloor || 'N/A',
+                  residentPlate: input.residentPlate || 'N/A',
+                  guestPlate: input.guestPlate.toUpperCase(),
+                  guestMobile: input.guestMobile,
+                  guestEmail: input.guestEmail.toLowerCase(),
+                  startTime: input.startTime,
+                  endTime: input.endTime,
+                  createdAt: now,
+                  updatedAt: now
+                })
+              }));
+              
+              return {
+                id,
+                residentId: input.residentId,
+                residentCode: input.residentCode.toUpperCase(),
+                residentFloor: input.residentFloor || 'N/A',
+                residentPlate: input.residentPlate || 'N/A',
+                guestPlate: input.guestPlate.toUpperCase(),
+                guestMobile: input.guestMobile,
+                guestEmail: input.guestEmail.toLowerCase(),
+                startTime: input.startTime,
+                endTime: input.endTime,
+                createdAt: now,
+                updatedAt: now
+              };
+            } catch (error) {
+              console.error('Error:', error);
+              throw error;
+            }
+          };
+
+  CreateReservationDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Name: CreateReservationLambdaDataSource
+      Type: AWS_LAMBDA
+      ServiceRoleArn: !GetAtt CreateReservationLambdaRole.Arn
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt CreateReservationLambda.Arn
+
+  CreateReservationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CreateReservationLambda
+      Action: lambda:InvokeFunction
+      Principal: appsync.amazonaws.com
+      SourceArn: !Sub 'arn:aws:appsync:ca-central-1:103103683543:apis/${GraphQLApi.ApiId}/*'
+
   # Lambda for checkAvailability
   CheckAvailabilityLambdaRole:
     Type: AWS::IAM::Role
@@ -791,7 +1028,9 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service:
+                - lambda.amazonaws.com
+                - appsync.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -809,6 +1048,14 @@ Resources:
                   - !GetAtt ParkingConfigTable.Arn
                   - !GetAtt ReservationTable.Arn
                   - !Sub '${ReservationTable.Arn}/index/*'
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !Sub 'arn:aws:lambda:ca-central-1:103103683543:function:parking-checkAvailability'
 
   CheckAvailabilityLambda:
     Type: AWS::Lambda::Function
