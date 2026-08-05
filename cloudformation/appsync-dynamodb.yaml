@@ -41,6 +41,8 @@ Resources:
           AttributeType: S
         - AttributeName: userId
           AttributeType: S
+        - AttributeName: residentCode
+          AttributeType: S
       KeySchema:
         - AttributeName: id
           KeyType: HASH
@@ -48,6 +50,12 @@ Resources:
         - IndexName: byUserId
           KeySchema:
             - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: byResidentCode
+          KeySchema:
+            - AttributeName: residentCode
               KeyType: HASH
           Projection:
             ProjectionType: ALL

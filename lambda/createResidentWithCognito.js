@@ -40,7 +40,7 @@ async function generateUniqueResidentCode() {
   const nums = '0123456789';
   
   let attempts = 0;
-  const maxAttempts = 10;
+  const maxAttempts = 20;
   
   while (attempts < maxAttempts) {
     let code = '';
@@ -55,9 +55,10 @@ async function generateUniqueResidentCode() {
       code += nums[Math.floor(Math.random() * nums.length)];
     }
     
-    // Check if code already exists in database
+    // Check if code already exists using GSI
     const scanCommand = new ScanCommand({
       TableName: 'Resident',
+      IndexName: 'byResidentCode',
       FilterExpression: 'residentCode = :code',
       ExpressionAttributeValues: {
         ':code': code
@@ -73,6 +74,7 @@ async function generateUniqueResidentCode() {
     }
     
     attempts++;
+    console.log(`Code ${code} already exists, retrying... (attempt ${attempts}/${maxAttempts})`);
   }
   
   throw new Error('Failed to generate unique resident code after multiple attempts');
@@ -164,10 +166,20 @@ exports.handler = async (event) => {
     const putCommand = new PutCommand({
       TableName: 'Resident',
       Item: resident,
+      // Conditional write: fail if residentCode already exists
+      ConditionExpression: 'attribute_not_exists(residentCode)',
     });
     
-    await docClient.send(putCommand);
-    console.log(`Resident created in DynamoDB: ${residentId} with code: ${residentCode}`);
+    try {
+      await docClient.send(putCommand);
+      console.log(`Resident created in DynamoDB: ${residentId} with code: ${residentCode}`);
+    } catch (dbError) {
+      if (dbError.name === 'ConditionalCheckFailedException') {
+        // Race condition: code was taken between check and write
+        throw new Error(`Resident code ${residentCode} is already in use. Please try again.`);
+      }
+      throw dbError;
+    }
     
     // Return success with temp password and resident code
     return {
