@@ -277,7 +277,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
           <div className="header-icon">🅿️</div>
           <h1>Guest Parking Reservation</h1>
           <p className="header-subtitle">Reserve your parking spot with resident code</p>
-          {onLoginClick && (
+          {!success && onLoginClick && (
             <button className="btn-staff-login" onClick={onLoginClick}>
               🔐 Staff Login
             </button>
@@ -515,12 +515,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 <span className="detail-value">{getDurationText()}</span>
               </div>
             </div>
-            <button 
-              className="btn-submit btn-create-another" 
-              onClick={handleCreateAnother}
-            >
-              ➕ Create Another Reservation
-            </button>
           </div>
         )}
       </div>
