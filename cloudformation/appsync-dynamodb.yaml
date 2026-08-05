@@ -877,11 +877,14 @@ Resources:
             
             try {
               const input = event.arguments.input;
-              const now = new Date().toISOString();
+              const now = new Date();
+              const nowISO = now.toISOString();
+              
+              // Always use current time as start time (ignore input.startTime)
+              const startTime = now;
+              const endTime = new Date(input.endTime);
               
               // Validation 1: Duration check
-              const startTime = new Date(input.startTime);
-              const endTime = new Date(input.endTime);
               const durationHours = (endTime - startTime) / (1000 * 60 * 60);
               
               if (durationHours <= 0) {
@@ -890,11 +893,6 @@ Resources:
               
               if (durationHours > 24) {
                 throw new Error('Maximum parking duration is 24 hours');
-              }
-              
-              // Validation 2: Not in past
-              if (startTime < new Date()) {
-                throw new Error('Cannot create reservation for past time');
               }
               
               // Validation 3: Format validation
@@ -923,7 +921,7 @@ Resources:
                 TableName: process.env.RESERVATION_TABLE,
                 FilterExpression: 'endTime > :now',
                 ExpressionAttributeValues: marshall({
-                  ':now': now
+                  ':now': nowISO
                 })
               }));
               
@@ -939,7 +937,7 @@ Resources:
                 FilterExpression: 'guestPlate = :plate AND endTime > :now',
                 ExpressionAttributeValues: marshall({
                   ':plate': input.guestPlate.toUpperCase(),
-                  ':now': now
+                  ':now': nowISO
                 })
               }));
               
@@ -974,10 +972,10 @@ Resources:
                   guestPlate: input.guestPlate.toUpperCase(),
                   guestMobile: input.guestMobile,
                   guestEmail: input.guestEmail.toLowerCase(),
-                  startTime: input.startTime,
+                  startTime: startTime.toISOString(),
                   endTime: input.endTime,
-                  createdAt: now,
-                  updatedAt: now
+                  createdAt: nowISO,
+                  updatedAt: nowISO
                 })
               }));
               
@@ -990,10 +988,10 @@ Resources:
                 guestPlate: input.guestPlate.toUpperCase(),
                 guestMobile: input.guestMobile,
                 guestEmail: input.guestEmail.toLowerCase(),
-                startTime: input.startTime,
+                startTime: startTime.toISOString(),
                 endTime: input.endTime,
-                createdAt: now,
-                updatedAt: now
+                createdAt: nowISO,
+                updatedAt: nowISO
               };
             } catch (error) {
               console.error('Error:', error);

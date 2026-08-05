@@ -13,7 +13,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
   const [guestEmail, setGuestEmail] = useState('');
   const [durationHours, setDurationHours] = useState<number>(2);
   const [durationMinutes, setDurationMinutes] = useState<number>(0);
-  const [startDateTime] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
@@ -96,8 +95,13 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
   }, [residentCode, unitNumber, guestPlate, guestMobile, guestEmail]);
 
   const getEndDateTime = (): Date => {
+    const now = new Date();
     const totalMinutes = (durationHours * 60) + durationMinutes;
-    return new Date(startDateTime.getTime() + totalMinutes * 60 * 1000);
+    return new Date(now.getTime() + totalMinutes * 60 * 1000);
+  };
+
+  const getCurrentDateTime = (): Date => {
+    return new Date();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,15 +118,10 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         return;
       }
 
+      const now = new Date();
       const endDateTime = getEndDateTime();
       
       // Duration validation
-      if (endDateTime <= startDateTime) {
-        setMessage('❌ Duration must be greater than 0');
-        setLoading(false);
-        return;
-      }
-
       const totalHours = (durationHours + durationMinutes / 60);
       if (totalHours > 24) {
         setMessage('❌ Maximum parking duration is 24 hours');
@@ -172,6 +171,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       const cleanedMobile = guestMobile.replace(/[\s-]/g, '');
 
       // Create reservation with verified resident info
+      // Backend will set the current time as startTime
       await createReservation({
         residentId: verification.residentId,
         residentCode: residentCode.toUpperCase(),
@@ -180,7 +180,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         guestPlate: guestPlate.toUpperCase(),
         guestMobile: cleanedMobile,
         guestEmail: guestEmail.toLowerCase(),
-        startTime: startDateTime.toISOString(),
+        startTime: now.toISOString(), // Backend will use this or current time
         endTime: endDateTime.toISOString(),
       });
 
@@ -413,10 +413,10 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 </label>
                 <div className="datetime-display disabled">
                   <span className="datetime-icon">🕐</span>
-                  <span className="datetime-text">{formatDateTime(startDateTime)}</span>
-                  <span className="datetime-badge">Current Time</span>
+                  <span className="datetime-text">{formatDateTime(getCurrentDateTime())}</span>
+                  <span className="datetime-badge">Now</span>
                 </div>
-                <small>🔒 Fixed to current time</small>
+                <small>🔒 Starts immediately when you submit</small>
               </div>
 
               <div className="form-group">
