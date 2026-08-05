@@ -182,49 +182,14 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     }
   };
 
-  const handleEndReservation = async (reservation: Reservation) => {
-    if (!confirm(`End parking for ${reservation.guestPlate}?`)) return;
-    
-    setLoading(true);
-    try {
-      const mutation = `
-        mutation UpdateReservation($input: UpdateReservationInput!) {
-          updateReservation(input: $input) {
-            id
-            endTime
-          }
-        }
-      `;
-      
-      await graphqlClient.graphql({
-        query: mutation,
-        variables: {
-          input: {
-            id: reservation.id,
-            endTime: new Date().toISOString()
-          }
-        }
-      });
-      
-      setMessage('✅ Reservation ended successfully');
-      loadReservations();
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      console.error('Error ending reservation:', error);
-      setMessage(`❌ Error: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCancelReservation = async (reservation: Reservation) => {
-    if (!confirm(`Cancel reservation for ${reservation.guestPlate}?\nThis will mark it as cancelled and free up the spot.`)) return;
+    if (!confirm(`Delete reservation for ${reservation.guestPlate}?\nThis will mark it as cancelled and free up the spot.`)) return;
     
     setLoading(true);
     try {
       await cancelReservation(reservation.id);
       
-      setMessage('✅ Reservation cancelled successfully');
+      setMessage('✅ Reservation deleted successfully');
       loadReservations();
       setTimeout(() => setMessage(''), 3000);
     } catch (error: any) {
@@ -809,18 +774,11 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                 ⏱️ +Time
                               </button>
                               <button
-                                className="btn-action btn-end"
-                                onClick={() => handleEndReservation(reservation)}
-                                title="End parking now"
-                              >
-                                🔴 End
-                              </button>
-                              <button
-                                className="btn-action btn-cancel"
+                                className="btn-action btn-delete"
                                 onClick={() => handleCancelReservation(reservation)}
-                                title="Cancel reservation"
+                                title="Delete reservation"
                               >
-                                ❌ Cancel
+                                🗑️ Delete
                               </button>
                             </div>
                           </td>
