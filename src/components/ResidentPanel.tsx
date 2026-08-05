@@ -9,6 +9,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
   const [residentData, setResidentData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadResidentData();
@@ -17,6 +18,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
   const loadResidentData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Get userId from user object
       const userId = user?.userId || user?.username;
@@ -26,72 +28,28 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
         throw new Error('User ID not found');
       }
       
-      // Fetch resident data from database
-      let resident = await getResidentByUserId(userId);
+      // Fetch resident data from database - NO AUTO-CREATE!
+      const resident = await getResidentByUserId(userId);
       
-      // If no resident found, create one with default data
       if (!resident) {
-        console.log('No resident found, creating default record...');
-        
-        const newResident = {
-          email: email,
-          userId: userId,
-          building: 'Building A',
-          floor: '5',
-          unitNumber: '502',
-          plate: 'ABC-1234',
-          residentCode: generateUniqueCode(),
-        };
-        
-        // Import createResident
-        const { createResident } = await import('../lib/graphql');
-        resident = await createResident(newResident);
-        console.log('Created resident record:', resident);
+        // Show error - resident must be created by admin first
+        throw new Error('Resident record not found. Please contact administrator.');
       }
       
-      if (resident) {
-        setResidentData({
-          email: resident.email || email,
-          building: resident.building || 'Building A',
-          floor: resident.floor || '5',
-          unitNumber: resident.unitNumber || '502',
-          licensePlate: resident.plate || 'ABC-1234',
-          residentCode: resident.residentCode || generateUniqueCode(),
-        });
-      }
-    } catch (error) {
-      console.error('Error loading resident data:', error);
-      // Set default data if error
       setResidentData({
-        email: user?.signInDetails?.loginId || 'N/A',
-        building: 'Building A',
-        floor: '5',
-        unitNumber: '502',
-        licensePlate: 'ABC-1234',
-        residentCode: generateUniqueCode(),
+        email: resident.email || email,
+        building: resident.building || 'N/A',
+        floor: resident.floor || 'N/A',
+        unitNumber: resident.unitNumber || 'N/A',
+        licensePlate: resident.plate || 'N/A',
+        residentCode: resident.residentCode || 'N/A',
       });
+    } catch (error: any) {
+      console.error('Error loading resident data:', error);
+      setError(error.message || 'Failed to load resident data');
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateUniqueCode = (): string => {
-    // Generate a 6-character code: ABC123
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const nums = '0123456789';
-    let code = '';
-    
-    // 3 letters
-    for (let i = 0; i < 3; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    
-    // 3 numbers
-    for (let i = 0; i < 3; i++) {
-      code += nums.charAt(Math.floor(Math.random() * nums.length));
-    }
-    
-    return code;
   };
 
   const handleCopyCode = async () => {
@@ -113,6 +71,26 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
           <div className="loading-state">
             <div className="spinner"></div>
             <p>Loading your information...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="resident-panel">
+        <div className="dashboard-container">
+          <div className="error-state">
+            <div className="error-icon">❌</div>
+            <h2>Unable to Load Resident Data</h2>
+            <p className="error-message">{error}</p>
+            <button className="btn-retry" onClick={loadResidentData}>
+              🔄 Retry
+            </button>
+            <p className="error-help">
+              If the problem persists, please contact the administrator.
+            </p>
           </div>
         </div>
       </div>

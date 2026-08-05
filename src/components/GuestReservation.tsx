@@ -94,16 +94,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     setValidationErrors(errors);
   }, [residentCode, unitNumber, guestPlate, guestMobile, guestEmail]);
 
-  const getEndDateTime = (): Date => {
-    const now = new Date();
-    const totalMinutes = (durationHours * 60) + durationMinutes;
-    return new Date(now.getTime() + totalMinutes * 60 * 1000);
-  };
-
-  const getCurrentDateTime = (): Date => {
-    return new Date();
-  };
-
   const handleCreateAnother = () => {
     setResidentCode('');
     setUnitNumber('');
@@ -123,31 +113,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     setMessage('');
 
     try {
-      // Client-side validation before submission
-      if (Object.keys(validationErrors).length > 0) {
-        const firstError = Object.values(validationErrors)[0];
-        setMessage(`❌ ${firstError}`);
-        setLoading(false);
-        return;
-      }
-
-      const now = new Date();
-      const endDateTime = getEndDateTime();
-      
-      // Duration validation
-      const totalHours = (durationHours + durationMinutes / 60);
-      if (totalHours > 24) {
-        setMessage('❌ Maximum parking duration is 24 hours');
-        setLoading(false);
-        return;
-      }
-
-      if (totalHours === 0) {
-        setMessage('❌ Duration must be at least 1 minute');
-        setLoading(false);
-        return;
-      }
-
       // Verify resident code and unit number match (backend validation)
       const verifyMutation = `
         mutation VerifyResidentCredentials($residentCode: String!, $unitNumber: String!) {
@@ -183,8 +148,10 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       // Clean phone number format
       const cleanedMobile = guestMobile.replace(/[\s-]/g, '');
 
-      // Create reservation with verified resident info
-      // Backend will set the current time as startTime
+      // Calculate end time in minutes (backend will validate max duration)
+      const totalMinutes = (durationHours * 60) + durationMinutes;
+      
+      // Send duration to backend, let backend calculate exact times
       await createReservation({
         residentId: verification.residentId,
         residentCode: residentCode.toUpperCase(),
@@ -193,8 +160,8 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
         guestPlate: guestPlate.toUpperCase(),
         guestMobile: cleanedMobile,
         guestEmail: guestEmail.toLowerCase(),
-        startTime: now.toISOString(), // Backend will use this or current time
-        endTime: endDateTime.toISOString(),
+        startTime: new Date().toISOString(), // Backend will override this with server time
+        endTime: new Date(Date.now() + totalMinutes * 60 * 1000).toISOString(), // Backend will recalculate
       });
 
       setMessage('✅ Reservation created successfully!');
@@ -257,17 +224,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     }
     
     return parts.join(' ');
-  };
-
-  const formatDateTime = (date: Date): string => {
-    return date.toLocaleString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
   };
 
   return (
@@ -418,10 +374,10 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 </label>
                 <div className="datetime-display disabled">
                   <span className="datetime-icon">🕐</span>
-                  <span className="datetime-text">{formatDateTime(getCurrentDateTime())}</span>
+                  <span className="datetime-text">Starts immediately when you submit</span>
                   <span className="datetime-badge">Now</span>
                 </div>
-                <small>🔒 Starts immediately when you submit</small>
+                <small>🔒 Parking starts at server time when reservation is confirmed</small>
               </div>
 
               <div className="form-group">
@@ -458,7 +414,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                     />
                   </div>
                 </div>
-                <small>Type how long you need to park (max 24 hours total)</small>
+                <small>How long you need to park (maximum 24 hours)</small>
               </div>
 
               <div className="duration-display">
@@ -466,14 +422,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 <div className="duration-content">
                   <span className="duration-label">Total Duration:</span>
                   <span className="duration-value">{getDurationText()}</span>
-                </div>
-              </div>
-
-              <div className="end-time-display">
-                <div className="end-time-icon">🏁</div>
-                <div className="end-time-content">
-                  <span className="end-time-label">End Time:</span>
-                  <span className="end-time-value">{formatDateTime(getEndDateTime())}</span>
                 </div>
               </div>
             </div>
