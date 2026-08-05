@@ -1,0 +1,130 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type AvailabilityResponse {
+  available: Boolean!
+  availableSpots: Int!
+  message: String!
+  nextAvailableTime: AWSDateTime
+  totalSpots: Int!
+}
+
+type Mutation {
+  createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig
+  createReservation(input: CreateReservationInput!): Reservation
+  createResident(input: CreateResidentInput!): Resident
+  deleteParkingConfig(id: ID!): ParkingConfig
+  deleteReservation(id: ID!): Reservation
+  deleteResident(id: ID!): Resident
+  updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
+  updateReservation(input: UpdateReservationInput!): Reservation
+  updateResident(input: UpdateResidentInput!): Resident
+  verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
+}
+
+type ParkingConfig {
+  createdAt: AWSDateTime!
+  id: ID!
+  name: String
+  totalSpots: Int!
+  updatedAt: AWSDateTime!
+  updatedBy: String
+}
+
+type Query {
+  checkAvailability: AvailabilityResponse
+  getParkingConfig(id: ID!): ParkingConfig
+  getReservation(id: ID!): Reservation
+  getResident(id: ID!): Resident
+  getResidentByUserId(userId: String!): Resident
+  listParkingConfigs: [ParkingConfig]
+  listReservations: [Reservation]
+  listResidents: [Resident]
+}
+
+type Reservation {
+  createdAt: AWSDateTime!
+  endTime: AWSDateTime!
+  guestEmail: AWSEmail!
+  guestMobile: AWSPhone!
+  guestPlate: String!
+  id: ID!
+  residentCode: String!
+  residentFloor: String
+  residentId: String!
+  residentPlate: String
+  startTime: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type Resident {
+  building: String!
+  createdAt: AWSDateTime!
+  email: AWSEmail!
+  floor: String!
+  id: ID!
+  plate: String!
+  residentCode: String!
+  unitNumber: String!
+  updatedAt: AWSDateTime!
+  userId: String!
+}
+
+type ResidentVerificationResult {
+  isValid: Boolean!
+  message: String
+  residentFloor: String
+  residentId: String
+  residentPlate: String
+}
+
+input CreateParkingConfigInput {
+  name: String
+  totalSpots: Int!
+  updatedBy: String
+}
+
+input CreateReservationInput {
+  endTime: AWSDateTime!
+  guestEmail: AWSEmail!
+  guestMobile: AWSPhone!
+  guestPlate: String!
+  residentCode: String!
+  residentFloor: String
+  residentId: String!
+  residentPlate: String
+  startTime: AWSDateTime!
+}
+
+input CreateResidentInput {
+  building: String!
+  email: AWSEmail!
+  floor: String!
+  plate: String!
+  residentCode: String!
+  unitNumber: String!
+  userId: String!
+}
+
+input UpdateParkingConfigInput {
+  id: ID!
+  name: String
+  totalSpots: Int
+  updatedBy: String
+}
+
+input UpdateReservationInput {
+  endTime: AWSDateTime
+  id: ID!
+}
+
+input UpdateResidentInput {
+  building: String
+  email: AWSEmail
+  floor: String
+  id: ID!
+  plate: String
+  unitNumber: String
+}
