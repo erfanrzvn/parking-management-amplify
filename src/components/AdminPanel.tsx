@@ -385,9 +385,14 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           }
         });
         
-        const result = response.data.createResidentWithCognito;
-        const residentCode = result.residentCode;
-        const tempPassword = result.tempPassword;
+        const result = response.data?.createResidentWithCognito;
+        
+        if (!result) {
+          throw new Error('No response data from server');
+        }
+        
+        const residentCode = result.residentCode || 'N/A';
+        const tempPassword = result.tempPassword || 'N/A';
         
         setMessage(`✅ Resident created successfully!\n\n🔑 Resident Code: ${residentCode}\n🔐 Temporary Password: ${tempPassword}\n\n📧 Please share these credentials with the resident.`);
       }

@@ -17,6 +17,11 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  
+  // Rate limiting state - limit 5 attempts per 15 minutes
+  const RATE_LIMIT_KEY = 'guestReservationAttempts';
+  const MAX_ATTEMPTS = 5;
+  const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
   // Real-time validation functions
   const validateResidentCode = (code: string): string => {
@@ -109,6 +114,28 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check rate limiting
+    const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
+    if (rateLimitData) {
+      const { attempts, timestamp } = JSON.parse(rateLimitData);
+      const now = Date.now();
+      const timeSinceFirst = now - timestamp;
+      
+      // If within window and exceeded attempts
+      if (timeSinceFirst < WINDOW_MS && attempts >= MAX_ATTEMPTS) {
+        const remainingMs = WINDOW_MS - timeSinceFirst;
+        const remainingMinutes = Math.ceil(remainingMs / 60000);
+        setMessage(`❌ Too many attempts. Please wait ${remainingMinutes} minute(s) before trying again.`);
+        return;
+      }
+      
+      // Reset if window expired
+      if (timeSinceFirst >= WINDOW_MS) {
+        localStorage.removeItem(RATE_LIMIT_KEY);
+      }
+    }
+    
     setLoading(true);
     setMessage('');
 
@@ -167,9 +194,28 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       setMessage('✅ Reservation created successfully!');
       setSuccess(true);
       
+      // Clear rate limiting on success
+      localStorage.removeItem(RATE_LIMIT_KEY);
+      
       // Don't auto-reset, let user click "Create Another" button
     } catch (error: any) {
       console.error('Reservation error:', error);
+      
+      // Increment rate limit counter
+      const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
+      if (rateLimitData) {
+        const { attempts, timestamp } = JSON.parse(rateLimitData);
+        localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
+          attempts: attempts + 1,
+          timestamp
+        }));
+      } else {
+        localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
+          attempts: 1,
+          timestamp: Date.now()
+        }));
+      }
+      
       let errorMessage = 'Failed to create reservation';
       
       // Parse backend error messages with user-friendly translations

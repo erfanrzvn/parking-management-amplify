@@ -166,12 +166,13 @@ Resources:
       Description: API Key for guest access
       Expires: 1798761600
 
-  # GraphQL Schema
+  # GraphQL Schema (Updated v3 - Force schema refresh)
   GraphQLSchema:
     Type: AWS::AppSync::GraphQLSchema
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
       Definition: |
+        # Schema version 3 - Pagination support
         type ParkingConfig {
           id: ID!
           name: String
