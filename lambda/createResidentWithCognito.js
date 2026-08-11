@@ -89,7 +89,7 @@ exports.handler = async (event) => {
   let rollbackCognito = false;
   
   try {
-    const { email, building, floor, unitNumber, plate } = event.arguments.input;
+    const { email, name, phone, building, floor, unitNumber, plate } = event.arguments.input;
     
     // Validate required fields
     if (!email || !floor || !plate || !building || !unitNumber) {
@@ -157,6 +157,8 @@ exports.handler = async (event) => {
     const resident = {
       id: residentId,
       email: email,
+      name: name,
+      phone: phone,
       building: building,
       floor: floor,
       unitNumber: unitNumber,

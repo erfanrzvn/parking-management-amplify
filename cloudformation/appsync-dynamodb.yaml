@@ -185,6 +185,8 @@ Resources:
         type Resident {
           id: ID!
           email: AWSEmail!
+          name: String
+          phone: AWSPhone
           building: String!
           floor: String!
           unitNumber: String!
@@ -260,6 +262,8 @@ Resources:
         type ResidentWithCredentials {
           id: ID!
           email: AWSEmail!
+          name: String
+          phone: AWSPhone
           building: String!
           floor: String!
           unitNumber: String!
@@ -287,6 +291,8 @@ Resources:
 
         input CreateResidentInput {
           email: AWSEmail!
+          name: String
+          phone: AWSPhone
           building: String!
           floor: String!
           unitNumber: String!
@@ -297,6 +303,8 @@ Resources:
 
         input CreateResidentWithCognitoInput {
           email: AWSEmail!
+          name: String
+          phone: AWSPhone
           building: String!
           floor: String!
           unitNumber: String!
@@ -306,6 +314,8 @@ Resources:
         input UpdateResidentInput {
           id: ID!
           email: AWSEmail
+          name: String
+          phone: AWSPhone
           building: String
           floor: String
           unitNumber: String

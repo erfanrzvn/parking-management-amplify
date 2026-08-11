@@ -64,6 +64,8 @@ export async function listResidents(limit?: number, nextToken?: string) {
         items {
           id
           email
+          name
+          phone
           building
           floor
           unitNumber
@@ -90,6 +92,8 @@ export async function getResidentByUserId(userId: string) {
       getResidentByUserId(userId: $userId) {
         id
         email
+        name
+        phone
         building
         floor
         unitNumber
@@ -114,6 +118,8 @@ export async function getResident(id: string) {
       getResident(id: $id) {
         id
         email
+        name
+        phone
         building
         floor
         unitNumber
@@ -138,6 +144,8 @@ export async function createResident(input: any) {
       createResident(input: $input) {
         id
         email
+        name
+        phone
         building
         floor
         unitNumber
@@ -162,6 +170,8 @@ export async function updateResident(input: any) {
       updateResident(input: $input) {
         id
         email
+        name
+        phone
         building
         floor
         unitNumber
