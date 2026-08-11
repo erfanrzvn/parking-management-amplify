@@ -1,111 +1,111 @@
-schema {
-  query: Query
-  mutation: Mutation
-}
-
-type AvailabilityResponse {
-  available: Boolean!
-  availableSpots: Int!
-  message: String!
-  nextAvailableTime: AWSDateTime
-  totalSpots: Int!
-}
-
-type Mutation {
-  createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig
-  createReservation(input: CreateReservationInput!): Reservation
-  createResident(input: CreateResidentInput!): Resident
-  deleteParkingConfig(id: ID!): ParkingConfig
-  deleteReservation(id: ID!): Reservation
-  deleteResident(id: ID!): Resident
-  updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
-  updateReservation(input: UpdateReservationInput!): Reservation
-  updateResident(input: UpdateResidentInput!): Resident
-  verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
-}
-
+# Schema version 4 - Added name and phone to Resident
 type ParkingConfig {
-  createdAt: AWSDateTime!
   id: ID!
   name: String
   totalSpots: Int!
-  updatedAt: AWSDateTime!
   updatedBy: String
-}
-
-type Query {
-  checkAvailability: AvailabilityResponse
-  getParkingConfig(id: ID!): ParkingConfig
-  getReservation(id: ID!): Reservation
-  getResident(id: ID!): Resident
-  getResidentByUserId(userId: String!): Resident
-  listParkingConfigs: [ParkingConfig]
-  listReservations: [Reservation]
-  listResidents: [Resident]
-}
-
-type Reservation {
   createdAt: AWSDateTime!
-  endTime: AWSDateTime!
-  guestEmail: AWSEmail!
-  guestMobile: AWSPhone!
-  guestPlate: String!
-  id: ID!
-  residentCode: String!
-  residentFloor: String
-  residentId: String!
-  residentPlate: String
-  startTime: AWSDateTime!
   updatedAt: AWSDateTime!
 }
 
 type Resident {
-  building: String!
-  createdAt: AWSDateTime!
-  email: AWSEmail!
-  floor: String!
   id: ID!
+  email: AWSEmail!
+  name: String
+  phone: AWSPhone
+  building: String!
+  floor: String!
+  unitNumber: String!
   plate: String!
   residentCode: String!
-  unitNumber: String!
-  updatedAt: AWSDateTime!
   userId: String!
+  deletedAt: AWSDateTime
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type Reservation {
+  id: ID!
+  residentId: String!
+  residentCode: String!
+  residentFloor: String
+  residentPlate: String
+  guestPlate: String!
+  guestMobile: AWSPhone!
+  guestEmail: AWSEmail!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+  status: String
+  deletedAt: AWSDateTime
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type Query {
+  getParkingConfig(id: ID!): ParkingConfig
+  listParkingConfigs: [ParkingConfig]
+  getResident(id: ID!): Resident
+  getResidentByUserId(userId: String!): Resident
+  listResidents(limit: Int, nextToken: String): ResidentConnection
+  getReservation(id: ID!): Reservation
+  listReservations(limit: Int, nextToken: String): ReservationConnection
+  checkAvailability: AvailabilityResponse
+}
+
+type ResidentConnection {
+  items: [Resident]
+  nextToken: String
+}
+
+type ReservationConnection {
+  items: [Reservation]
+  nextToken: String
+}
+
+type Mutation {
+  createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig
+  updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
+  deleteParkingConfig(id: ID!): ParkingConfig
+  createResident(input: CreateResidentInput!): Resident
+  createResidentWithCognito(input: CreateResidentWithCognitoInput!): ResidentWithCredentials
+  updateResident(input: UpdateResidentInput!): Resident
+  deleteResident(id: ID!): Resident
+  createReservation(input: CreateReservationInput!): Reservation
+  updateReservation(input: UpdateReservationInput!): Reservation
+  cancelReservation(id: ID!): Reservation
+  deleteReservation(id: ID!): Reservation
+  verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
 }
 
 type ResidentVerificationResult {
   isValid: Boolean!
-  message: String
-  residentFloor: String
   residentId: String
+  residentFloor: String
   residentPlate: String
+  message: String
+}
+
+type ResidentWithCredentials {
+  id: ID!
+  email: AWSEmail!
+  name: String
+  phone: AWSPhone
+  building: String!
+  floor: String!
+  unitNumber: String!
+  plate: String!
+  residentCode: String!
+  userId: String!
+  tempPassword: String!
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+  message: String
 }
 
 input CreateParkingConfigInput {
   name: String
   totalSpots: Int!
   updatedBy: String
-}
-
-input CreateReservationInput {
-  endTime: AWSDateTime!
-  guestEmail: AWSEmail!
-  guestMobile: AWSPhone!
-  guestPlate: String!
-  residentCode: String!
-  residentFloor: String
-  residentId: String!
-  residentPlate: String
-  startTime: AWSDateTime!
-}
-
-input CreateResidentInput {
-  building: String!
-  email: AWSEmail!
-  floor: String!
-  plate: String!
-  residentCode: String!
-  unitNumber: String!
-  userId: String!
 }
 
 input UpdateParkingConfigInput {
@@ -115,16 +115,65 @@ input UpdateParkingConfigInput {
   updatedBy: String
 }
 
-input UpdateReservationInput {
-  endTime: AWSDateTime
-  id: ID!
+input CreateResidentInput {
+  email: AWSEmail!
+  name: String
+  phone: AWSPhone
+  building: String!
+  floor: String!
+  unitNumber: String!
+  plate: String!
+  residentCode: String!
+  userId: String!
+}
+
+input CreateResidentWithCognitoInput {
+  email: AWSEmail!
+  name: String
+  phone: AWSPhone
+  building: String!
+  floor: String!
+  unitNumber: String!
+  plate: String!
 }
 
 input UpdateResidentInput {
-  building: String
-  email: AWSEmail
-  floor: String
   id: ID!
-  plate: String
+  email: AWSEmail
+  name: String
+  phone: AWSPhone
+  building: String
+  floor: String
   unitNumber: String
+  plate: String
+}
+
+input CreateReservationInput {
+  residentId: String!
+  residentCode: String!
+  residentFloor: String
+  residentPlate: String
+  guestPlate: String!
+  guestMobile: AWSPhone!
+  guestEmail: AWSEmail!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+}
+
+input UpdateReservationInput {
+  id: ID!
+  endTime: AWSDateTime
+}
+
+type AvailabilityResponse {
+  available: Boolean!
+  availableSpots: Int!
+  totalSpots: Int!
+  nextAvailableTime: AWSDateTime
+  message: String!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
 }
