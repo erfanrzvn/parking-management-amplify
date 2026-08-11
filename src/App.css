@@ -1005,6 +1005,14 @@ body {
   overflow-x: auto;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.reservations-table-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .reservations-table {
@@ -1592,6 +1600,14 @@ body {
   overflow-x: auto;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.logs-table-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .log-row {
@@ -2467,6 +2483,14 @@ body {
   background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.residents-table-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .code-badge {
