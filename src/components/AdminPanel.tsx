@@ -19,6 +19,8 @@ interface Parking {
 interface Resident {
   id: string;
   email: string;
+  name?: string;
+  phone?: string;
   building?: string;
   floor?: string;
   unitNumber?: string;
@@ -63,6 +65,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
   const [residentForm, setResidentForm] = useState({
     email: '',
+    name: '',
+    phone: '',
     building: '',
     floor: '',
     unitNumber: '',
@@ -119,6 +123,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         setResidents(data.map((item: any) => ({
           id: item.id,
           email: item.email || '',
+          name: item.name,
+          phone: item.phone,
           building: item.building,
           floor: item.floor,
           unitNumber: item.unitNumber,
@@ -262,6 +268,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       setEditingResident(resident);
       setResidentForm({
         email: resident.email,
+        name: resident.name || '',
+        phone: resident.phone || '',
         building: resident.building || '',
         floor: resident.floor || '',
         unitNumber: resident.unitNumber || '',
@@ -274,6 +282,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       setEditingResident(null);
       setResidentForm({
         email: '',
+        name: '',
+        phone: '',
         building: '',
         floor: '',
         unitNumber: '',
@@ -290,6 +300,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     setEditingResident(null);
     setResidentForm({
       email: '',
+      name: '',
+      phone: '',
       building: '',
       floor: '',
       unitNumber: '',
@@ -310,6 +322,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         await updateResident({
           id: editingResident.id,
           email: residentForm.email,
+          name: residentForm.name,
+          phone: residentForm.phone,
           building: residentForm.building,
           floor: residentForm.floor,
           unitNumber: residentForm.unitNumber,
@@ -323,6 +337,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
             createResidentWithCognito(input: $input) {
               id
               email
+              name
+              phone
               building
               floor
               unitNumber
@@ -342,6 +358,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           variables: {
             input: {
               email: residentForm.email,
+              name: residentForm.name,
+              phone: residentForm.phone,
               building: residentForm.building,
               floor: residentForm.floor,
               unitNumber: residentForm.unitNumber,
@@ -902,11 +920,11 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <table className="reservations-table">
                   <thead>
                     <tr>
+                      <th>Building</th>
+                      <th>Unit</th>
+                      <th>Resident Name</th>
+                      <th>Phone</th>
                       <th>Email</th>
-                      <th>Building & Unit</th>
-                      <th>Floor</th>
-                      <th>License Plate</th>
-                      <th>Resident Code</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -914,24 +932,19 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                     {residents.map((resident) => (
                       <tr key={resident.id}>
                         <td>
-                          <strong>{resident.email}</strong>
+                          <strong>{resident.building || '-'}</strong>
                         </td>
                         <td>
-                          <div className="resident-info">
-                            {resident.building && resident.unitNumber ? (
-                              <>
-                                <div>{resident.building}</div>
-                                <small>Unit {resident.unitNumber}</small>
-                              </>
-                            ) : (
-                              <span>-</span>
-                            )}
-                          </div>
+                          <strong>{resident.unitNumber || '-'}</strong>
                         </td>
-                        <td>{resident.floor || '-'}</td>
-                        <td className="plate-cell">{resident.plate || '-'}</td>
                         <td>
-                          <span className="code-badge">{resident.residentCode}</span>
+                          {resident.name || resident.email.split('@')[0]}
+                        </td>
+                        <td>
+                          {resident.phone || '-'}
+                        </td>
+                        <td>
+                          {resident.email}
                         </td>
                         <td>
                           <div className="action-buttons">
@@ -1204,6 +1217,28 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                   required
                   autoFocus
                 />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Resident Name</label>
+                  <input
+                    type="text"
+                    value={residentForm.name}
+                    onChange={(e) => setResidentForm({...residentForm, name: e.target.value})}
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Phone Number</label>
+                  <input
+                    type="tel"
+                    value={residentForm.phone}
+                    onChange={(e) => setResidentForm({...residentForm, phone: e.target.value})}
+                    placeholder="+1234567890"
+                  />
+                </div>
               </div>
 
               <div className="form-row">
