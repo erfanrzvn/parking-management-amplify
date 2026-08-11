@@ -708,12 +708,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <table className="reservations-table">
                   <thead>
                     <tr>
-                      <th>Time Left</th>
-                      <th>Status</th>
-                      <th>Guest Plate</th>
-                      <th>Resident</th>
-                      <th>Contact</th>
-                      <th>End Time</th>
+                      <th>Name</th>
+                      <th>Plate</th>
+                      <th>Host (Building, Unit)</th>
+                      <th>Parking Name</th>
+                      <th>Started Time</th>
+                      <th>Duration</th>
+                      <th>Remaining Time</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -722,44 +723,49 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       const status = getReservationStatus(reservation.endTime);
                       const timeRemaining = getTimeRemaining(reservation.endTime);
                       const residentInfo = getResidentInfo(reservation.residentId);
+                      const startTime = new Date(reservation.startTime);
+                      const endTime = new Date(reservation.endTime);
+                      const durationHours = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
                       
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
-                          <td className="time-remaining-cell">
-                            <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`}>
-                              {timeRemaining}
-                            </div>
-                          </td>
                           <td>
-                            <span className={`status-badge status-${status}`}>
-                              {status === 'active' ? '🟢 Active' : status === 'ending-soon' ? '🟡 Ending Soon' : '🔴 Expired'}
-                            </span>
+                            <div className="guest-name">
+                              {reservation.guestEmail.split('@')[0]}
+                            </div>
                           </td>
                           <td className="plate-cell">
                             <strong>{reservation.guestPlate}</strong>
                           </td>
                           <td>
                             <div className="resident-info">
-                              <div><strong>{residentInfo.name}</strong></div>
-                              {residentInfo.floor && (
+                              <div><strong>{residentInfo.building || '-'}</strong></div>
+                              {residentInfo.unitNumber && (
+                                <small>Unit {residentInfo.unitNumber}</small>
+                              )}
+                              {residentInfo.floor && !residentInfo.unitNumber && (
                                 <small>Floor {residentInfo.floor}</small>
                               )}
-                              <small>Code: {residentInfo.code}</small>
                             </div>
                           </td>
                           <td>
-                            <div className="contact-info">
-                              <div>📧 {reservation.guestEmail}</div>
-                              <div>📱 {reservation.guestMobile}</div>
-                            </div>
+                            {parkings.length > 0 ? parkings[0].name : 'N/A'}
                           </td>
-                          <td className="end-time-cell">
-                            {new Date(reservation.endTime).toLocaleString('en-US', {
+                          <td className="time-cell">
+                            {startTime.toLocaleString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
+                          </td>
+                          <td>
+                            <span className="duration-badge">{durationHours}h</span>
+                          </td>
+                          <td className="time-remaining-cell">
+                            <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`}>
+                              {timeRemaining}
+                            </div>
                           </td>
                           <td>
                             <div className="action-buttons">
