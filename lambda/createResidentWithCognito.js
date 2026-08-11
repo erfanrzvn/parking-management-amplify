@@ -117,9 +117,7 @@ exports.handler = async (event) => {
           { Name: 'email', Value: email },
           { Name: 'email_verified', Value: 'true' },
           { Name: 'custom:userType', Value: 'RESIDENT' },
-          { Name: 'custom:floor', Value: floor },
-          { Name: 'custom:plate', Value: plate },
-          { Name: 'custom:residentCode', Value: residentCode },
+          { Name: 'custom:residentId', Value: residentId }, // Link to DynamoDB record
         ],
         TemporaryPassword: tempPassword,
         MessageAction: 'SUPPRESS',
