@@ -21,7 +21,7 @@ function App() {
   const checkAuthStatus = async () => {
     try {
       const session = await fetchAuthSession();
-      console.log('Auth session:', session);
+      // Removed sensitive session logging
       
       if (session.tokens) {
         setIsAuthenticated(true);
@@ -43,17 +43,17 @@ function App() {
       const session = await fetchAuthSession();
       const groups = session.tokens?.accessToken?.payload['cognito:groups'] as string[] | undefined;
       
-      console.log('User groups:', groups);
+      // Removed sensitive groups logging
       
       // Check for both uppercase and proper case
       if (groups?.some(g => g.toLowerCase() === 'admin')) {
-        console.log('User is Admin');
+        console.log('User role: Admin');
         setUserRole('admin');
       } else if (groups?.some(g => g.toLowerCase() === 'resident')) {
-        console.log('User is Resident');
+        console.log('User role: Resident');
         setUserRole('resident');
       } else {
-        console.log('User has no recognized role');
+        console.log('User role: Unknown');
         setUserRole(null);
       }
       
@@ -78,11 +78,11 @@ function App() {
     setUser(null);
   };
 
-  console.log('App state:', { isAuthenticated, userRole, showLogin });
+  // Removed sensitive app state logging
 
   // Show login page
   if (showLogin && !isAuthenticated) {
-    console.log('Showing login page');
+    console.log('Rendering: Login page');
     return (
       <LoginPage 
         onLoginSuccess={() => {
@@ -90,7 +90,7 @@ function App() {
           checkAuthStatus();
         }}
         onBack={() => {
-          console.log('Back to home');
+          console.log('Back button clicked');
           setShowLogin(false);
         }}
       />
@@ -99,7 +99,7 @@ function App() {
 
   // Show authenticated dashboard
   if (isAuthenticated && userRole) {
-    console.log('Showing authenticated dashboard');
+    console.log('Rendering: Dashboard');
     return (
       <div className="app">
         <header className="app-header">
@@ -128,7 +128,7 @@ function App() {
   }
 
   // Show guest home page
-  console.log('Showing guest home page');
+  console.log('Rendering: Home page');
   return (
     <div className="app">
       <GuestReservation onLoginClick={() => setShowLogin(true)} />

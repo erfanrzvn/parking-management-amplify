@@ -1481,18 +1481,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 </div>
               </div>
 
-              {editingResident && (
-                <div className="form-group">
-                  <label>Resident Code</label>
-                  <input
-                    type="text"
-                    value={residentForm.residentCode}
-                    readOnly
-                    disabled
-                  />
-                  <small>Resident code cannot be changed</small>
-                </div>
-              )}
+              {/* Resident code is not shown for security reasons */}
 
               <div className="modal-actions">
                 <button 

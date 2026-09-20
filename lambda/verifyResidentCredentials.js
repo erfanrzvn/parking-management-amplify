@@ -89,7 +89,7 @@ const checkRateLimit = async (key) => {
 };
 
 exports.handler = async (event) => {
-  console.log('VerifyResidentCredentials input:', JSON.stringify(event, null, 2));
+  console.log('VerifyResidentCredentials request received');
   
   try {
     const { residentCode, unitNumber } = event.arguments;

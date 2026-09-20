@@ -76,14 +76,14 @@ async function generateUniqueResidentCode() {
     }
     
     attempts++;
-    console.log(`Code ${code} already exists, retrying... (attempt ${attempts}/${maxAttempts})`);
+    console.log(`Resident code already exists, retrying... (attempt ${attempts}/${maxAttempts})`);
   }
   
   throw new Error('Failed to generate unique resident code after multiple attempts');
 }
 
 exports.handler = async (event) => {
-  console.log('CreateResidentWithCognito input:', JSON.stringify(event, null, 2));
+  console.log('CreateResidentWithCognito request received');
   
   let cognitoUserId = null;
   let rollbackCognito = false;
@@ -101,12 +101,12 @@ exports.handler = async (event) => {
     
     // Generate unique resident code
     const residentCode = await generateUniqueResidentCode();
-    console.log(`Generated unique resident code: ${residentCode}`);
+    console.log(`Generated unique resident code`);
     
     // Generate temporary password
     const tempPassword = generateTempPassword();
     
-    console.log(`Creating Cognito user for email: ${email}`);
+    console.log(`Creating Cognito user`);
     
     // Step 1: Create Cognito User
     try {
@@ -128,7 +128,7 @@ exports.handler = async (event) => {
       cognitoUserId = createUserResponse.User.Username;
       rollbackCognito = true; // Mark for rollback if subsequent steps fail
       
-      console.log(`Cognito user created: ${cognitoUserId}`);
+      console.log(`Cognito user created successfully`);
       
       // Step 2: Add user to RESIDENT group
       const addToGroupCommand = new AdminAddUserToGroupCommand({
@@ -176,13 +176,13 @@ exports.handler = async (event) => {
     
     try {
       await docClient.send(putCommand);
-      console.log(`Resident created in DynamoDB: ${residentId} with code: ${residentCode}`);
+      console.log(`Resident created in DynamoDB successfully`);
     } catch (dbError) {
       console.error('DynamoDB error:', dbError);
       
       // ROLLBACK: Delete Cognito user since DynamoDB write failed
       if (rollbackCognito && cognitoUserId) {
-        console.log(`Rolling back: Deleting Cognito user ${cognitoUserId}`);
+        console.log(`Rolling back: Deleting Cognito user`);
         try {
           await cognitoClient.send(new AdminDeleteUserCommand({
             UserPoolId: USER_POOL_ID,

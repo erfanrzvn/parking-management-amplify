@@ -18,7 +18,7 @@ const sanitize = (str) => {
 };
 
 exports.handler = async (event) => {
-  console.log('CreateReservation input:', JSON.stringify(event));
+  console.log('CreateReservation request received');
   
   try {
     const input = event.arguments.input;

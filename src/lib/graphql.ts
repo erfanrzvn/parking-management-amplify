@@ -70,8 +70,6 @@ export async function listResidents(limit?: number, nextToken?: string) {
           floor
           unitNumber
           plate
-          residentCode
-          userId
           householdId
           createdAt
         }

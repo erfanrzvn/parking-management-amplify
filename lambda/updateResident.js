@@ -11,7 +11,7 @@ const USER_POOL_ID = process.env.USER_POOL_ID || 'ca-central-1_dBeo5yZXq';
 const RESIDENT_TABLE = process.env.RESIDENT_TABLE || 'Resident';
 
 exports.handler = async (event) => {
-  console.log('UpdateResident input:', JSON.stringify(event, null, 2));
+  console.log('UpdateResident request received');
   
   try {
     const { id, email, name, phone, building, floor, unitNumber, plate } = event.arguments.input;

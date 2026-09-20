@@ -225,7 +225,7 @@ exports.handler = async (event) => {
 
         if (existingResident) {
           // Update existing resident
-          console.log(`Updating resident: ${record.email}`);
+          console.log(`Updating existing resident`);
 
           // Update Cognito user
           await createOrUpdateCognitoUser(record, true);
@@ -278,7 +278,7 @@ exports.handler = async (event) => {
           results.updated++;
         } else {
           // Create new resident
-          console.log(`Creating new resident: ${record.email}`);
+          console.log(`Creating new resident`);
 
           // Create Cognito user
           const userId = await createOrUpdateCognitoUser(record, false);

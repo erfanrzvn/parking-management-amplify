@@ -11,7 +11,7 @@ const RESIDENT_TABLE = process.env.RESIDENT_TABLE || 'Resident';
  * Returns CSV string with headers and data
  */
 exports.handler = async (event) => {
-  console.log('Export residents CSV request:', JSON.stringify(event));
+  console.log('Export residents CSV request');
 
   try {
     // Scan all residents (not deleted)

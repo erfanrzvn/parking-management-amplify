@@ -5,9 +5,9 @@ let clientInstance: ReturnType<typeof generateClient<Schema>> | null = null;
 
 export function getClient() {
   if (!clientInstance) {
-    console.log('Creating new Amplify client instance...');
+    console.log('Initializing Amplify client...');
     clientInstance = generateClient<Schema>();
-    console.log('Client created:', clientInstance);
+    console.log('Amplify client initialized');
   }
   return clientInstance;
 }

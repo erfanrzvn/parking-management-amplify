@@ -1,0 +1,2 @@
+id,email,name,phone,building,floor,unitNumber,plate,residentCode,userId,householdId
+,wife@parking.com,Jane Parker,+1-555-9999,Building A,5,502,DEF-5678,,user-jane,BuildingA-5-502
