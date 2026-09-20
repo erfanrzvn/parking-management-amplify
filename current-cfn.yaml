@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+﻿AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Parking Management System - AppSync API and DynamoDB Tables'
 
 Parameters:
@@ -41,8 +41,6 @@ Resources:
           AttributeType: S
         - AttributeName: userId
           AttributeType: S
-        - AttributeName: residentCode
-          AttributeType: S
       KeySchema:
         - AttributeName: id
           KeyType: HASH
@@ -50,12 +48,6 @@ Resources:
         - IndexName: byUserId
           KeySchema:
             - AttributeName: userId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: byResidentCode
-          KeySchema:
-            - AttributeName: residentCode
               KeyType: HASH
           Projection:
             ProjectionType: ALL
@@ -99,47 +91,6 @@ Resources:
         - Key: Project
           Value: parking-management
 
-  RateLimitTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: RateLimit
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: key
-          AttributeType: S
-      KeySchema:
-        - AttributeName: key
-          KeyType: HASH
-      TimeToLiveSpecification:
-        AttributeName: ttl
-        Enabled: true
-      Tags:
-        - Key: Name
-          Value: RateLimit
-        - Key: Project
-          Value: parking-management
-
-  AuditLogTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: AuditLog
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-        - AttributeName: timestamp
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-        - AttributeName: timestamp
-          KeyType: RANGE
-      Tags:
-        - Key: Name
-          Value: AuditLog
-        - Key: Project
-          Value: parking-management
-
   # AppSync GraphQL API
   GraphQLApi:
     Type: AWS::AppSync::GraphQLApi
@@ -166,13 +117,12 @@ Resources:
       Description: API Key for guest access
       Expires: 1798761600
 
-  # GraphQL Schema (Updated v3 - Force schema refresh)
+  # GraphQL Schema
   GraphQLSchema:
     Type: AWS::AppSync::GraphQLSchema
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
       Definition: |
-        # Schema version 6 - Added householdId and CSV import/export
         type ParkingConfig {
           id: ID!
           name: String
@@ -185,16 +135,12 @@ Resources:
         type Resident {
           id: ID!
           email: AWSEmail!
-          name: String
-          phone: String
           building: String!
           floor: String!
           unitNumber: String!
           plate: String!
           residentCode: String!
           userId: String!
-          householdId: String
-          deletedAt: AWSDateTime
           createdAt: AWSDateTime!
           updatedAt: AWSDateTime!
         }
@@ -210,8 +156,6 @@ Resources:
           guestEmail: AWSEmail!
           startTime: AWSDateTime!
           endTime: AWSDateTime!
-          status: String
-          deletedAt: AWSDateTime
           createdAt: AWSDateTime!
           updatedAt: AWSDateTime!
         }
@@ -221,20 +165,10 @@ Resources:
           listParkingConfigs: [ParkingConfig]
           getResident(id: ID!): Resident
           getResidentByUserId(userId: String!): Resident
-          listResidents(limit: Int, nextToken: String): ResidentConnection
+          listResidents: [Resident]
           getReservation(id: ID!): Reservation
-          listReservations(limit: Int, nextToken: String): ReservationConnection
+          listReservations: [Reservation]
           checkAvailability: AvailabilityResponse
-        }
-
-        type ResidentConnection {
-          items: [Resident]
-          nextToken: String
-        }
-
-        type ReservationConnection {
-          items: [Reservation]
-          nextToken: String
         }
 
         type Mutation {
@@ -242,12 +176,10 @@ Resources:
           updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
           deleteParkingConfig(id: ID!): ParkingConfig
           createResident(input: CreateResidentInput!): Resident
-          createResidentWithCognito(input: CreateResidentWithCognitoInput!): ResidentWithCredentials
           updateResident(input: UpdateResidentInput!): Resident
           deleteResident(id: ID!): Resident
           createReservation(input: CreateReservationInput!): Reservation
           updateReservation(input: UpdateReservationInput!): Reservation
-          cancelReservation(id: ID!): Reservation
           deleteReservation(id: ID!): Reservation
           verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
         }
@@ -257,23 +189,6 @@ Resources:
           residentId: String
           residentFloor: String
           residentPlate: String
-          message: String
-        }
-
-        type ResidentWithCredentials {
-          id: ID!
-          email: AWSEmail!
-          name: String
-          phone: String
-          building: String!
-          floor: String!
-          unitNumber: String!
-          plate: String!
-          residentCode: String!
-          userId: String!
-          tempPassword: String!
-          createdAt: AWSDateTime!
-          updatedAt: AWSDateTime!
           message: String
         }
 
@@ -292,8 +207,6 @@ Resources:
 
         input CreateResidentInput {
           email: AWSEmail!
-          name: String
-          phone: String
           building: String!
           floor: String!
           unitNumber: String!
@@ -302,21 +215,9 @@ Resources:
           userId: String!
         }
 
-        input CreateResidentWithCognitoInput {
-          email: AWSEmail!
-          name: String
-          phone: String
-          building: String!
-          floor: String!
-          unitNumber: String!
-          plate: String!
-        }
-
         input UpdateResidentInput {
           id: ID!
           email: AWSEmail
-          name: String
-          phone: String
           building: String
           floor: String
           unitNumber: String
@@ -598,23 +499,10 @@ Resources:
       Code: |
         import { util } from '@aws-appsync/utils';
         export function request(ctx) {
-          const limit = ctx.args.limit || 50;
-          const nextToken = ctx.args.nextToken || null;
-          
-          return { 
-            operation: 'Scan',
-            limit: limit,
-            nextToken: nextToken,
-            filter: {
-              expression: 'attribute_not_exists(deletedAt)',
-            }
-          };
+          return { operation: 'Scan' };
         }
         export function response(ctx) {
-          return {
-            items: ctx.result.items,
-            nextToken: ctx.result.nextToken
-          };
+          return ctx.result.items;
         }
 
   GetResidentByUserIdResolver:
@@ -758,54 +646,9 @@ Resources:
       Code: |
         import { util } from '@aws-appsync/utils';
         export function request(ctx) {
-          // Soft delete: set deletedAt timestamp instead of actually deleting
           return {
-            operation: 'UpdateItem',
+            operation: 'DeleteItem',
             key: util.dynamodb.toMapValues({id: ctx.args.id}),
-            update: {
-              expression: 'SET deletedAt = :deletedAt, #updatedAt = :updatedAt',
-              expressionNames: { '#updatedAt': 'updatedAt' },
-              expressionValues: util.dynamodb.toMapValues({
-                ':deletedAt': util.time.nowISO8601(),
-                ':updatedAt': util.time.nowISO8601()
-              })
-            }
-          };
-        }
-        export function response(ctx) {
-          return ctx.result;
-        }
-
-  CancelReservationResolver:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLSchema
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Mutation
-      FieldName: cancelReservation
-      DataSourceName: !GetAtt ReservationDataSource.Name
-      Runtime:
-        Name: APPSYNC_JS
-        RuntimeVersion: 1.0.0
-      Code: |
-        import { util } from '@aws-appsync/utils';
-        export function request(ctx) {
-          // Set status to cancelled and mark as deleted
-          return {
-            operation: 'UpdateItem',
-            key: util.dynamodb.toMapValues({id: ctx.args.id}),
-            update: {
-              expression: 'SET #status = :status, deletedAt = :deletedAt, #updatedAt = :updatedAt',
-              expressionNames: { 
-                '#status': 'status',
-                '#updatedAt': 'updatedAt' 
-              },
-              expressionValues: util.dynamodb.toMapValues({
-                ':status': 'cancelled',
-                ':deletedAt': util.time.nowISO8601(),
-                ':updatedAt': util.time.nowISO8601()
-              })
-            }
           };
         }
         export function response(ctx) {
@@ -819,243 +662,49 @@ Resources:
       ApiId: !GetAtt GraphQLApi.ApiId
       TypeName: Mutation
       FieldName: verifyResidentCredentials
-      DataSourceName: !GetAtt VerifyResidentCredentialsDataSource.Name
+      DataSourceName: !GetAtt ResidentDataSource.Name
       Runtime:
         Name: APPSYNC_JS
         RuntimeVersion: 1.0.0
       Code: |
         import { util } from '@aws-appsync/utils';
         export function request(ctx) {
+          const { residentCode, unitNumber } = ctx.args;
           return {
-            operation: 'Invoke',
-            payload: ctx,
+            operation: 'Scan',
+            filter: {
+              expression: 'residentCode = :code AND unitNumber = :unit',
+              expressionValues: util.dynamodb.toMapValues({
+                ':code': residentCode.toUpperCase(),
+                ':unit': unitNumber,
+              }),
+            },
           };
         }
         export function response(ctx) {
           if (ctx.error) {
             util.error(ctx.error.message, ctx.error.type);
           }
-          return ctx.result;
+          
+          if (ctx.result.items.length === 0) {
+            return {
+              isValid: false,
+              residentId: null,
+              residentFloor: null,
+              residentPlate: null,
+              message: 'Invalid resident code or unit number'
+            };
+          }
+          
+          const resident = ctx.result.items[0];
+          return {
+            isValid: true,
+            residentId: resident.id,
+            residentFloor: resident.floor || 'N/A',
+            residentPlate: resident.plate || 'N/A',
+            message: 'Verified successfully'
+          };
         }
-
-  # Lambda for verifyResidentCredentials with rate limiting
-  VerifyResidentCredentialsLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-                - appsync.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: DynamoDBAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:Query
-                  - dynamodb:Scan
-                Resource:
-                  - !GetAtt ResidentTable.Arn
-                  - !GetAtt RateLimitTable.Arn
-                  - !Sub '${ResidentTable.Arn}/index/*'
-        - PolicyName: InvokeLambda
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource: !Sub 'arn:aws:lambda:ca-central-1:103103683543:function:parking-verifyResidentCredentials'
-
-  VerifyResidentCredentialsLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: parking-verifyResidentCredentials
-      Runtime: nodejs20.x
-      Handler: index.handler
-      Role: !GetAtt VerifyResidentCredentialsLambdaRole.Arn
-      Timeout: 10
-      Environment:
-        Variables:
-          RESIDENT_TABLE: !Ref ResidentTable
-          RATE_LIMIT_TABLE: !Ref RateLimitTable
-          AWS_REGION_NAME: !Ref AWS::Region
-      Code:
-        ZipFile: |
-          const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-          const { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
-          
-          const dynamoClient = new DynamoDBClient({});
-          const docClient = DynamoDBDocumentClient.from(dynamoClient);
-          
-          // Rate limit: 5 attempts per IP per 15 minutes
-          const MAX_ATTEMPTS = 5;
-          const WINDOW_SECONDS = 900; // 15 minutes
-          
-          // Extract IP from AppSync context
-          const getClientIP = (ctx) => {
-            return ctx?.request?.headers['x-forwarded-for']?.split(',')[0]?.trim() 
-              || ctx?.request?.headers['x-real-ip'] 
-              || ctx?.identity?.sourceIp 
-              || 'unknown';
-          };
-          
-          const checkRateLimit = async (key) => {
-            const now = Math.floor(Date.now() / 1000);
-            const ttl = now + WINDOW_SECONDS;
-            
-            try {
-              // Try to get existing rate limit record
-              const getResult = await docClient.send(new GetCommand({
-                TableName: process.env.RATE_LIMIT_TABLE,
-                Key: { key }
-              }));
-              
-              if (getResult.Item) {
-                const attempts = getResult.Item.attempts || 0;
-                const expiresAt = getResult.Item.ttl || 0;
-                
-                // Check if window has expired
-                if (expiresAt < now) {
-                  // Reset counter
-                  await docClient.send(new PutCommand({
-                    TableName: process.env.RATE_LIMIT_TABLE,
-                    Item: {
-                      key,
-                      attempts: 1,
-                      ttl,
-                      lastAttempt: now
-                    }
-                  }));
-                  return { allowed: true, remaining: MAX_ATTEMPTS - 1 };
-                }
-                
-                // Check if exceeded
-                if (attempts >= MAX_ATTEMPTS) {
-                  const resetIn = expiresAt - now;
-                  return { 
-                    allowed: false, 
-                    remaining: 0,
-                    resetIn 
-                  };
-                }
-                
-                // Increment counter
-                await docClient.send(new UpdateCommand({
-                  TableName: process.env.RATE_LIMIT_TABLE,
-                  Key: { key },
-                  UpdateExpression: 'SET attempts = attempts + :inc, lastAttempt = :now',
-                  ExpressionAttributeValues: {
-                    ':inc': 1,
-                    ':now': now
-                  }
-                }));
-                
-                return { allowed: true, remaining: MAX_ATTEMPTS - attempts - 1 };
-              } else {
-                // First attempt
-                await docClient.send(new PutCommand({
-                  TableName: process.env.RATE_LIMIT_TABLE,
-                  Item: {
-                    key,
-                    attempts: 1,
-                    ttl,
-                    lastAttempt: now
-                  }
-                }));
-                return { allowed: true, remaining: MAX_ATTEMPTS - 1 };
-              }
-            } catch (error) {
-              console.error('Rate limit check error:', error);
-              // On error, allow request (fail open)
-              return { allowed: true, remaining: MAX_ATTEMPTS };
-            }
-          };
-          
-          exports.handler = async (event) => {
-            console.log('VerifyResidentCredentials input:', JSON.stringify(event, null, 2));
-            
-            try {
-              const { residentCode, unitNumber } = event.arguments;
-              const clientIP = getClientIP(event);
-              
-              // Rate limiting key: IP address + action
-              const rateLimitKey = `verify:${clientIP}`;
-              
-              // Check rate limit
-              const rateLimit = await checkRateLimit(rateLimitKey);
-              
-              if (!rateLimit.allowed) {
-                const minutes = Math.ceil(rateLimit.resetIn / 60);
-                throw new Error(`Too many attempts. Please try again in ${minutes} minute(s).`);
-              }
-              
-              // Query using GSI byResidentCode
-              const queryResult = await docClient.send(new QueryCommand({
-                TableName: process.env.RESIDENT_TABLE,
-                IndexName: 'byResidentCode',
-                KeyConditionExpression: 'residentCode = :code',
-                FilterExpression: 'unitNumber = :unit',
-                ExpressionAttributeValues: {
-                  ':code': residentCode.toUpperCase(),
-                  ':unit': unitNumber
-                }
-              }));
-              
-              if (!queryResult.Items || queryResult.Items.length === 0) {
-                return {
-                  isValid: false,
-                  residentId: null,
-                  residentFloor: null,
-                  residentPlate: null,
-                  message: 'Invalid credentials'
-                };
-              }
-              
-              const resident = queryResult.Items[0];
-              
-              return {
-                isValid: true,
-                residentId: resident.id,
-                residentFloor: resident.floor || 'N/A',
-                residentPlate: resident.plate || 'N/A',
-                message: 'Verified successfully'
-              };
-              
-            } catch (error) {
-              console.error('Error:', error);
-              throw new Error(error.message || 'Verification failed');
-            }
-          };
-
-  VerifyResidentCredentialsDataSource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      Name: VerifyResidentCredentialsDataSource
-      Type: AWS_LAMBDA
-      ServiceRoleArn: !GetAtt VerifyResidentCredentialsLambdaRole.Arn
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt VerifyResidentCredentialsLambda.Arn
-
-  VerifyResidentCredentialsLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref VerifyResidentCredentialsLambda
-      Action: lambda:InvokeFunction
-      Principal: appsync.amazonaws.com
-      SourceArn: !Sub 'arn:aws:appsync:ca-central-1:103103683543:apis/${GraphQLApi.ApiId}/*'
 
   # Resolvers - Reservation
   GetReservationResolver:
@@ -1095,23 +744,10 @@ Resources:
       Code: |
         import { util } from '@aws-appsync/utils';
         export function request(ctx) {
-          const limit = ctx.args.limit || 100;
-          const nextToken = ctx.args.nextToken || null;
-          
-          return { 
-            operation: 'Scan',
-            limit: limit,
-            nextToken: nextToken,
-            filter: {
-              expression: 'attribute_not_exists(deletedAt)',
-            }
-          };
+          return { operation: 'Scan' };
         }
         export function response(ctx) {
-          return {
-            items: ctx.result.items,
-            nextToken: ctx.result.nextToken
-          };
+          return ctx.result.items;
         }
 
   CreateReservationResolver:
@@ -1172,38 +808,6 @@ Resources:
           return ctx.result;
         }
 
-  DeleteReservationResolver:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLSchema
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Mutation
-      FieldName: deleteReservation
-      DataSourceName: !GetAtt ReservationDataSource.Name
-      Runtime:
-        Name: APPSYNC_JS
-        RuntimeVersion: 1.0.0
-      Code: |
-        import { util } from '@aws-appsync/utils';
-        export function request(ctx) {
-          // Soft delete
-          return {
-            operation: 'UpdateItem',
-            key: util.dynamodb.toMapValues({id: ctx.args.id}),
-            update: {
-              expression: 'SET deletedAt = :deletedAt, #updatedAt = :updatedAt',
-              expressionNames: { '#updatedAt': 'updatedAt' },
-              expressionValues: util.dynamodb.toMapValues({
-                ':deletedAt': util.time.nowISO8601(),
-                ':updatedAt': util.time.nowISO8601()
-              })
-            }
-          };
-        }
-        export function response(ctx) {
-          return ctx.result;
-        }
-
   # Lambda for createReservation with validation
   CreateReservationLambdaRole:
     Type: AWS::IAM::Role
@@ -1228,15 +832,12 @@ Resources:
                 Action:
                   - dynamodb:GetItem
                   - dynamodb:PutItem
-                  - dynamodb:UpdateItem
                   - dynamodb:Query
                   - dynamodb:Scan
                 Resource:
                   - !GetAtt ParkingConfigTable.Arn
                   - !GetAtt ResidentTable.Arn
                   - !GetAtt ReservationTable.Arn
-                  - !GetAtt RateLimitTable.Arn
-                  - !GetAtt AuditLogTable.Arn
                   - !Sub '${ReservationTable.Arn}/index/*'
         - PolicyName: InvokeLambda
           PolicyDocument:
@@ -1260,9 +861,6 @@ Resources:
           PARKING_CONFIG_TABLE: !Ref ParkingConfigTable
           RESIDENT_TABLE: !Ref ResidentTable
           RESERVATION_TABLE: !Ref ReservationTable
-          RATE_LIMIT_TABLE: !Ref RateLimitTable
-          AUDIT_LOG_TABLE: !Ref AuditLogTable
-          AWS_REGION_NAME: !Ref AWS::Region
       Code:
         ZipFile: |
           const { DynamoDBClient, ScanCommand, PutItemCommand, QueryCommand } = require('@aws-sdk/client-dynamodb');
@@ -1494,7 +1092,6 @@ Resources:
         Variables:
           PARKING_CONFIG_TABLE: !Ref ParkingConfigTable
           RESERVATION_TABLE: !Ref ReservationTable
-          AWS_REGION_NAME: !Ref AWS::Region
       Code:
         ZipFile: |
           const { DynamoDBClient, ScanCommand, GetItemCommand } = require('@aws-sdk/client-dynamodb');
@@ -1604,121 +1201,6 @@ Resources:
           return ctx.result;
         }
 
-  # Lambda for createResidentWithCognito
-  CreateResidentWithCognitoLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-                - appsync.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: DynamoDBAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:PutItem
-                  - dynamodb:Query
-                  - dynamodb:Scan
-                Resource:
-                  - !GetAtt ResidentTable.Arn
-                  - !GetAtt AuditLogTable.Arn
-                  - !Sub '${ResidentTable.Arn}/index/*'
-        - PolicyName: CognitoAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - cognito-idp:AdminCreateUser
-                  - cognito-idp:AdminAddUserToGroup
-                  - cognito-idp:AdminDeleteUser
-                Resource:
-                  - !Ref CognitoUserPoolArn
-        - PolicyName: InvokeLambda
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource: !Sub 'arn:aws:lambda:ca-central-1:103103683543:function:parking-createResidentWithCognito'
-
-  CreateResidentWithCognitoLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: parking-createResidentWithCognito
-      Runtime: nodejs20.x
-      Handler: index.handler
-      Role: !GetAtt CreateResidentWithCognitoLambdaRole.Arn
-      Timeout: 30
-      Environment:
-        Variables:
-          RESIDENT_TABLE: !Ref ResidentTable
-          AUDIT_LOG_TABLE: !Ref AuditLogTable
-          USER_POOL_ID: !Ref CognitoUserPoolId
-          AWS_REGION_NAME: !Ref AWS::Region
-      Code:
-        ZipFile: |
-          // This is a placeholder - actual function code is deployed separately
-          exports.handler = async (event) => {
-            console.log('Function must be deployed with actual code from lambda/createResidentWithCognito.js');
-            throw new Error('Function not yet deployed with actual code');
-          };
-
-  CreateResidentWithCognitoDataSource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      Name: CreateResidentWithCognitoDataSource
-      Type: AWS_LAMBDA
-      ServiceRoleArn: !GetAtt CreateResidentWithCognitoLambdaRole.Arn
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt CreateResidentWithCognitoLambda.Arn
-
-  CreateResidentWithCognitoLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref CreateResidentWithCognitoLambda
-      Action: lambda:InvokeFunction
-      Principal: appsync.amazonaws.com
-      SourceArn: !Sub 'arn:aws:appsync:ca-central-1:103103683543:apis/${GraphQLApi.ApiId}/*'
-
-  CreateResidentWithCognitoResolver:
-    Type: AWS::AppSync::Resolver
-    DependsOn: GraphQLSchema
-    Properties:
-      ApiId: !GetAtt GraphQLApi.ApiId
-      TypeName: Mutation
-      FieldName: createResidentWithCognito
-      DataSourceName: !GetAtt CreateResidentWithCognitoDataSource.Name
-      Runtime:
-        Name: APPSYNC_JS
-        RuntimeVersion: 1.0.0
-      Code: |
-        import { util } from '@aws-appsync/utils';
-        export function request(ctx) {
-          return {
-            operation: 'Invoke',
-            payload: ctx,
-          };
-        }
-        export function response(ctx) {
-          if (ctx.error) {
-            util.error(ctx.error.message, ctx.error.type);
-          }
-          return ctx.result;
-        }
-
 Outputs:
   GraphQLApiId:
     Description: GraphQL API ID
@@ -1757,3 +1239,4 @@ Outputs:
   Region:
     Description: AWS Region
     Value: ca-central-1
+

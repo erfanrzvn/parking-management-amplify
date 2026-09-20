@@ -1,0 +1,3 @@
+{
+  "query": "query ListResidents { listResidents { items { id email name phone building floor unitNumber plate residentCode userId createdAt } nextToken } }"
+}

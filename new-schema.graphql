@@ -1,0 +1,1676 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type AccessCode @aws_cognito_user_pools @aws_iam {
+  building: Building
+  buildingId: ID!
+  code: String!
+  createdAt: AWSDateTime
+  guestName: String
+  guestPhone: String
+  id: ID!
+  isActive: Boolean
+  issuedAt: AWSDateTime!
+  issuedBy: ID!
+  issuedByName: String
+  maxUsages: Int
+  notes: String
+  purpose: String
+  unit: Unit
+  unitId: ID!
+  updatedAt: AWSDateTime
+  usageCount: Int
+  validFrom: AWSDateTime!
+  validUntil: AWSDateTime!
+}
+
+type Building @aws_cognito_user_pools @aws_iam {
+  accessCodes(filter: ModelAccessCodeFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelAccessCodeConnection
+  address: String!
+  adminId: ID
+  city: String
+  code: String!
+  createdAt: AWSDateTime
+  description: String
+  guestReservations(filter: ModelGuestReservationFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelGuestReservationConnection
+  id: ID!
+  isActive: Boolean
+  name: String!
+  parkingLots(filter: ModelParkingLotFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelParkingLotConnection
+  parkingSpots(filter: ModelParkingSpotFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelParkingSpotConnection
+  postalCode: String
+  totalParkingSpots: Int
+  totalUnits: Int
+  unitParkingAssignments(filter: ModelUnitParkingAssignmentFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelUnitParkingAssignmentConnection
+  units(filter: ModelUnitFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelUnitConnection
+  updatedAt: AWSDateTime
+  userProfiles(filter: ModelUserProfileFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelUserProfileConnection
+}
+
+type GuestReservation @aws_cognito_user_pools @aws_iam {
+  accessCode: String
+  accessCodeId: ID
+  actualDuration: Int
+  building: Building
+  buildingId: ID!
+  cancellationReason: String
+  cancelledAt: AWSDateTime
+  cancelledBy: String
+  checkedInAt: AWSDateTime
+  checkedOutAt: AWSDateTime
+  createdAt: AWSDateTime
+  duration: Int
+  endTime: AWSDateTime!
+  guestEmail: String
+  guestName: String!
+  guestPhone: String!
+  guestVehiclePlate: String
+  hostResidentId: ID
+  hostResidentName: String
+  hostUnitId: ID
+  hourlyRate: Float
+  id: ID!
+  isAccessCodeValid: Boolean
+  isPaid: Boolean
+  notes: String
+  parkingLot: ParkingLot
+  parkingLotId: ID!
+  parkingSpot: ParkingSpot
+  parkingSpotId: ID!
+  paymentId: String
+  paymentMethod: String
+  startTime: AWSDateTime!
+  status: GuestReservationStatus
+  totalCost: Float
+  updatedAt: AWSDateTime
+}
+
+type ModelAccessCodeConnection @aws_cognito_user_pools @aws_iam {
+  items: [AccessCode]!
+  nextToken: String
+}
+
+type ModelBuildingConnection @aws_cognito_user_pools @aws_iam {
+  items: [Building]!
+  nextToken: String
+}
+
+type ModelGuestReservationConnection @aws_cognito_user_pools @aws_iam {
+  items: [GuestReservation]!
+  nextToken: String
+}
+
+type ModelParkingLotConnection @aws_cognito_user_pools @aws_iam {
+  items: [ParkingLot]!
+  nextToken: String
+}
+
+type ModelParkingSpotConnection @aws_cognito_user_pools @aws_iam {
+  items: [ParkingSpot]!
+  nextToken: String
+}
+
+type ModelUnitConnection @aws_cognito_user_pools @aws_iam {
+  items: [Unit]!
+  nextToken: String
+}
+
+type ModelUnitParkingAssignmentConnection @aws_cognito_user_pools @aws_iam {
+  items: [UnitParkingAssignment]!
+  nextToken: String
+}
+
+type ModelUserProfileConnection @aws_cognito_user_pools @aws_iam {
+  items: [UserProfile]!
+  nextToken: String
+}
+
+type ModelVehicleConnection @aws_cognito_user_pools @aws_iam {
+  items: [Vehicle]!
+  nextToken: String
+}
+
+type Mutation {
+  createAccessCode(condition: ModelAccessCodeConditionInput, input: CreateAccessCodeInput!): AccessCode @aws_cognito_user_pools @aws_iam
+  createBuilding(condition: ModelBuildingConditionInput, input: CreateBuildingInput!): Building @aws_cognito_user_pools @aws_iam
+  createGuestReservation(condition: ModelGuestReservationConditionInput, input: CreateGuestReservationInput!): GuestReservation @aws_cognito_user_pools @aws_iam
+  createParkingLot(condition: ModelParkingLotConditionInput, input: CreateParkingLotInput!): ParkingLot @aws_cognito_user_pools @aws_iam
+  createParkingSpot(condition: ModelParkingSpotConditionInput, input: CreateParkingSpotInput!): ParkingSpot @aws_cognito_user_pools @aws_iam
+  createUnit(condition: ModelUnitConditionInput, input: CreateUnitInput!): Unit @aws_cognito_user_pools @aws_iam
+  createUnitParkingAssignment(condition: ModelUnitParkingAssignmentConditionInput, input: CreateUnitParkingAssignmentInput!): UnitParkingAssignment @aws_cognito_user_pools @aws_iam
+  createUserProfile(condition: ModelUserProfileConditionInput, input: CreateUserProfileInput!): UserProfile @aws_cognito_user_pools @aws_iam
+  createVehicle(condition: ModelVehicleConditionInput, input: CreateVehicleInput!): Vehicle @aws_cognito_user_pools @aws_iam
+  deleteAccessCode(condition: ModelAccessCodeConditionInput, input: DeleteAccessCodeInput!): AccessCode @aws_cognito_user_pools @aws_iam
+  deleteBuilding(condition: ModelBuildingConditionInput, input: DeleteBuildingInput!): Building @aws_cognito_user_pools @aws_iam
+  deleteGuestReservation(condition: ModelGuestReservationConditionInput, input: DeleteGuestReservationInput!): GuestReservation @aws_cognito_user_pools @aws_iam
+  deleteParkingLot(condition: ModelParkingLotConditionInput, input: DeleteParkingLotInput!): ParkingLot @aws_cognito_user_pools @aws_iam
+  deleteParkingSpot(condition: ModelParkingSpotConditionInput, input: DeleteParkingSpotInput!): ParkingSpot @aws_cognito_user_pools @aws_iam
+  deleteUnit(condition: ModelUnitConditionInput, input: DeleteUnitInput!): Unit @aws_cognito_user_pools @aws_iam
+  deleteUnitParkingAssignment(condition: ModelUnitParkingAssignmentConditionInput, input: DeleteUnitParkingAssignmentInput!): UnitParkingAssignment @aws_cognito_user_pools @aws_iam
+  deleteUserProfile(condition: ModelUserProfileConditionInput, input: DeleteUserProfileInput!): UserProfile @aws_cognito_user_pools @aws_iam
+  deleteVehicle(condition: ModelVehicleConditionInput, input: DeleteVehicleInput!): Vehicle @aws_cognito_user_pools @aws_iam
+  updateAccessCode(condition: ModelAccessCodeConditionInput, input: UpdateAccessCodeInput!): AccessCode @aws_cognito_user_pools @aws_iam
+  updateBuilding(condition: ModelBuildingConditionInput, input: UpdateBuildingInput!): Building @aws_cognito_user_pools @aws_iam
+  updateGuestReservation(condition: ModelGuestReservationConditionInput, input: UpdateGuestReservationInput!): GuestReservation @aws_cognito_user_pools @aws_iam
+  updateParkingLot(condition: ModelParkingLotConditionInput, input: UpdateParkingLotInput!): ParkingLot @aws_cognito_user_pools @aws_iam
+  updateParkingSpot(condition: ModelParkingSpotConditionInput, input: UpdateParkingSpotInput!): ParkingSpot @aws_cognito_user_pools @aws_iam
+  updateUnit(condition: ModelUnitConditionInput, input: UpdateUnitInput!): Unit @aws_cognito_user_pools @aws_iam
+  updateUnitParkingAssignment(condition: ModelUnitParkingAssignmentConditionInput, input: UpdateUnitParkingAssignmentInput!): UnitParkingAssignment @aws_cognito_user_pools @aws_iam
+  updateUserProfile(condition: ModelUserProfileConditionInput, input: UpdateUserProfileInput!): UserProfile @aws_cognito_user_pools @aws_iam
+  updateVehicle(condition: ModelVehicleConditionInput, input: UpdateVehicleInput!): Vehicle @aws_cognito_user_pools @aws_iam
+}
+
+type ParkingLot @aws_cognito_user_pools @aws_iam {
+  availableSpots: Int
+  building: Building
+  buildingId: ID!
+  code: String!
+  createdAt: AWSDateTime
+  description: String
+  evChargerSpots: Int
+  guestReservations(filter: ModelGuestReservationFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelGuestReservationConnection
+  guestSpots: Int
+  id: ID!
+  isActive: Boolean
+  name: String!
+  residentSpots: Int
+  section: String
+  spots(filter: ModelParkingSpotFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelParkingSpotConnection
+  totalSpots: Int!
+  updatedAt: AWSDateTime
+}
+
+type ParkingSpot @aws_cognito_user_pools @aws_iam {
+  assignedToUnitId: ID
+  assignments(filter: ModelUnitParkingAssignmentFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelUnitParkingAssignmentConnection
+  building: Building
+  buildingId: ID!
+  chargerStatus: ParkingSpotChargerStatus
+  chargerType: String
+  createdAt: AWSDateTime
+  floor: String
+  guestReservations(filter: ModelGuestReservationFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelGuestReservationConnection
+  hasCharger: Boolean
+  hourlyRate: Float
+  id: ID!
+  isActive: Boolean
+  isAssigned: Boolean
+  lastMaintenanceDate: AWSDate
+  monthlyRate: Float
+  nextMaintenanceDate: AWSDate
+  notes: String
+  parkingLot: ParkingLot
+  parkingLotId: ID!
+  powerLevel: Int
+  row: String
+  section: String
+  spotNumber: String!
+  status: ParkingSpotStatus
+  type: ParkingSpotType
+  updatedAt: AWSDateTime
+}
+
+type Query {
+  getAccessCode(id: ID!): AccessCode @aws_cognito_user_pools @aws_iam
+  getBuilding(id: ID!): Building @aws_cognito_user_pools @aws_iam
+  getGuestReservation(id: ID!): GuestReservation @aws_cognito_user_pools @aws_iam
+  getParkingLot(id: ID!): ParkingLot @aws_cognito_user_pools @aws_iam
+  getParkingSpot(id: ID!): ParkingSpot @aws_cognito_user_pools @aws_iam
+  getUnit(id: ID!): Unit @aws_cognito_user_pools @aws_iam
+  getUnitParkingAssignment(id: ID!): UnitParkingAssignment @aws_cognito_user_pools @aws_iam
+  getUserProfile(id: ID!): UserProfile @aws_cognito_user_pools @aws_iam
+  getVehicle(id: ID!): Vehicle @aws_cognito_user_pools @aws_iam
+  listAccessCodes(filter: ModelAccessCodeFilterInput, limit: Int, nextToken: String): ModelAccessCodeConnection @aws_cognito_user_pools @aws_iam
+  listBuildings(filter: ModelBuildingFilterInput, limit: Int, nextToken: String): ModelBuildingConnection @aws_cognito_user_pools @aws_iam
+  listGuestReservations(filter: ModelGuestReservationFilterInput, limit: Int, nextToken: String): ModelGuestReservationConnection @aws_cognito_user_pools @aws_iam
+  listParkingLots(filter: ModelParkingLotFilterInput, limit: Int, nextToken: String): ModelParkingLotConnection @aws_cognito_user_pools @aws_iam
+  listParkingSpots(filter: ModelParkingSpotFilterInput, limit: Int, nextToken: String): ModelParkingSpotConnection @aws_cognito_user_pools @aws_iam
+  listUnitParkingAssignments(filter: ModelUnitParkingAssignmentFilterInput, limit: Int, nextToken: String): ModelUnitParkingAssignmentConnection @aws_cognito_user_pools @aws_iam
+  listUnits(filter: ModelUnitFilterInput, limit: Int, nextToken: String): ModelUnitConnection @aws_cognito_user_pools @aws_iam
+  listUserProfiles(filter: ModelUserProfileFilterInput, limit: Int, nextToken: String): ModelUserProfileConnection @aws_cognito_user_pools @aws_iam
+  listVehicles(filter: ModelVehicleFilterInput, limit: Int, nextToken: String): ModelVehicleConnection @aws_cognito_user_pools @aws_iam
+}
+
+type Subscription {
+  onCreateAccessCode(filter: ModelSubscriptionAccessCodeFilterInput, issuedBy: String): AccessCode @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createAccessCode"])
+  onCreateBuilding(filter: ModelSubscriptionBuildingFilterInput): Building @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createBuilding"])
+  onCreateGuestReservation(filter: ModelSubscriptionGuestReservationFilterInput, hostResidentId: String): GuestReservation @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createGuestReservation"])
+  onCreateParkingLot(filter: ModelSubscriptionParkingLotFilterInput): ParkingLot @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createParkingLot"])
+  onCreateParkingSpot(filter: ModelSubscriptionParkingSpotFilterInput): ParkingSpot @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createParkingSpot"])
+  onCreateUnit(filter: ModelSubscriptionUnitFilterInput, residentId: String): Unit @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createUnit"])
+  onCreateUnitParkingAssignment(filter: ModelSubscriptionUnitParkingAssignmentFilterInput, residentId: String): UnitParkingAssignment @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createUnitParkingAssignment"])
+  onCreateUserProfile(filter: ModelSubscriptionUserProfileFilterInput): UserProfile @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createUserProfile"])
+  onCreateVehicle(filter: ModelSubscriptionVehicleFilterInput, ownerId: String): Vehicle @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["createVehicle"])
+  onDeleteAccessCode(filter: ModelSubscriptionAccessCodeFilterInput, issuedBy: String): AccessCode @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteAccessCode"])
+  onDeleteBuilding(filter: ModelSubscriptionBuildingFilterInput): Building @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteBuilding"])
+  onDeleteGuestReservation(filter: ModelSubscriptionGuestReservationFilterInput, hostResidentId: String): GuestReservation @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteGuestReservation"])
+  onDeleteParkingLot(filter: ModelSubscriptionParkingLotFilterInput): ParkingLot @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteParkingLot"])
+  onDeleteParkingSpot(filter: ModelSubscriptionParkingSpotFilterInput): ParkingSpot @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteParkingSpot"])
+  onDeleteUnit(filter: ModelSubscriptionUnitFilterInput, residentId: String): Unit @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteUnit"])
+  onDeleteUnitParkingAssignment(filter: ModelSubscriptionUnitParkingAssignmentFilterInput, residentId: String): UnitParkingAssignment @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteUnitParkingAssignment"])
+  onDeleteUserProfile(filter: ModelSubscriptionUserProfileFilterInput): UserProfile @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteUserProfile"])
+  onDeleteVehicle(filter: ModelSubscriptionVehicleFilterInput, ownerId: String): Vehicle @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["deleteVehicle"])
+  onUpdateAccessCode(filter: ModelSubscriptionAccessCodeFilterInput, issuedBy: String): AccessCode @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateAccessCode"])
+  onUpdateBuilding(filter: ModelSubscriptionBuildingFilterInput): Building @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateBuilding"])
+  onUpdateGuestReservation(filter: ModelSubscriptionGuestReservationFilterInput, hostResidentId: String): GuestReservation @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateGuestReservation"])
+  onUpdateParkingLot(filter: ModelSubscriptionParkingLotFilterInput): ParkingLot @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateParkingLot"])
+  onUpdateParkingSpot(filter: ModelSubscriptionParkingSpotFilterInput): ParkingSpot @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateParkingSpot"])
+  onUpdateUnit(filter: ModelSubscriptionUnitFilterInput, residentId: String): Unit @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateUnit"])
+  onUpdateUnitParkingAssignment(filter: ModelSubscriptionUnitParkingAssignmentFilterInput, residentId: String): UnitParkingAssignment @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateUnitParkingAssignment"])
+  onUpdateUserProfile(filter: ModelSubscriptionUserProfileFilterInput): UserProfile @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateUserProfile"])
+  onUpdateVehicle(filter: ModelSubscriptionVehicleFilterInput, ownerId: String): Vehicle @aws_cognito_user_pools @aws_iam @aws_subscribe(mutations : ["updateVehicle"])
+}
+
+type Unit @aws_cognito_user_pools @aws_iam {
+  accessCodes(filter: ModelAccessCodeFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelAccessCodeConnection
+  assignedParkingCount: Int
+  building: Building
+  buildingId: ID!
+  createdAt: AWSDateTime
+  floorNumber: Int
+  id: ID!
+  isActive: Boolean
+  isOccupied: Boolean
+  maxParkingAllowed: Int
+  moveInDate: AWSDate
+  moveOutDate: AWSDate
+  notes: String
+  parkingAssignments(filter: ModelUnitParkingAssignmentFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelUnitParkingAssignmentConnection
+  residentEmail: String
+  residentId: ID
+  residentName: String
+  residentPhone: String
+  unitNumber: String!
+  updatedAt: AWSDateTime
+  userProfiles(filter: ModelUserProfileFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelUserProfileConnection
+  vehicles(filter: ModelVehicleFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelVehicleConnection
+}
+
+type UnitParkingAssignment @aws_cognito_user_pools @aws_iam {
+  assignedAt: AWSDateTime!
+  assignedBy: ID!
+  assignedByName: String
+  assignmentType: UnitParkingAssignmentAssignmentType
+  building: Building
+  buildingId: ID!
+  createdAt: AWSDateTime
+  endDate: AWSDate
+  id: ID!
+  isActive: Boolean
+  notes: String
+  parkingSpot: ParkingSpot
+  parkingSpotId: ID!
+  residentId: ID
+  residentName: String
+  startDate: AWSDate
+  unit: Unit
+  unitId: ID!
+  updatedAt: AWSDateTime
+}
+
+type UserProfile @aws_cognito_user_pools @aws_iam {
+  assignedBuilding: Building
+  assignedBuildingId: ID
+  cognitoUsername: String!
+  createdAt: AWSDateTime
+  displayName: String
+  email: String!
+  firstName: String
+  id: ID!
+  isActive: Boolean
+  isEmailVerified: Boolean
+  isPhoneVerified: Boolean
+  language: String
+  lastLoginAt: AWSDateTime
+  lastName: String
+  loginCount: Int
+  notificationPreferences: AWSJSON
+  phone: String
+  role: UserProfileRole
+  timezone: String
+  unit: Unit
+  unitId: ID
+  updatedAt: AWSDateTime
+  vehicles(filter: ModelVehicleFilterInput, limit: Int, nextToken: String, sortDirection: ModelSortDirection): ModelVehicleConnection
+}
+
+type Vehicle @aws_cognito_user_pools @aws_iam {
+  batteryCapacity: Int
+  chargerType: String
+  color: String
+  createdAt: AWSDateTime
+  id: ID!
+  isActive: Boolean
+  isElectric: Boolean
+  isVerified: Boolean
+  licensePlate: String!
+  make: String
+  model: String
+  notes: String
+  owner: UserProfile
+  ownerId: ID!
+  unit: Unit
+  unitId: ID
+  updatedAt: AWSDateTime
+  verifiedAt: AWSDateTime
+  verifiedBy: ID
+  year: Int
+}
+
+enum GuestReservationStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+  CONFIRMED
+  EXPIRED
+  PENDING
+}
+
+enum ModelAttributeTypes {
+  _null
+  binary
+  binarySet
+  bool
+  list
+  map
+  number
+  numberSet
+  string
+  stringSet
+}
+
+enum ModelSortDirection {
+  ASC
+  DESC
+}
+
+enum ParkingSpotChargerStatus {
+  OUT_OF_SERVICE
+  WORKING
+}
+
+enum ParkingSpotStatus {
+  AVAILABLE
+  MAINTENANCE
+  OCCUPIED
+  RESERVED
+}
+
+enum ParkingSpotType {
+  CHARGING
+  COMPACT
+  GUEST
+  HANDICAP
+  REGULAR
+}
+
+enum UnitParkingAssignmentAssignmentType {
+  PERMANENT
+  TEMPORARY
+}
+
+enum UserProfileRole {
+  BuildingAdmins
+  GUEST
+  RESIDENT
+  SuperAdmins
+}
+
+input AmplifyAIConversationTurnErrorInput {
+  errorType: String!
+  message: String!
+}
+
+input CreateAccessCodeInput {
+  buildingId: ID!
+  code: String!
+  createdAt: AWSDateTime
+  guestName: String
+  guestPhone: String
+  id: ID
+  isActive: Boolean
+  issuedAt: AWSDateTime!
+  issuedBy: ID!
+  issuedByName: String
+  maxUsages: Int
+  notes: String
+  purpose: String
+  unitId: ID!
+  updatedAt: AWSDateTime
+  usageCount: Int
+  validFrom: AWSDateTime!
+  validUntil: AWSDateTime!
+}
+
+input CreateBuildingInput {
+  address: String!
+  adminId: ID
+  city: String
+  code: String!
+  createdAt: AWSDateTime
+  description: String
+  id: ID
+  isActive: Boolean
+  name: String!
+  postalCode: String
+  totalParkingSpots: Int
+  totalUnits: Int
+  updatedAt: AWSDateTime
+}
+
+input CreateGuestReservationInput {
+  accessCode: String
+  accessCodeId: ID
+  actualDuration: Int
+  buildingId: ID!
+  cancellationReason: String
+  cancelledAt: AWSDateTime
+  cancelledBy: String
+  checkedInAt: AWSDateTime
+  checkedOutAt: AWSDateTime
+  createdAt: AWSDateTime
+  duration: Int
+  endTime: AWSDateTime!
+  guestEmail: String
+  guestName: String!
+  guestPhone: String!
+  guestVehiclePlate: String
+  hostResidentId: ID
+  hostResidentName: String
+  hostUnitId: ID
+  hourlyRate: Float
+  id: ID
+  isAccessCodeValid: Boolean
+  isPaid: Boolean
+  notes: String
+  parkingLotId: ID!
+  parkingSpotId: ID!
+  paymentId: String
+  paymentMethod: String
+  startTime: AWSDateTime!
+  status: GuestReservationStatus
+  totalCost: Float
+  updatedAt: AWSDateTime
+}
+
+input CreateParkingLotInput {
+  availableSpots: Int
+  buildingId: ID!
+  code: String!
+  createdAt: AWSDateTime
+  description: String
+  evChargerSpots: Int
+  guestSpots: Int
+  id: ID
+  isActive: Boolean
+  name: String!
+  residentSpots: Int
+  section: String
+  totalSpots: Int!
+  updatedAt: AWSDateTime
+}
+
+input CreateParkingSpotInput {
+  assignedToUnitId: ID
+  buildingId: ID!
+  chargerStatus: ParkingSpotChargerStatus
+  chargerType: String
+  createdAt: AWSDateTime
+  floor: String
+  hasCharger: Boolean
+  hourlyRate: Float
+  id: ID
+  isActive: Boolean
+  isAssigned: Boolean
+  lastMaintenanceDate: AWSDate
+  monthlyRate: Float
+  nextMaintenanceDate: AWSDate
+  notes: String
+  parkingLotId: ID!
+  powerLevel: Int
+  row: String
+  section: String
+  spotNumber: String!
+  status: ParkingSpotStatus
+  type: ParkingSpotType
+  updatedAt: AWSDateTime
+}
+
+input CreateUnitInput {
+  assignedParkingCount: Int
+  buildingId: ID!
+  createdAt: AWSDateTime
+  floorNumber: Int
+  id: ID
+  isActive: Boolean
+  isOccupied: Boolean
+  maxParkingAllowed: Int
+  moveInDate: AWSDate
+  moveOutDate: AWSDate
+  notes: String
+  residentEmail: String
+  residentId: ID
+  residentName: String
+  residentPhone: String
+  unitNumber: String!
+  updatedAt: AWSDateTime
+}
+
+input CreateUnitParkingAssignmentInput {
+  assignedAt: AWSDateTime!
+  assignedBy: ID!
+  assignedByName: String
+  assignmentType: UnitParkingAssignmentAssignmentType
+  buildingId: ID!
+  createdAt: AWSDateTime
+  endDate: AWSDate
+  id: ID
+  isActive: Boolean
+  notes: String
+  parkingSpotId: ID!
+  residentId: ID
+  residentName: String
+  startDate: AWSDate
+  unitId: ID!
+  updatedAt: AWSDateTime
+}
+
+input CreateUserProfileInput {
+  assignedBuildingId: ID
+  cognitoUsername: String!
+  createdAt: AWSDateTime
+  displayName: String
+  email: String!
+  firstName: String
+  id: ID
+  isActive: Boolean
+  isEmailVerified: Boolean
+  isPhoneVerified: Boolean
+  language: String
+  lastLoginAt: AWSDateTime
+  lastName: String
+  loginCount: Int
+  notificationPreferences: AWSJSON
+  phone: String
+  role: UserProfileRole
+  timezone: String
+  unitId: ID
+  updatedAt: AWSDateTime
+}
+
+input CreateVehicleInput {
+  batteryCapacity: Int
+  chargerType: String
+  color: String
+  createdAt: AWSDateTime
+  id: ID
+  isActive: Boolean
+  isElectric: Boolean
+  isVerified: Boolean
+  licensePlate: String!
+  make: String
+  model: String
+  notes: String
+  ownerId: ID!
+  unitId: ID
+  updatedAt: AWSDateTime
+  verifiedAt: AWSDateTime
+  verifiedBy: ID
+  year: Int
+}
+
+input DeleteAccessCodeInput {
+  id: ID!
+}
+
+input DeleteBuildingInput {
+  id: ID!
+}
+
+input DeleteGuestReservationInput {
+  id: ID!
+}
+
+input DeleteParkingLotInput {
+  id: ID!
+}
+
+input DeleteParkingSpotInput {
+  id: ID!
+}
+
+input DeleteUnitInput {
+  id: ID!
+}
+
+input DeleteUnitParkingAssignmentInput {
+  id: ID!
+}
+
+input DeleteUserProfileInput {
+  id: ID!
+}
+
+input DeleteVehicleInput {
+  id: ID!
+}
+
+input ModelAccessCodeConditionInput {
+  and: [ModelAccessCodeConditionInput]
+  buildingId: ModelIDInput
+  code: ModelStringInput
+  createdAt: ModelStringInput
+  guestName: ModelStringInput
+  guestPhone: ModelStringInput
+  isActive: ModelBooleanInput
+  issuedAt: ModelStringInput
+  issuedBy: ModelIDInput
+  issuedByName: ModelStringInput
+  maxUsages: ModelIntInput
+  not: ModelAccessCodeConditionInput
+  notes: ModelStringInput
+  or: [ModelAccessCodeConditionInput]
+  purpose: ModelStringInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+  usageCount: ModelIntInput
+  validFrom: ModelStringInput
+  validUntil: ModelStringInput
+}
+
+input ModelAccessCodeFilterInput {
+  and: [ModelAccessCodeFilterInput]
+  buildingId: ModelIDInput
+  code: ModelStringInput
+  createdAt: ModelStringInput
+  guestName: ModelStringInput
+  guestPhone: ModelStringInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  issuedAt: ModelStringInput
+  issuedBy: ModelIDInput
+  issuedByName: ModelStringInput
+  maxUsages: ModelIntInput
+  not: ModelAccessCodeFilterInput
+  notes: ModelStringInput
+  or: [ModelAccessCodeFilterInput]
+  purpose: ModelStringInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+  usageCount: ModelIntInput
+  validFrom: ModelStringInput
+  validUntil: ModelStringInput
+}
+
+input ModelBooleanInput {
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+  eq: Boolean
+  ne: Boolean
+}
+
+input ModelBuildingConditionInput {
+  address: ModelStringInput
+  adminId: ModelIDInput
+  and: [ModelBuildingConditionInput]
+  city: ModelStringInput
+  code: ModelStringInput
+  createdAt: ModelStringInput
+  description: ModelStringInput
+  isActive: ModelBooleanInput
+  name: ModelStringInput
+  not: ModelBuildingConditionInput
+  or: [ModelBuildingConditionInput]
+  postalCode: ModelStringInput
+  totalParkingSpots: ModelIntInput
+  totalUnits: ModelIntInput
+  updatedAt: ModelStringInput
+}
+
+input ModelBuildingFilterInput {
+  address: ModelStringInput
+  adminId: ModelIDInput
+  and: [ModelBuildingFilterInput]
+  city: ModelStringInput
+  code: ModelStringInput
+  createdAt: ModelStringInput
+  description: ModelStringInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  name: ModelStringInput
+  not: ModelBuildingFilterInput
+  or: [ModelBuildingFilterInput]
+  postalCode: ModelStringInput
+  totalParkingSpots: ModelIntInput
+  totalUnits: ModelIntInput
+  updatedAt: ModelStringInput
+}
+
+input ModelFloatInput {
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+  between: [Float]
+  eq: Float
+  ge: Float
+  gt: Float
+  le: Float
+  lt: Float
+  ne: Float
+}
+
+input ModelGuestReservationConditionInput {
+  accessCode: ModelStringInput
+  accessCodeId: ModelIDInput
+  actualDuration: ModelIntInput
+  and: [ModelGuestReservationConditionInput]
+  buildingId: ModelIDInput
+  cancellationReason: ModelStringInput
+  cancelledAt: ModelStringInput
+  cancelledBy: ModelStringInput
+  checkedInAt: ModelStringInput
+  checkedOutAt: ModelStringInput
+  createdAt: ModelStringInput
+  duration: ModelIntInput
+  endTime: ModelStringInput
+  guestEmail: ModelStringInput
+  guestName: ModelStringInput
+  guestPhone: ModelStringInput
+  guestVehiclePlate: ModelStringInput
+  hostResidentId: ModelIDInput
+  hostResidentName: ModelStringInput
+  hostUnitId: ModelIDInput
+  hourlyRate: ModelFloatInput
+  isAccessCodeValid: ModelBooleanInput
+  isPaid: ModelBooleanInput
+  not: ModelGuestReservationConditionInput
+  notes: ModelStringInput
+  or: [ModelGuestReservationConditionInput]
+  parkingLotId: ModelIDInput
+  parkingSpotId: ModelIDInput
+  paymentId: ModelStringInput
+  paymentMethod: ModelStringInput
+  startTime: ModelStringInput
+  status: ModelGuestReservationStatusInput
+  totalCost: ModelFloatInput
+  updatedAt: ModelStringInput
+}
+
+input ModelGuestReservationFilterInput {
+  accessCode: ModelStringInput
+  accessCodeId: ModelIDInput
+  actualDuration: ModelIntInput
+  and: [ModelGuestReservationFilterInput]
+  buildingId: ModelIDInput
+  cancellationReason: ModelStringInput
+  cancelledAt: ModelStringInput
+  cancelledBy: ModelStringInput
+  checkedInAt: ModelStringInput
+  checkedOutAt: ModelStringInput
+  createdAt: ModelStringInput
+  duration: ModelIntInput
+  endTime: ModelStringInput
+  guestEmail: ModelStringInput
+  guestName: ModelStringInput
+  guestPhone: ModelStringInput
+  guestVehiclePlate: ModelStringInput
+  hostResidentId: ModelIDInput
+  hostResidentName: ModelStringInput
+  hostUnitId: ModelIDInput
+  hourlyRate: ModelFloatInput
+  id: ModelIDInput
+  isAccessCodeValid: ModelBooleanInput
+  isPaid: ModelBooleanInput
+  not: ModelGuestReservationFilterInput
+  notes: ModelStringInput
+  or: [ModelGuestReservationFilterInput]
+  parkingLotId: ModelIDInput
+  parkingSpotId: ModelIDInput
+  paymentId: ModelStringInput
+  paymentMethod: ModelStringInput
+  startTime: ModelStringInput
+  status: ModelGuestReservationStatusInput
+  totalCost: ModelFloatInput
+  updatedAt: ModelStringInput
+}
+
+input ModelGuestReservationStatusInput {
+  eq: GuestReservationStatus
+  ne: GuestReservationStatus
+}
+
+input ModelIDInput {
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+  beginsWith: ID
+  between: [ID]
+  contains: ID
+  eq: ID
+  ge: ID
+  gt: ID
+  le: ID
+  lt: ID
+  ne: ID
+  notContains: ID
+  size: ModelSizeInput
+}
+
+input ModelIntInput {
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+  between: [Int]
+  eq: Int
+  ge: Int
+  gt: Int
+  le: Int
+  lt: Int
+  ne: Int
+}
+
+input ModelParkingLotConditionInput {
+  and: [ModelParkingLotConditionInput]
+  availableSpots: ModelIntInput
+  buildingId: ModelIDInput
+  code: ModelStringInput
+  createdAt: ModelStringInput
+  description: ModelStringInput
+  evChargerSpots: ModelIntInput
+  guestSpots: ModelIntInput
+  isActive: ModelBooleanInput
+  name: ModelStringInput
+  not: ModelParkingLotConditionInput
+  or: [ModelParkingLotConditionInput]
+  residentSpots: ModelIntInput
+  section: ModelStringInput
+  totalSpots: ModelIntInput
+  updatedAt: ModelStringInput
+}
+
+input ModelParkingLotFilterInput {
+  and: [ModelParkingLotFilterInput]
+  availableSpots: ModelIntInput
+  buildingId: ModelIDInput
+  code: ModelStringInput
+  createdAt: ModelStringInput
+  description: ModelStringInput
+  evChargerSpots: ModelIntInput
+  guestSpots: ModelIntInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  name: ModelStringInput
+  not: ModelParkingLotFilterInput
+  or: [ModelParkingLotFilterInput]
+  residentSpots: ModelIntInput
+  section: ModelStringInput
+  totalSpots: ModelIntInput
+  updatedAt: ModelStringInput
+}
+
+input ModelParkingSpotChargerStatusInput {
+  eq: ParkingSpotChargerStatus
+  ne: ParkingSpotChargerStatus
+}
+
+input ModelParkingSpotConditionInput {
+  and: [ModelParkingSpotConditionInput]
+  assignedToUnitId: ModelIDInput
+  buildingId: ModelIDInput
+  chargerStatus: ModelParkingSpotChargerStatusInput
+  chargerType: ModelStringInput
+  createdAt: ModelStringInput
+  floor: ModelStringInput
+  hasCharger: ModelBooleanInput
+  hourlyRate: ModelFloatInput
+  isActive: ModelBooleanInput
+  isAssigned: ModelBooleanInput
+  lastMaintenanceDate: ModelStringInput
+  monthlyRate: ModelFloatInput
+  nextMaintenanceDate: ModelStringInput
+  not: ModelParkingSpotConditionInput
+  notes: ModelStringInput
+  or: [ModelParkingSpotConditionInput]
+  parkingLotId: ModelIDInput
+  powerLevel: ModelIntInput
+  row: ModelStringInput
+  section: ModelStringInput
+  spotNumber: ModelStringInput
+  status: ModelParkingSpotStatusInput
+  type: ModelParkingSpotTypeInput
+  updatedAt: ModelStringInput
+}
+
+input ModelParkingSpotFilterInput {
+  and: [ModelParkingSpotFilterInput]
+  assignedToUnitId: ModelIDInput
+  buildingId: ModelIDInput
+  chargerStatus: ModelParkingSpotChargerStatusInput
+  chargerType: ModelStringInput
+  createdAt: ModelStringInput
+  floor: ModelStringInput
+  hasCharger: ModelBooleanInput
+  hourlyRate: ModelFloatInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  isAssigned: ModelBooleanInput
+  lastMaintenanceDate: ModelStringInput
+  monthlyRate: ModelFloatInput
+  nextMaintenanceDate: ModelStringInput
+  not: ModelParkingSpotFilterInput
+  notes: ModelStringInput
+  or: [ModelParkingSpotFilterInput]
+  parkingLotId: ModelIDInput
+  powerLevel: ModelIntInput
+  row: ModelStringInput
+  section: ModelStringInput
+  spotNumber: ModelStringInput
+  status: ModelParkingSpotStatusInput
+  type: ModelParkingSpotTypeInput
+  updatedAt: ModelStringInput
+}
+
+input ModelParkingSpotStatusInput {
+  eq: ParkingSpotStatus
+  ne: ParkingSpotStatus
+}
+
+input ModelParkingSpotTypeInput {
+  eq: ParkingSpotType
+  ne: ParkingSpotType
+}
+
+input ModelSizeInput {
+  between: [Int]
+  eq: Int
+  ge: Int
+  gt: Int
+  le: Int
+  lt: Int
+  ne: Int
+}
+
+input ModelStringInput {
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+  beginsWith: String
+  between: [String]
+  contains: String
+  eq: String
+  ge: String
+  gt: String
+  le: String
+  lt: String
+  ne: String
+  notContains: String
+  size: ModelSizeInput
+}
+
+input ModelSubscriptionAccessCodeFilterInput {
+  and: [ModelSubscriptionAccessCodeFilterInput]
+  buildingId: ModelSubscriptionIDInput
+  code: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  guestName: ModelSubscriptionStringInput
+  guestPhone: ModelSubscriptionStringInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  issuedAt: ModelSubscriptionStringInput
+  issuedBy: ModelStringInput
+  issuedByName: ModelSubscriptionStringInput
+  maxUsages: ModelSubscriptionIntInput
+  notes: ModelSubscriptionStringInput
+  or: [ModelSubscriptionAccessCodeFilterInput]
+  purpose: ModelSubscriptionStringInput
+  unitId: ModelSubscriptionIDInput
+  updatedAt: ModelSubscriptionStringInput
+  usageCount: ModelSubscriptionIntInput
+  validFrom: ModelSubscriptionStringInput
+  validUntil: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionBooleanInput {
+  eq: Boolean
+  ne: Boolean
+}
+
+input ModelSubscriptionBuildingFilterInput {
+  address: ModelSubscriptionStringInput
+  adminId: ModelSubscriptionIDInput
+  and: [ModelSubscriptionBuildingFilterInput]
+  city: ModelSubscriptionStringInput
+  code: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  description: ModelSubscriptionStringInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  name: ModelSubscriptionStringInput
+  or: [ModelSubscriptionBuildingFilterInput]
+  postalCode: ModelSubscriptionStringInput
+  totalParkingSpots: ModelSubscriptionIntInput
+  totalUnits: ModelSubscriptionIntInput
+  updatedAt: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionFloatInput {
+  between: [Float]
+  eq: Float
+  ge: Float
+  gt: Float
+  in: [Float]
+  le: Float
+  lt: Float
+  ne: Float
+  notIn: [Float]
+}
+
+input ModelSubscriptionGuestReservationFilterInput {
+  accessCode: ModelSubscriptionStringInput
+  accessCodeId: ModelSubscriptionIDInput
+  actualDuration: ModelSubscriptionIntInput
+  and: [ModelSubscriptionGuestReservationFilterInput]
+  buildingId: ModelSubscriptionIDInput
+  cancellationReason: ModelSubscriptionStringInput
+  cancelledAt: ModelSubscriptionStringInput
+  cancelledBy: ModelSubscriptionStringInput
+  checkedInAt: ModelSubscriptionStringInput
+  checkedOutAt: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  duration: ModelSubscriptionIntInput
+  endTime: ModelSubscriptionStringInput
+  guestEmail: ModelSubscriptionStringInput
+  guestName: ModelSubscriptionStringInput
+  guestPhone: ModelSubscriptionStringInput
+  guestVehiclePlate: ModelSubscriptionStringInput
+  hostResidentId: ModelStringInput
+  hostResidentName: ModelSubscriptionStringInput
+  hostUnitId: ModelSubscriptionIDInput
+  hourlyRate: ModelSubscriptionFloatInput
+  id: ModelSubscriptionIDInput
+  isAccessCodeValid: ModelSubscriptionBooleanInput
+  isPaid: ModelSubscriptionBooleanInput
+  notes: ModelSubscriptionStringInput
+  or: [ModelSubscriptionGuestReservationFilterInput]
+  parkingLotId: ModelSubscriptionIDInput
+  parkingSpotId: ModelSubscriptionIDInput
+  paymentId: ModelSubscriptionStringInput
+  paymentMethod: ModelSubscriptionStringInput
+  startTime: ModelSubscriptionStringInput
+  status: ModelSubscriptionStringInput
+  totalCost: ModelSubscriptionFloatInput
+  updatedAt: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionIDInput {
+  beginsWith: ID
+  between: [ID]
+  contains: ID
+  eq: ID
+  ge: ID
+  gt: ID
+  in: [ID]
+  le: ID
+  lt: ID
+  ne: ID
+  notContains: ID
+  notIn: [ID]
+}
+
+input ModelSubscriptionIntInput {
+  between: [Int]
+  eq: Int
+  ge: Int
+  gt: Int
+  in: [Int]
+  le: Int
+  lt: Int
+  ne: Int
+  notIn: [Int]
+}
+
+input ModelSubscriptionParkingLotFilterInput {
+  and: [ModelSubscriptionParkingLotFilterInput]
+  availableSpots: ModelSubscriptionIntInput
+  buildingId: ModelSubscriptionIDInput
+  code: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  description: ModelSubscriptionStringInput
+  evChargerSpots: ModelSubscriptionIntInput
+  guestSpots: ModelSubscriptionIntInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  name: ModelSubscriptionStringInput
+  or: [ModelSubscriptionParkingLotFilterInput]
+  residentSpots: ModelSubscriptionIntInput
+  section: ModelSubscriptionStringInput
+  totalSpots: ModelSubscriptionIntInput
+  updatedAt: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionParkingSpotFilterInput {
+  and: [ModelSubscriptionParkingSpotFilterInput]
+  assignedToUnitId: ModelSubscriptionIDInput
+  buildingId: ModelSubscriptionIDInput
+  chargerStatus: ModelSubscriptionStringInput
+  chargerType: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  floor: ModelSubscriptionStringInput
+  hasCharger: ModelSubscriptionBooleanInput
+  hourlyRate: ModelSubscriptionFloatInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  isAssigned: ModelSubscriptionBooleanInput
+  lastMaintenanceDate: ModelSubscriptionStringInput
+  monthlyRate: ModelSubscriptionFloatInput
+  nextMaintenanceDate: ModelSubscriptionStringInput
+  notes: ModelSubscriptionStringInput
+  or: [ModelSubscriptionParkingSpotFilterInput]
+  parkingLotId: ModelSubscriptionIDInput
+  powerLevel: ModelSubscriptionIntInput
+  row: ModelSubscriptionStringInput
+  section: ModelSubscriptionStringInput
+  spotNumber: ModelSubscriptionStringInput
+  status: ModelSubscriptionStringInput
+  type: ModelSubscriptionStringInput
+  updatedAt: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionStringInput {
+  beginsWith: String
+  between: [String]
+  contains: String
+  eq: String
+  ge: String
+  gt: String
+  in: [String]
+  le: String
+  lt: String
+  ne: String
+  notContains: String
+  notIn: [String]
+}
+
+input ModelSubscriptionUnitFilterInput {
+  and: [ModelSubscriptionUnitFilterInput]
+  assignedParkingCount: ModelSubscriptionIntInput
+  buildingId: ModelSubscriptionIDInput
+  createdAt: ModelSubscriptionStringInput
+  floorNumber: ModelSubscriptionIntInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  isOccupied: ModelSubscriptionBooleanInput
+  maxParkingAllowed: ModelSubscriptionIntInput
+  moveInDate: ModelSubscriptionStringInput
+  moveOutDate: ModelSubscriptionStringInput
+  notes: ModelSubscriptionStringInput
+  or: [ModelSubscriptionUnitFilterInput]
+  residentEmail: ModelSubscriptionStringInput
+  residentId: ModelStringInput
+  residentName: ModelSubscriptionStringInput
+  residentPhone: ModelSubscriptionStringInput
+  unitNumber: ModelSubscriptionStringInput
+  updatedAt: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionUnitParkingAssignmentFilterInput {
+  and: [ModelSubscriptionUnitParkingAssignmentFilterInput]
+  assignedAt: ModelSubscriptionStringInput
+  assignedBy: ModelSubscriptionIDInput
+  assignedByName: ModelSubscriptionStringInput
+  assignmentType: ModelSubscriptionStringInput
+  buildingId: ModelSubscriptionIDInput
+  createdAt: ModelSubscriptionStringInput
+  endDate: ModelSubscriptionStringInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  notes: ModelSubscriptionStringInput
+  or: [ModelSubscriptionUnitParkingAssignmentFilterInput]
+  parkingSpotId: ModelSubscriptionIDInput
+  residentId: ModelStringInput
+  residentName: ModelSubscriptionStringInput
+  startDate: ModelSubscriptionStringInput
+  unitId: ModelSubscriptionIDInput
+  updatedAt: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionUserProfileFilterInput {
+  and: [ModelSubscriptionUserProfileFilterInput]
+  assignedBuildingId: ModelSubscriptionIDInput
+  cognitoUsername: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  displayName: ModelSubscriptionStringInput
+  email: ModelSubscriptionStringInput
+  firstName: ModelSubscriptionStringInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  isEmailVerified: ModelSubscriptionBooleanInput
+  isPhoneVerified: ModelSubscriptionBooleanInput
+  language: ModelSubscriptionStringInput
+  lastLoginAt: ModelSubscriptionStringInput
+  lastName: ModelSubscriptionStringInput
+  loginCount: ModelSubscriptionIntInput
+  notificationPreferences: ModelSubscriptionStringInput
+  or: [ModelSubscriptionUserProfileFilterInput]
+  phone: ModelSubscriptionStringInput
+  role: ModelSubscriptionStringInput
+  timezone: ModelSubscriptionStringInput
+  unitId: ModelSubscriptionIDInput
+  updatedAt: ModelSubscriptionStringInput
+}
+
+input ModelSubscriptionVehicleFilterInput {
+  and: [ModelSubscriptionVehicleFilterInput]
+  batteryCapacity: ModelSubscriptionIntInput
+  chargerType: ModelSubscriptionStringInput
+  color: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  id: ModelSubscriptionIDInput
+  isActive: ModelSubscriptionBooleanInput
+  isElectric: ModelSubscriptionBooleanInput
+  isVerified: ModelSubscriptionBooleanInput
+  licensePlate: ModelSubscriptionStringInput
+  make: ModelSubscriptionStringInput
+  model: ModelSubscriptionStringInput
+  notes: ModelSubscriptionStringInput
+  or: [ModelSubscriptionVehicleFilterInput]
+  ownerId: ModelStringInput
+  unitId: ModelSubscriptionIDInput
+  updatedAt: ModelSubscriptionStringInput
+  verifiedAt: ModelSubscriptionStringInput
+  verifiedBy: ModelSubscriptionIDInput
+  year: ModelSubscriptionIntInput
+}
+
+input ModelUnitConditionInput {
+  and: [ModelUnitConditionInput]
+  assignedParkingCount: ModelIntInput
+  buildingId: ModelIDInput
+  createdAt: ModelStringInput
+  floorNumber: ModelIntInput
+  isActive: ModelBooleanInput
+  isOccupied: ModelBooleanInput
+  maxParkingAllowed: ModelIntInput
+  moveInDate: ModelStringInput
+  moveOutDate: ModelStringInput
+  not: ModelUnitConditionInput
+  notes: ModelStringInput
+  or: [ModelUnitConditionInput]
+  residentEmail: ModelStringInput
+  residentId: ModelIDInput
+  residentName: ModelStringInput
+  residentPhone: ModelStringInput
+  unitNumber: ModelStringInput
+  updatedAt: ModelStringInput
+}
+
+input ModelUnitFilterInput {
+  and: [ModelUnitFilterInput]
+  assignedParkingCount: ModelIntInput
+  buildingId: ModelIDInput
+  createdAt: ModelStringInput
+  floorNumber: ModelIntInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  isOccupied: ModelBooleanInput
+  maxParkingAllowed: ModelIntInput
+  moveInDate: ModelStringInput
+  moveOutDate: ModelStringInput
+  not: ModelUnitFilterInput
+  notes: ModelStringInput
+  or: [ModelUnitFilterInput]
+  residentEmail: ModelStringInput
+  residentId: ModelIDInput
+  residentName: ModelStringInput
+  residentPhone: ModelStringInput
+  unitNumber: ModelStringInput
+  updatedAt: ModelStringInput
+}
+
+input ModelUnitParkingAssignmentAssignmentTypeInput {
+  eq: UnitParkingAssignmentAssignmentType
+  ne: UnitParkingAssignmentAssignmentType
+}
+
+input ModelUnitParkingAssignmentConditionInput {
+  and: [ModelUnitParkingAssignmentConditionInput]
+  assignedAt: ModelStringInput
+  assignedBy: ModelIDInput
+  assignedByName: ModelStringInput
+  assignmentType: ModelUnitParkingAssignmentAssignmentTypeInput
+  buildingId: ModelIDInput
+  createdAt: ModelStringInput
+  endDate: ModelStringInput
+  isActive: ModelBooleanInput
+  not: ModelUnitParkingAssignmentConditionInput
+  notes: ModelStringInput
+  or: [ModelUnitParkingAssignmentConditionInput]
+  parkingSpotId: ModelIDInput
+  residentId: ModelIDInput
+  residentName: ModelStringInput
+  startDate: ModelStringInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+}
+
+input ModelUnitParkingAssignmentFilterInput {
+  and: [ModelUnitParkingAssignmentFilterInput]
+  assignedAt: ModelStringInput
+  assignedBy: ModelIDInput
+  assignedByName: ModelStringInput
+  assignmentType: ModelUnitParkingAssignmentAssignmentTypeInput
+  buildingId: ModelIDInput
+  createdAt: ModelStringInput
+  endDate: ModelStringInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  not: ModelUnitParkingAssignmentFilterInput
+  notes: ModelStringInput
+  or: [ModelUnitParkingAssignmentFilterInput]
+  parkingSpotId: ModelIDInput
+  residentId: ModelIDInput
+  residentName: ModelStringInput
+  startDate: ModelStringInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+}
+
+input ModelUserProfileConditionInput {
+  and: [ModelUserProfileConditionInput]
+  assignedBuildingId: ModelIDInput
+  cognitoUsername: ModelStringInput
+  createdAt: ModelStringInput
+  displayName: ModelStringInput
+  email: ModelStringInput
+  firstName: ModelStringInput
+  isActive: ModelBooleanInput
+  isEmailVerified: ModelBooleanInput
+  isPhoneVerified: ModelBooleanInput
+  language: ModelStringInput
+  lastLoginAt: ModelStringInput
+  lastName: ModelStringInput
+  loginCount: ModelIntInput
+  not: ModelUserProfileConditionInput
+  notificationPreferences: ModelStringInput
+  or: [ModelUserProfileConditionInput]
+  phone: ModelStringInput
+  role: ModelUserProfileRoleInput
+  timezone: ModelStringInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+}
+
+input ModelUserProfileFilterInput {
+  and: [ModelUserProfileFilterInput]
+  assignedBuildingId: ModelIDInput
+  cognitoUsername: ModelStringInput
+  createdAt: ModelStringInput
+  displayName: ModelStringInput
+  email: ModelStringInput
+  firstName: ModelStringInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  isEmailVerified: ModelBooleanInput
+  isPhoneVerified: ModelBooleanInput
+  language: ModelStringInput
+  lastLoginAt: ModelStringInput
+  lastName: ModelStringInput
+  loginCount: ModelIntInput
+  not: ModelUserProfileFilterInput
+  notificationPreferences: ModelStringInput
+  or: [ModelUserProfileFilterInput]
+  phone: ModelStringInput
+  role: ModelUserProfileRoleInput
+  timezone: ModelStringInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+}
+
+input ModelUserProfileRoleInput {
+  eq: UserProfileRole
+  ne: UserProfileRole
+}
+
+input ModelVehicleConditionInput {
+  and: [ModelVehicleConditionInput]
+  batteryCapacity: ModelIntInput
+  chargerType: ModelStringInput
+  color: ModelStringInput
+  createdAt: ModelStringInput
+  isActive: ModelBooleanInput
+  isElectric: ModelBooleanInput
+  isVerified: ModelBooleanInput
+  licensePlate: ModelStringInput
+  make: ModelStringInput
+  model: ModelStringInput
+  not: ModelVehicleConditionInput
+  notes: ModelStringInput
+  or: [ModelVehicleConditionInput]
+  ownerId: ModelIDInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+  verifiedAt: ModelStringInput
+  verifiedBy: ModelIDInput
+  year: ModelIntInput
+}
+
+input ModelVehicleFilterInput {
+  and: [ModelVehicleFilterInput]
+  batteryCapacity: ModelIntInput
+  chargerType: ModelStringInput
+  color: ModelStringInput
+  createdAt: ModelStringInput
+  id: ModelIDInput
+  isActive: ModelBooleanInput
+  isElectric: ModelBooleanInput
+  isVerified: ModelBooleanInput
+  licensePlate: ModelStringInput
+  make: ModelStringInput
+  model: ModelStringInput
+  not: ModelVehicleFilterInput
+  notes: ModelStringInput
+  or: [ModelVehicleFilterInput]
+  ownerId: ModelIDInput
+  unitId: ModelIDInput
+  updatedAt: ModelStringInput
+  verifiedAt: ModelStringInput
+  verifiedBy: ModelIDInput
+  year: ModelIntInput
+}
+
+input UpdateAccessCodeInput {
+  buildingId: ID
+  code: String
+  createdAt: AWSDateTime
+  guestName: String
+  guestPhone: String
+  id: ID!
+  isActive: Boolean
+  issuedAt: AWSDateTime
+  issuedBy: ID
+  issuedByName: String
+  maxUsages: Int
+  notes: String
+  purpose: String
+  unitId: ID
+  updatedAt: AWSDateTime
+  usageCount: Int
+  validFrom: AWSDateTime
+  validUntil: AWSDateTime
+}
+
+input UpdateBuildingInput {
+  address: String
+  adminId: ID
+  city: String
+  code: String
+  createdAt: AWSDateTime
+  description: String
+  id: ID!
+  isActive: Boolean
+  name: String
+  postalCode: String
+  totalParkingSpots: Int
+  totalUnits: Int
+  updatedAt: AWSDateTime
+}
+
+input UpdateGuestReservationInput {
+  accessCode: String
+  accessCodeId: ID
+  actualDuration: Int
+  buildingId: ID
+  cancellationReason: String
+  cancelledAt: AWSDateTime
+  cancelledBy: String
+  checkedInAt: AWSDateTime
+  checkedOutAt: AWSDateTime
+  createdAt: AWSDateTime
+  duration: Int
+  endTime: AWSDateTime
+  guestEmail: String
+  guestName: String
+  guestPhone: String
+  guestVehiclePlate: String
+  hostResidentId: ID
+  hostResidentName: String
+  hostUnitId: ID
+  hourlyRate: Float
+  id: ID!
+  isAccessCodeValid: Boolean
+  isPaid: Boolean
+  notes: String
+  parkingLotId: ID
+  parkingSpotId: ID
+  paymentId: String
+  paymentMethod: String
+  startTime: AWSDateTime
+  status: GuestReservationStatus
+  totalCost: Float
+  updatedAt: AWSDateTime
+}
+
+input UpdateParkingLotInput {
+  availableSpots: Int
+  buildingId: ID
+  code: String
+  createdAt: AWSDateTime
+  description: String
+  evChargerSpots: Int
+  guestSpots: Int
+  id: ID!
+  isActive: Boolean
+  name: String
+  residentSpots: Int
+  section: String
+  totalSpots: Int
+  updatedAt: AWSDateTime
+}
+
+input UpdateParkingSpotInput {
+  assignedToUnitId: ID
+  buildingId: ID
+  chargerStatus: ParkingSpotChargerStatus
+  chargerType: String
+  createdAt: AWSDateTime
+  floor: String
+  hasCharger: Boolean
+  hourlyRate: Float
+  id: ID!
+  isActive: Boolean
+  isAssigned: Boolean
+  lastMaintenanceDate: AWSDate
+  monthlyRate: Float
+  nextMaintenanceDate: AWSDate
+  notes: String
+  parkingLotId: ID
+  powerLevel: Int
+  row: String
+  section: String
+  spotNumber: String
+  status: ParkingSpotStatus
+  type: ParkingSpotType
+  updatedAt: AWSDateTime
+}
+
+input UpdateUnitInput {
+  assignedParkingCount: Int
+  buildingId: ID
+  createdAt: AWSDateTime
+  floorNumber: Int
+  id: ID!
+  isActive: Boolean
+  isOccupied: Boolean
+  maxParkingAllowed: Int
+  moveInDate: AWSDate
+  moveOutDate: AWSDate
+  notes: String
+  residentEmail: String
+  residentId: ID
+  residentName: String
+  residentPhone: String
+  unitNumber: String
+  updatedAt: AWSDateTime
+}
+
+input UpdateUnitParkingAssignmentInput {
+  assignedAt: AWSDateTime
+  assignedBy: ID
+  assignedByName: String
+  assignmentType: UnitParkingAssignmentAssignmentType
+  buildingId: ID
+  createdAt: AWSDateTime
+  endDate: AWSDate
+  id: ID!
+  isActive: Boolean
+  notes: String
+  parkingSpotId: ID
+  residentId: ID
+  residentName: String
+  startDate: AWSDate
+  unitId: ID
+  updatedAt: AWSDateTime
+}
+
+input UpdateUserProfileInput {
+  assignedBuildingId: ID
+  cognitoUsername: String
+  createdAt: AWSDateTime
+  displayName: String
+  email: String
+  firstName: String
+  id: ID!
+  isActive: Boolean
+  isEmailVerified: Boolean
+  isPhoneVerified: Boolean
+  language: String
+  lastLoginAt: AWSDateTime
+  lastName: String
+  loginCount: Int
+  notificationPreferences: AWSJSON
+  phone: String
+  role: UserProfileRole
+  timezone: String
+  unitId: ID
+  updatedAt: AWSDateTime
+}
+
+input UpdateVehicleInput {
+  batteryCapacity: Int
+  chargerType: String
+  color: String
+  createdAt: AWSDateTime
+  id: ID!
+  isActive: Boolean
+  isElectric: Boolean
+  isVerified: Boolean
+  licensePlate: String
+  make: String
+  model: String
+  notes: String
+  ownerId: ID
+  unitId: ID
+  updatedAt: AWSDateTime
+  verifiedAt: AWSDateTime
+  verifiedBy: ID
+  year: Int
+}

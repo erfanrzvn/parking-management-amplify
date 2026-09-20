@@ -1,4 +1,4 @@
-# Schema version 4 - Added name and phone to Resident
+# Schema version 5 - Changed phone from AWSPhone to String for flexible formats
 type ParkingConfig {
   id: ID!
   name: String
@@ -12,13 +12,14 @@ type Resident {
   id: ID!
   email: AWSEmail!
   name: String
-  phone: AWSPhone
+  phone: String
   building: String!
   floor: String!
   unitNumber: String!
   plate: String!
   residentCode: String!
   userId: String!
+  householdId: String
   deletedAt: AWSDateTime
   createdAt: AWSDateTime!
   updatedAt: AWSDateTime!
@@ -50,6 +51,7 @@ type Query {
   getReservation(id: ID!): Reservation
   listReservations(limit: Int, nextToken: String): ReservationConnection
   checkAvailability: AvailabilityResponse
+  exportResidentsCSV: String
 }
 
 type ResidentConnection {
@@ -75,6 +77,7 @@ type Mutation {
   cancelReservation(id: ID!): Reservation
   deleteReservation(id: ID!): Reservation
   verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
+  importResidentsCSV(csvData: String!): ImportResult
 }
 
 type ResidentVerificationResult {
@@ -89,13 +92,14 @@ type ResidentWithCredentials {
   id: ID!
   email: AWSEmail!
   name: String
-  phone: AWSPhone
+  phone: String
   building: String!
   floor: String!
   unitNumber: String!
   plate: String!
   residentCode: String!
   userId: String!
+  householdId: String
   tempPassword: String!
   createdAt: AWSDateTime!
   updatedAt: AWSDateTime!
@@ -118,34 +122,37 @@ input UpdateParkingConfigInput {
 input CreateResidentInput {
   email: AWSEmail!
   name: String
-  phone: AWSPhone
+  phone: String
   building: String!
   floor: String!
   unitNumber: String!
   plate: String!
   residentCode: String!
   userId: String!
+  householdId: String
 }
 
 input CreateResidentWithCognitoInput {
   email: AWSEmail!
   name: String
-  phone: AWSPhone
+  phone: String
   building: String!
   floor: String!
   unitNumber: String!
   plate: String!
+  householdId: String
 }
 
 input UpdateResidentInput {
   id: ID!
   email: AWSEmail
   name: String
-  phone: AWSPhone
+  phone: String
   building: String
   floor: String
   unitNumber: String
   plate: String
+  householdId: String
 }
 
 input CreateReservationInput {
@@ -170,6 +177,15 @@ type AvailabilityResponse {
   availableSpots: Int!
   totalSpots: Int!
   nextAvailableTime: AWSDateTime
+  message: String!
+}
+
+type ImportResult {
+  success: Boolean!
+  created: Int!
+  updated: Int!
+  failed: Int!
+  errors: [String]
   message: String!
 }
 

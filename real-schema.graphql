@@ -1,0 +1,179 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type AvailabilityResponse {
+  available: Boolean!
+  availableSpots: Int!
+  message: String!
+  nextAvailableTime: AWSDateTime
+  totalSpots: Int!
+}
+
+type Mutation {
+  cancelReservation(id: ID!): Reservation
+  createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig
+  createReservation(input: CreateReservationInput!): Reservation
+  createResident(input: CreateResidentInput!): Resident
+  createResidentWithCognito(input: CreateResidentWithCognitoInput!): ResidentWithCredentials
+  deleteParkingConfig(id: ID!): ParkingConfig
+  deleteReservation(id: ID!): Reservation
+  deleteResident(id: ID!): Resident
+  updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
+  updateReservation(input: UpdateReservationInput!): Reservation
+  updateResident(input: UpdateResidentInput!): Resident
+  verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
+}
+
+#  Schema version 4 - Added name and phone to Resident
+type ParkingConfig {
+  createdAt: AWSDateTime!
+  id: ID!
+  name: String
+  totalSpots: Int!
+  updatedAt: AWSDateTime!
+  updatedBy: String
+}
+
+type Query {
+  checkAvailability: AvailabilityResponse
+  getParkingConfig(id: ID!): ParkingConfig
+  getReservation(id: ID!): Reservation
+  getResident(id: ID!): Resident
+  getResidentByUserId(userId: String!): Resident
+  listParkingConfigs: [ParkingConfig]
+  listReservations(limit: Int, nextToken: String): ReservationConnection
+  listResidents(limit: Int, nextToken: String): ResidentConnection
+}
+
+type Reservation {
+  createdAt: AWSDateTime!
+  deletedAt: AWSDateTime
+  endTime: AWSDateTime!
+  guestEmail: AWSEmail!
+  guestMobile: AWSPhone!
+  guestPlate: String!
+  id: ID!
+  residentCode: String!
+  residentFloor: String
+  residentId: String!
+  residentPlate: String
+  startTime: AWSDateTime!
+  status: String
+  updatedAt: AWSDateTime!
+}
+
+type ReservationConnection {
+  items: [Reservation]
+  nextToken: String
+}
+
+type Resident {
+  building: String!
+  createdAt: AWSDateTime!
+  deletedAt: AWSDateTime
+  email: AWSEmail!
+  floor: String!
+  id: ID!
+  name: String
+  phone: AWSPhone
+  plate: String!
+  residentCode: String!
+  unitNumber: String!
+  updatedAt: AWSDateTime!
+  userId: String!
+}
+
+type ResidentConnection {
+  items: [Resident]
+  nextToken: String
+}
+
+type ResidentVerificationResult {
+  isValid: Boolean!
+  message: String
+  residentFloor: String
+  residentId: String
+  residentPlate: String
+}
+
+type ResidentWithCredentials {
+  building: String!
+  createdAt: AWSDateTime!
+  email: AWSEmail!
+  floor: String!
+  id: ID!
+  message: String
+  name: String
+  phone: AWSPhone
+  plate: String!
+  residentCode: String!
+  tempPassword: String!
+  unitNumber: String!
+  updatedAt: AWSDateTime!
+  userId: String!
+}
+
+input CreateParkingConfigInput {
+  name: String
+  totalSpots: Int!
+  updatedBy: String
+}
+
+input CreateReservationInput {
+  endTime: AWSDateTime!
+  guestEmail: AWSEmail!
+  guestMobile: AWSPhone!
+  guestPlate: String!
+  residentCode: String!
+  residentFloor: String
+  residentId: String!
+  residentPlate: String
+  startTime: AWSDateTime!
+}
+
+input CreateResidentInput {
+  building: String!
+  email: AWSEmail!
+  floor: String!
+  name: String
+  phone: AWSPhone
+  plate: String!
+  residentCode: String!
+  unitNumber: String!
+  userId: String!
+}
+
+input CreateResidentWithCognitoInput {
+  building: String!
+  email: AWSEmail!
+  floor: String!
+  name: String
+  phone: AWSPhone
+  plate: String!
+  unitNumber: String!
+}
+
+input UpdateParkingConfigInput {
+  id: ID!
+  name: String
+  totalSpots: Int
+  updatedBy: String
+}
+
+input UpdateReservationInput {
+  endTime: AWSDateTime
+  id: ID!
+}
+
+input UpdateResidentInput {
+  building: String
+  email: AWSEmail
+  floor: String
+  id: ID!
+  name: String
+  phone: AWSPhone
+  plate: String
+  unitNumber: String
+}

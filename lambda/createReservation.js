@@ -95,7 +95,7 @@ exports.handler = async (event) => {
       throw new Error('This license plate already has an active reservation');
     }
     
-    // Validation 5: Verify resident exists
+    // Validation 5: Verify resident exists and get household info
     const residentScan = await dynamodb.send(new ScanCommand({
       TableName: process.env.RESIDENT_TABLE,
       FilterExpression: 'id = :id AND attribute_not_exists(deletedAt)',
@@ -108,7 +108,44 @@ exports.handler = async (event) => {
       throw new Error('Invalid resident ID');
     }
     
-    // Validation 6: Check for time overlap
+    const resident = unmarshall(residentScan.Items[0]);
+    const householdId = resident.householdId;
+    
+    // Validation 6: Check if any member of the same household has an active reservation
+    if (householdId) {
+      // Get all residents in the same household
+      const householdScan = await dynamodb.send(new ScanCommand({
+        TableName: process.env.RESIDENT_TABLE,
+        FilterExpression: 'householdId = :householdId AND attribute_not_exists(deletedAt)',
+        ExpressionAttributeValues: marshall({
+          ':householdId': householdId
+        })
+      }));
+      
+      if (householdScan.Items && householdScan.Items.length > 0) {
+        const householdResidentIds = householdScan.Items.map(item => unmarshall(item).id);
+        
+        // Check if any household member has an active reservation
+        const householdReservations = await dynamodb.send(new ScanCommand({
+          TableName: process.env.RESERVATION_TABLE,
+          FilterExpression: 'endTime > :now AND attribute_not_exists(deletedAt)',
+          ExpressionAttributeValues: marshall({
+            ':now': nowISO
+          })
+        }));
+        
+        if (householdReservations.Items && householdReservations.Items.length > 0) {
+          for (const item of householdReservations.Items) {
+            const reservation = unmarshall(item);
+            if (householdResidentIds.includes(reservation.residentId)) {
+              throw new Error(`Your household already has an active reservation. Only one active reservation per household is allowed (Building: ${resident.building}, Unit: ${resident.unitNumber})`);
+            }
+          }
+        }
+      }
+    }
+    
+    // Validation 7: Check for time overlap (individual resident check as fallback)
     const residentReservations = await dynamodb.send(new ScanCommand({
       TableName: process.env.RESERVATION_TABLE,
       FilterExpression: 'residentId = :residentId AND endTime > :now AND attribute_not_exists(deletedAt)',
@@ -125,7 +162,7 @@ exports.handler = async (event) => {
         const existingEnd = new Date(existingRes.endTime);
         
         if (startTime < existingEnd && endTime > existingStart) {
-          throw new Error('This resident already has a reservation during this time period');
+          throw new Error('You already have a reservation during this time period');
         }
       }
     }

@@ -262,6 +262,95 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     return code;
   };
 
+  const handleExportCSV = async () => {
+    setLoading(true);
+    setMessage('');
+    
+    try {
+      const query = `
+        query ExportResidentsCSV {
+          exportResidentsCSV
+        }
+      `;
+      
+      const response: any = await graphqlClient.graphql({ query });
+      const csvData = response.data.exportResidentsCSV;
+      
+      // Create blob and download
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `residents-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setMessage('✅ CSV exported successfully');
+    } catch (error: any) {
+      console.error('Export error:', error);
+      setMessage(`❌ Export failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setLoading(true);
+    setMessage('');
+    
+    try {
+      // Read file
+      const text = await file.text();
+      
+      // Call import mutation
+      const mutation = `
+        mutation ImportResidentsCSV($csvData: String!) {
+          importResidentsCSV(csvData: $csvData) {
+            success
+            created
+            updated
+            failed
+            errors
+            message
+          }
+        }
+      `;
+      
+      const response: any = await graphqlClient.graphql({
+        query: mutation,
+        variables: { csvData: text }
+      });
+      
+      const result = response.data.importResidentsCSV;
+      
+      if (result.success) {
+        setMessage(`✅ ${result.message}`);
+      } else {
+        let errorMsg = `⚠️ ${result.message}`;
+        if (result.errors && result.errors.length > 0) {
+          errorMsg += '\n\nErrors:\n' + result.errors.slice(0, 5).join('\n');
+        }
+        setMessage(errorMsg);
+      }
+      
+      // Reload residents
+      await loadResidents();
+      
+    } catch (error: any) {
+      console.error('Import error:', error);
+      setMessage(`❌ Import failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
   const handleOpenResidentModal = (resident?: Resident) => {
     if (resident) {
       // Edit mode
@@ -901,12 +990,35 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           <div className="residents-section">
             <div className="section-header">
               <h2>Resident Management</h2>
-              <button 
-                className="btn-create-parking"
-                onClick={() => handleOpenResidentModal()}
-              >
-                + Add Resident
-              </button>
+              <div style={{display: 'flex', gap: '10px'}}>
+                <button 
+                  className="btn-secondary"
+                  onClick={handleExportCSV}
+                  disabled={loading}
+                >
+                  📥 Export CSV
+                </button>
+                <button 
+                  className="btn-secondary"
+                  onClick={() => document.getElementById('csv-file-input')?.click()}
+                  disabled={loading}
+                >
+                  📤 Import CSV
+                </button>
+                <input
+                  id="csv-file-input"
+                  type="file"
+                  accept=".csv"
+                  style={{display: 'none'}}
+                  onChange={handleImportCSV}
+                />
+                <button 
+                  className="btn-create-parking"
+                  onClick={() => handleOpenResidentModal()}
+                >
+                  + Add Resident
+                </button>
+              </div>
             </div>
 
             {residents.length === 0 ? (

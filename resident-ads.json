@@ -1,0 +1,12 @@
+{
+  "id": {"S": "resident_20260811_ads"},
+  "userId": {"S": "dcad0598-7051-7031-928f-1f3c147ff405"},
+  "email": {"S": "ads@asd.com"},
+  "residentCode": {"S": "UKA935"},
+  "floor": {"S": "2"},
+  "plate": {"S": "ABC1234"},
+  "building": {"S": "Building A"},
+  "unitNumber": {"S": "123"},
+  "createdAt": {"S": "2026-08-11T11:00:00Z"},
+  "updatedAt": {"S": "2026-08-11T11:00:00Z"}
+}

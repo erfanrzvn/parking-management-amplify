@@ -172,7 +172,7 @@ Resources:
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
       Definition: |
-        # Schema version 6 - Added householdId and CSV import/export
+        # Schema version 3 - Pagination support
         type ParkingConfig {
           id: ID!
           name: String
@@ -193,7 +193,6 @@ Resources:
           plate: String!
           residentCode: String!
           userId: String!
-          householdId: String
           deletedAt: AWSDateTime
           createdAt: AWSDateTime!
           updatedAt: AWSDateTime!
