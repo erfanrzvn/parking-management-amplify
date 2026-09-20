@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, ScanCommand, PutItemCommand, UpdateItemCommand, GetItemCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand, PutCommand, UpdateCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminGetUserCommand, AdminUpdateUserAttributesCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { randomBytes } = require('crypto');
 
@@ -93,8 +93,8 @@ function parseCSV(csvData) {
 
   const headers = lines[0].split(',').map(h => h.trim());
   
-  // Required columns for user-friendly CSV
-  const requiredHeaders = ['email', 'building', 'floor', 'unitNumber', 'plate'];
+  // Required columns for user-friendly CSV - only email is truly required
+  const requiredHeaders = ['email'];
   
   for (const required of requiredHeaders) {
     if (!headers.includes(required)) {
@@ -170,22 +170,31 @@ async function createOrUpdateCognitoUser(resident, isUpdate = false) {
   const validPhone = validatePhoneNumber(phone);
 
   if (isUpdate) {
-    // Update existing user
-    const attributes = [];
-    if (name) attributes.push({ Name: 'name', Value: name });
-    if (validPhone) attributes.push({ Name: 'phone_number', Value: validPhone });
-
-    if (attributes.length > 0) {
-      await cognitoClient.send(new AdminUpdateUserAttributesCommand({
-        UserPoolId: USER_POOL_ID,
-        Username: email,
-        UserAttributes: attributes
-      }));
-    }
+    // Check if user exists first
+    const existingUser = await checkCognitoUser(email);
     
-    const userInfo = await checkCognitoUser(email);
-    return userInfo.Username;
-  } else {
+    if (!existingUser) {
+      // User doesn't exist in Cognito, create new one instead of updating
+      isUpdate = false; // Switch to create mode
+    } else {
+      // Update existing user
+      const attributes = [];
+      if (name) attributes.push({ Name: 'name', Value: name });
+      if (validPhone) attributes.push({ Name: 'phone_number', Value: validPhone });
+
+      if (attributes.length > 0) {
+        await cognitoClient.send(new AdminUpdateUserAttributesCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: email,
+          UserAttributes: attributes
+        }));
+      }
+      
+      return existingUser.Username;
+    }
+  }
+  
+  if (!isUpdate) {
     // Create new user
     const userAttributes = [
       { Name: 'email', Value: email },
@@ -194,26 +203,46 @@ async function createOrUpdateCognitoUser(resident, isUpdate = false) {
     if (name) userAttributes.push({ Name: 'name', Value: name });
     if (validPhone) userAttributes.push({ Name: 'phone_number', Value: validPhone });
 
-    const createResult = await cognitoClient.send(new AdminCreateUserCommand({
-      UserPoolId: USER_POOL_ID,
-      Username: email,
-      UserAttributes: userAttributes,
-      MessageAction: 'SUPPRESS', // Don't send welcome email during bulk import
-      DesiredDeliveryMediums: ['EMAIL']
-    }));
-
-    // Add to RESIDENT group
     try {
-      await cognitoClient.send(new AdminAddUserToGroupCommand({
+      const createResult = await cognitoClient.send(new AdminCreateUserCommand({
         UserPoolId: USER_POOL_ID,
         Username: email,
-        GroupName: 'RESIDENT'
+        UserAttributes: userAttributes,
+        MessageAction: 'SUPPRESS', // Don't send welcome email during bulk import
+        DesiredDeliveryMediums: ['EMAIL']
       }));
-    } catch (error) {
-      console.warn(`Could not add user to RESIDENT group: ${error.message}`);
-    }
 
-    return createResult.User.Username;
+      // Add to RESIDENT group
+      try {
+        await cognitoClient.send(new AdminAddUserToGroupCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: email,
+          GroupName: 'RESIDENT'
+        }));
+      } catch (error) {
+        console.warn(`Could not add user to RESIDENT group: ${error.message}`);
+      }
+
+      return createResult.User.Username;
+    } catch (error) {
+      if (error.name === 'UsernameExistsException') {
+        // User already exists, update their attributes instead
+        const attributes = [];
+        if (name) attributes.push({ Name: 'name', Value: name });
+        if (validPhone) attributes.push({ Name: 'phone_number', Value: validPhone });
+
+        if (attributes.length > 0) {
+          await cognitoClient.send(new AdminUpdateUserAttributesCommand({
+            UserPoolId: USER_POOL_ID,
+            Username: email,
+            UserAttributes: attributes
+          }));
+        }
+        
+        return email;
+      }
+      throw error; // Re-throw if it's a different error
+    }
   }
 }
 
@@ -262,15 +291,17 @@ exports.handler = async (event) => {
       const record = records[i];
       
       try {
-        // Validate required fields
-        if (!record.email || !record.building || !record.floor || !record.unitNumber || !record.plate) {
+        // Validate required fields - only email is required
+        if (!record.email) {
           results.failed++;
-          results.errors.push(`Row ${i + 2}: Missing required fields (email, building, floor, unitNumber, plate)`);
+          results.errors.push(`Row ${i + 2}: Missing required field: email`);
           continue;
         }
 
-        // Generate householdId
-        const householdId = generateHouseholdId(record.building, record.floor, record.unitNumber);
+        // Generate householdId from building-floor-unit (only if all provided)
+        const householdId = (record.building && record.floor && record.unitNumber) 
+          ? `${record.building}-${record.floor}-${record.unitNumber}`
+          : null;
 
         // Check if resident exists (only by email, ignore id from CSV)
         const existingResident = await getResidentByEmail(record.email);
@@ -315,13 +346,15 @@ exports.handler = async (event) => {
             expressionAttributeValues[':plate'] = record.plate;
           }
 
-          updateExpression.push('householdId = :householdId');
-          expressionAttributeValues[':householdId'] = householdId;
+          if (householdId) {
+            updateExpression.push('householdId = :householdId');
+            expressionAttributeValues[':householdId'] = householdId;
+          }
 
           updateExpression.push('updatedAt = :updatedAt');
           expressionAttributeValues[':updatedAt'] = now;
 
-          await docClient.send(new UpdateItemCommand({
+          await docClient.send(new UpdateCommand({
             TableName: RESIDENT_TABLE,
             Key: { id: existingResident.id },
             UpdateExpression: 'SET ' + updateExpression.join(', '),
@@ -343,23 +376,27 @@ exports.handler = async (event) => {
           // Create in DynamoDB with auto-generated ID
           const residentId = `resident_${Date.now()}_${randomBytes(3).toString('hex')}`;
           
-          await docClient.send(new PutItemCommand({
+          const newResident = {
+            id: residentId,
+            email: record.email,
+            residentCode: residentCode,
+            userId: userId,
+            createdAt: now,
+            updatedAt: now
+          };
+
+          // Add optional fields only if provided
+          if (record.name) newResident.name = record.name;
+          if (record.phone) newResident.phone = record.phone;
+          if (record.building) newResident.building = record.building;
+          if (record.floor) newResident.floor = record.floor;
+          if (record.unitNumber) newResident.unitNumber = record.unitNumber;
+          if (record.plate) newResident.plate = record.plate;
+          if (householdId) newResident.householdId = householdId;
+
+          await docClient.send(new PutCommand({
             TableName: RESIDENT_TABLE,
-            Item: {
-              id: residentId,
-              email: record.email,
-              name: record.name || '',
-              phone: record.phone || '',
-              building: record.building,
-              floor: record.floor,
-              unitNumber: record.unitNumber,
-              plate: record.plate,
-              residentCode: residentCode,
-              userId: userId,
-              householdId: householdId,
-              createdAt: now,
-              updatedAt: now
-            }
+            Item: newResident
           }));
 
           results.created++;
@@ -393,7 +430,7 @@ exports.handler = async (event) => {
  * Helper function to get resident by ID
  */
 async function getResidentById(id) {
-  const result = await docClient.send(new GetItemCommand({
+  const result = await docClient.send(new GetCommand({
     TableName: RESIDENT_TABLE,
     Key: { id }
   }));
