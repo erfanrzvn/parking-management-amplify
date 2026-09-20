@@ -72,6 +72,7 @@ export async function listResidents(limit?: number, nextToken?: string) {
           plate
           householdId
           createdAt
+          updatedAt
         }
         nextToken
       }
