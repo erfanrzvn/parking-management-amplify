@@ -1,5 +1,5 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'ca-central-1' });
 const docClient = DynamoDBDocumentClient.from(client);
@@ -10,7 +10,7 @@ const RESIDENT_TABLE = process.env.RESIDENT_TABLE || 'Resident';
  * Export all residents to CSV format
  * Returns CSV string with headers and data
  */
-export const handler = async (event) => {
+exports.handler = async (event) => {
   console.log('Export residents CSV request:', JSON.stringify(event));
 
   try {
@@ -43,21 +43,16 @@ export const handler = async (event) => {
       return a.unitNumber.localeCompare(b.unitNumber);
     });
 
-    // Generate CSV
+    // Generate CSV with only user-friendly fields
+    // Removed: id, userId, residentCode, householdId, createdAt, updatedAt
     const headers = [
-      'id',
       'email',
       'name',
       'phone',
       'building',
       'floor',
       'unitNumber',
-      'plate',
-      'residentCode',
-      'userId',
-      'householdId',
-      'createdAt',
-      'updatedAt'
+      'plate'
     ];
 
     // CSV header row

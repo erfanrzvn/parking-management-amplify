@@ -1,0 +1,5 @@
+email,name,phone,building,floor,unitNumber,plate
+john.doe@example.com,John Doe,+1-555-0100,A,1,101,ABC123
+jane.doe@example.com,Jane Doe,+1-555-0101,A,1,101,ABC123
+mike.smith@example.com,Mike Smith,+1-555-0200,B,2,205,XYZ789
+sarah.jones@example.com,Sarah Jones,+1-555-0300,C,3,305,DEF456

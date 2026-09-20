@@ -1,7 +1,7 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand, PutItemCommand, UpdateItemCommand } from '@aws-sdk/lib-dynamodb';
-import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminGetUserCommand, AdminUpdateUserAttributesCommand } from '@aws-sdk/client-cognito-identity-provider';
-import { randomBytes } from 'crypto';
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand, PutItemCommand, UpdateItemCommand, GetItemCommand } = require('@aws-sdk/lib-dynamodb');
+const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminGetUserCommand, AdminUpdateUserAttributesCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { randomBytes } = require('crypto');
 
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'ca-central-1' });
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -32,6 +32,7 @@ function generateResidentCode() {
 
 /**
  * Parse CSV string into array of objects
+ * Expected columns: email, name, phone, building, floor, unitNumber, plate
  */
 function parseCSV(csvData) {
   const lines = csvData.trim().split('\n');
@@ -40,6 +41,8 @@ function parseCSV(csvData) {
   }
 
   const headers = lines[0].split(',').map(h => h.trim());
+  
+  // Required columns for user-friendly CSV
   const requiredHeaders = ['email', 'building', 'floor', 'unitNumber', 'plate'];
   
   for (const required of requiredHeaders) {
@@ -179,7 +182,7 @@ async function getResidentByEmail(email) {
 /**
  * Import residents from CSV
  */
-export const handler = async (event) => {
+exports.handler = async (event) => {
   console.log('Import residents CSV request');
 
   try {
@@ -215,10 +218,8 @@ export const handler = async (event) => {
         // Generate householdId
         const householdId = generateHouseholdId(record.building, record.floor, record.unitNumber);
 
-        // Check if resident exists
-        const existingResident = record.id 
-          ? await getResidentById(record.id)
-          : await getResidentByEmail(record.email);
+        // Check if resident exists (only by email, ignore id from CSV)
+        const existingResident = await getResidentByEmail(record.email);
 
         const now = new Date().toISOString();
 
@@ -282,11 +283,11 @@ export const handler = async (event) => {
           // Create Cognito user
           const userId = await createOrUpdateCognitoUser(record, false);
 
-          // Generate resident code if not provided
-          const residentCode = record.residentCode || generateResidentCode();
+          // Generate resident code (always new for new residents)
+          const residentCode = generateResidentCode();
 
-          // Create in DynamoDB
-          const residentId = record.id || `resident_${Date.now()}_${randomBytes(3).toString('hex')}`;
+          // Create in DynamoDB with auto-generated ID
+          const residentId = `resident_${Date.now()}_${randomBytes(3).toString('hex')}`;
           
           await docClient.send(new PutItemCommand({
             TableName: RESIDENT_TABLE,
