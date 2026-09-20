@@ -2637,3 +2637,42 @@ body {
   font-weight: 700;
   font-size: 1.2rem;
 }
+
+/* Household Grouping Styles */
+.residents-table .resident-row {
+  transition: all 0.2s ease;
+}
+
+.residents-table .resident-row:hover {
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+.household-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.household-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.residents-table .resident-row td:first-child {
+  min-width: 160px;
+}
+
+.residents-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

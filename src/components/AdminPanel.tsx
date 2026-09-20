@@ -27,6 +27,7 @@ interface Resident {
   plate?: string;
   residentCode: string;
   userId: string;
+  householdId?: string;
 }
 
 interface Reservation {
@@ -130,7 +131,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           unitNumber: item.unitNumber,
           plate: item.plate,
           residentCode: item.residentCode || '',
-          userId: item.userId || ''
+          userId: item.userId || '',
+          householdId: item.householdId
         })));
       }
     } catch (error) {
@@ -512,6 +514,40 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Group residents by household for display
+  const groupResidentsByHousehold = () => {
+    const grouped = new Map<string, Resident[]>();
+    
+    residents.forEach(resident => {
+      const householdId = resident.householdId || 'no-household';
+      if (!grouped.has(householdId)) {
+        grouped.set(householdId, []);
+      }
+      grouped.get(householdId)!.push(resident);
+    });
+    
+    // Sort households by building-floor-unit
+    return Array.from(grouped.entries()).sort((a, b) => {
+      if (a[0] === 'no-household') return 1;
+      if (b[0] === 'no-household') return -1;
+      return a[0].localeCompare(b[0]);
+    });
+  };
+
+  const getHouseholdColor = (householdId: string, index: number) => {
+    const colors = [
+      '#3b82f6', // blue
+      '#10b981', // green
+      '#f59e0b', // amber
+      '#ef4444', // red
+      '#8b5cf6', // purple
+      '#ec4899', // pink
+      '#06b6d4', // cyan
+      '#84cc16', // lime
+    ];
+    return colors[index % colors.length];
   };
 
   const handleUpdateParkingSpots = async (parking: Parking, change: number) => {
@@ -1029,54 +1065,98 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               </div>
             ) : (
               <div className="residents-table-container">
-                <table className="reservations-table">
+                <table className="reservations-table residents-table">
                   <thead>
                     <tr>
+                      <th>Household</th>
                       <th>Building</th>
                       <th>Unit</th>
                       <th>Resident Name</th>
                       <th>Phone</th>
                       <th>Email</th>
+                      <th>Plate</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {residents.map((resident) => (
-                      <tr key={resident.id}>
-                        <td>
-                          <strong>{resident.building || '-'}</strong>
-                        </td>
-                        <td>
-                          <strong>{resident.unitNumber || '-'}</strong>
-                        </td>
-                        <td>
-                          {resident.name || resident.email.split('@')[0]}
-                        </td>
-                        <td>
-                          {resident.phone || '-'}
-                        </td>
-                        <td>
-                          {resident.email}
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <button
-                              className="btn-action btn-edit"
-                              onClick={() => handleOpenResidentModal(resident)}
-                              title="Edit resident"
-                            >
-                              ✏️ Edit
-                            </button>
-                            <button
-                              className="btn-action btn-delete"
-                              onClick={() => handleDeleteResident(resident)}
-                              title="Delete resident"
-                            >
-                              🗑️ Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                    {groupResidentsByHousehold().map(([householdId, householdMembers], householdIndex) => (
+                      householdMembers.map((resident, memberIndex) => {
+                        const isFirstInHousehold = memberIndex === 0;
+                        const householdColor = getHouseholdColor(householdId, householdIndex);
+                        const memberCount = householdMembers.length;
+                        
+                        return (
+                          <tr 
+                            key={resident.id} 
+                            className="resident-row"
+                            style={{
+                              borderLeft: householdId !== 'no-household' ? `4px solid ${householdColor}` : 'none'
+                            }}
+                          >
+                            <td>
+                              {isFirstInHousehold && householdId !== 'no-household' ? (
+                                <div className="household-cell">
+                                  <div 
+                                    className="household-badge"
+                                    style={{ backgroundColor: householdColor }}
+                                  >
+                                    🏠 {memberCount} {memberCount === 1 ? 'member' : 'members'}
+                                  </div>
+                                  <small style={{ color: '#6b7280', fontSize: '11px' }}>
+                                    {householdId}
+                                  </small>
+                                </div>
+                              ) : householdId === 'no-household' ? (
+                                <span style={{ color: '#9ca3af' }}>—</span>
+                              ) : (
+                                <div style={{ paddingLeft: '20px', color: '#9ca3af' }}>↳</div>
+                              )}
+                            </td>
+                            <td>
+                              <strong>{resident.building || '-'}</strong>
+                            </td>
+                            <td>
+                              <strong>{resident.unitNumber || '-'}</strong>
+                            </td>
+                            <td>
+                              {resident.name || resident.email.split('@')[0]}
+                            </td>
+                            <td>
+                              {resident.phone || '-'}
+                            </td>
+                            <td>
+                              {resident.email}
+                            </td>
+                            <td>
+                              <span style={{ 
+                                fontWeight: 600, 
+                                color: '#374151',
+                                fontFamily: 'monospace'
+                              }}>
+                                {resident.plate || '-'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="action-buttons">
+                                <button
+                                  className="btn-action btn-edit"
+                                  onClick={() => handleOpenResidentModal(resident)}
+                                  title="Edit resident"
+                                >
+                                  ✏️ Edit
+                                </button>
+                                <button
+                                  className="btn-action btn-delete"
+                                  onClick={() => handleDeleteResident(resident)}
+                                  title="Delete resident"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     ))}
                   </tbody>
                 </table>
