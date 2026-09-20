@@ -1,0 +1,5 @@
+{
+  "arguments": {
+    "csvData": "email,name,phone,building,floor,unitNumber,plate\ntest@security.com,Test User,+1234567890,TestBuilding,5,501,TEST123"
+  }
+}

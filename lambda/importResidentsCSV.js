@@ -27,20 +27,44 @@ function validatePhoneNumber(phone) {
     return null; // Phone is optional
   }
   
-  // Remove all non-digit characters except leading +
-  let cleaned = phone.replace(/[^\d+]/g, '');
+  // Remove all spaces, dashes, parentheses, and other formatting
+  let cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
   
-  // If it starts with +, it might be valid E.164
-  if (cleaned.startsWith('+') && cleaned.length >= 11) {
-    return cleaned;
+  // If it's negative number (like -5505), convert to positive
+  if (cleaned.startsWith('-')) {
+    cleaned = cleaned.substring(1);
   }
   
-  // If it's just digits, add +1 (default to North America)
-  if (/^\d+$/.test(cleaned) && cleaned.length >= 10) {
-    return '+1' + cleaned;
+  // If it already starts with +, validate length
+  if (cleaned.startsWith('+')) {
+    // E.164 format should be +[1-3 digit country code][4-14 digits]
+    if (cleaned.length >= 11 && cleaned.length <= 17) {
+      return cleaned;
+    }
+    return null; // Invalid E.164 format
   }
   
-  // If it's invalid or too short, return null (skip phone)
+  // If it's just digits, determine country code
+  if (/^\d+$/.test(cleaned)) {
+    // If 10 digits, assume North America (+1)
+    if (cleaned.length === 10) {
+      return '+1' + cleaned;
+    }
+    // If 11 digits and starts with 1, it's already +1 format
+    if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      return '+' + cleaned;
+    }
+    // If 4-5 digits (like 5505, 12551), assume extension - add +1555 prefix
+    if (cleaned.length >= 4 && cleaned.length <= 5) {
+      return '+1555' + cleaned.padStart(7, '0');
+    }
+    // If other lengths, try adding +1
+    if (cleaned.length >= 7 && cleaned.length <= 11) {
+      return '+1' + cleaned;
+    }
+  }
+  
+  // If all else fails, return null (skip invalid phone)
   return null;
 }
 
