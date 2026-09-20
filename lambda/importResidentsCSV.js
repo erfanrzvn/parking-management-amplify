@@ -18,6 +18,33 @@ function generateHouseholdId(building, floor, unitNumber) {
 }
 
 /**
+ * Validate and format phone number for Cognito
+ * Cognito requires E.164 format: +[country code][number]
+ * If phone is invalid or missing, return null (optional field)
+ */
+function validatePhoneNumber(phone) {
+  if (!phone || phone.trim() === '') {
+    return null; // Phone is optional
+  }
+  
+  // Remove all non-digit characters except leading +
+  let cleaned = phone.replace(/[^\d+]/g, '');
+  
+  // If it starts with +, it might be valid E.164
+  if (cleaned.startsWith('+') && cleaned.length >= 11) {
+    return cleaned;
+  }
+  
+  // If it's just digits, add +1 (default to North America)
+  if (/^\d+$/.test(cleaned) && cleaned.length >= 10) {
+    return '+1' + cleaned;
+  }
+  
+  // If it's invalid or too short, return null (skip phone)
+  return null;
+}
+
+/**
  * Generate a random 6-character alphanumeric resident code
  */
 function generateResidentCode() {
@@ -114,12 +141,15 @@ async function checkCognitoUser(email) {
  */
 async function createOrUpdateCognitoUser(resident, isUpdate = false) {
   const { email, name, phone } = resident;
+  
+  // Validate and format phone number
+  const validPhone = validatePhoneNumber(phone);
 
   if (isUpdate) {
     // Update existing user
     const attributes = [];
     if (name) attributes.push({ Name: 'name', Value: name });
-    if (phone) attributes.push({ Name: 'phone_number', Value: phone });
+    if (validPhone) attributes.push({ Name: 'phone_number', Value: validPhone });
 
     if (attributes.length > 0) {
       await cognitoClient.send(new AdminUpdateUserAttributesCommand({
@@ -138,7 +168,7 @@ async function createOrUpdateCognitoUser(resident, isUpdate = false) {
       { Name: 'email_verified', Value: 'true' }
     ];
     if (name) userAttributes.push({ Name: 'name', Value: name });
-    if (phone) userAttributes.push({ Name: 'phone_number', Value: phone });
+    if (validPhone) userAttributes.push({ Name: 'phone_number', Value: validPhone });
 
     const createResult = await cognitoClient.send(new AdminCreateUserCommand({
       UserPoolId: USER_POOL_ID,

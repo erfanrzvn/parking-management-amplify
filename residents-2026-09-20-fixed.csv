@@ -1,0 +1,9 @@
+email,name,phone,building,floor,unitNumber,plate
+erfanrezvani@yahoo.com,Erfan Rezvani,+1-555-5505,1203,6,17,ABC-123
+mike.johnson@example.com,Mike Johnson,+1-555-0677,Building A,12,1203,QRS-123
+ads@asd.com,Ali Rezaei,+1-555-7948,Building A,2,123,ABC1234
+john.doe@example.com,John Doe,+1-555-1208,Building A,3,301,XYZ-789
+resident@parking.com,John Parker,+1-555-0875,Building A,5,502,ABC-1234
+sarah.smith@example.com,Sarah Smith,+1-555-1010,Building B,7,705,LMN-456
+test.resident@example.com,Test Resident,+1-555-1343,Tower A,5,502,ABC123
+admin@admin.com,last resident,+1-555-2551,Tower A,14,1401,ABC-313
