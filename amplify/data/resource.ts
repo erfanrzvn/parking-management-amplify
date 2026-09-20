@@ -23,12 +23,14 @@ const schema = a.schema({
       name: a.string(),
       phone: a.string(),
       building: a.string(),
-      floor: a.string().required(),
+      floor: a.string(),
       unitNumber: a.string(),
-      plate: a.string().required(),
+      plate: a.string(),
       residentCode: a.string().required(),
       userId: a.string().required(),
+      householdId: a.string(),
       createdAt: a.datetime(),
+      updatedAt: a.datetime(),
     })
     .authorization((allow) => [
       allow.owner(),
