@@ -172,7 +172,7 @@ Resources:
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
       Definition: |
-        # Schema version 6 - Added householdId and CSV import/export
+        # Schema version 7 - Made building, floor, unitNumber, plate optional for CSV import flexibility
         type ParkingConfig {
           id: ID!
           name: String
@@ -187,10 +187,10 @@ Resources:
           email: AWSEmail!
           name: String
           phone: String
-          building: String!
-          floor: String!
-          unitNumber: String!
-          plate: String!
+          building: String
+          floor: String
+          unitNumber: String
+          plate: String
           residentCode: String!
           userId: String!
           householdId: String

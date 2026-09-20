@@ -1,0 +1,180 @@
+# Schema version 7 - Made building, floor, unitNumber, plate optional
+type ParkingConfig {
+  id: ID!
+  name: String
+  totalSpots: Int!
+  updatedBy: String
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type Resident {
+  id: ID!
+  email: AWSEmail!
+  name: String
+  phone: String
+  building: String
+  floor: String
+  unitNumber: String
+  plate: String
+  residentCode: String!
+  userId: String!
+  householdId: String
+  deletedAt: AWSDateTime
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type Reservation {
+  id: ID!
+  residentId: String!
+  residentCode: String!
+  residentFloor: String
+  residentPlate: String
+  guestPlate: String!
+  guestMobile: AWSPhone!
+  guestEmail: AWSEmail!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+  status: String
+  deletedAt: AWSDateTime
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type Query {
+  getParkingConfig(id: ID!): ParkingConfig
+  listParkingConfigs: [ParkingConfig]
+  getResident(id: ID!): Resident
+  getResidentByUserId(userId: String!): Resident
+  listResidents(limit: Int, nextToken: String): ResidentConnection
+  getReservation(id: ID!): Reservation
+  listReservations(limit: Int, nextToken: String): ReservationConnection
+  checkAvailability: AvailabilityResponse
+}
+
+type ResidentConnection {
+  items: [Resident]
+  nextToken: String
+}
+
+type ReservationConnection {
+  items: [Reservation]
+  nextToken: String
+}
+
+type Mutation {
+  createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig
+  updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
+  deleteParkingConfig(id: ID!): ParkingConfig
+  createResident(input: CreateResidentInput!): Resident
+  createResidentWithCognito(input: CreateResidentWithCognitoInput!): ResidentWithCredentials
+  updateResident(input: UpdateResidentInput!): Resident
+  deleteResident(id: ID!): Resident
+  createReservation(input: CreateReservationInput!): Reservation
+  updateReservation(input: UpdateReservationInput!): Reservation
+  cancelReservation(id: ID!): Reservation
+  deleteReservation(id: ID!): Reservation
+  verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
+}
+
+type ResidentVerificationResult {
+  isValid: Boolean!
+  residentId: String
+  residentFloor: String
+  residentPlate: String
+  message: String
+}
+
+type ResidentWithCredentials {
+  id: ID!
+  email: AWSEmail!
+  name: String
+  phone: String
+  building: String!
+  floor: String!
+  unitNumber: String!
+  plate: String!
+  residentCode: String!
+  userId: String!
+  tempPassword: String!
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+  message: String
+}
+
+input CreateParkingConfigInput {
+  name: String
+  totalSpots: Int!
+  updatedBy: String
+}
+
+input UpdateParkingConfigInput {
+  id: ID!
+  name: String
+  totalSpots: Int
+  updatedBy: String
+}
+
+input CreateResidentInput {
+  email: AWSEmail!
+  name: String
+  phone: String
+  building: String
+  floor: String
+  unitNumber: String
+  plate: String
+  residentCode: String!
+  userId: String!
+}
+
+input CreateResidentWithCognitoInput {
+  email: AWSEmail!
+  name: String
+  phone: String
+  building: String!
+  floor: String!
+  unitNumber: String!
+  plate: String!
+}
+
+input UpdateResidentInput {
+  id: ID!
+  email: AWSEmail
+  name: String
+  phone: String
+  building: String
+  floor: String
+  unitNumber: String
+  plate: String
+}
+
+input CreateReservationInput {
+  residentId: String!
+  residentCode: String!
+  residentFloor: String
+  residentPlate: String
+  guestPlate: String!
+  guestMobile: AWSPhone!
+  guestEmail: AWSEmail!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+}
+
+input UpdateReservationInput {
+  id: ID!
+  endTime: AWSDateTime
+}
+
+type AvailabilityResponse {
+  available: Boolean!
+  availableSpots: Int!
+  totalSpots: Int!
+  nextAvailableTime: AWSDateTime
+  message: String!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}
