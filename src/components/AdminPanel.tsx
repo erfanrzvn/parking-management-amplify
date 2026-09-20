@@ -135,8 +135,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           householdId: item.householdId
         })));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading residents:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      if (error.errors) {
+        console.error('GraphQL Errors:', error.errors);
+      }
     }
   };
 
