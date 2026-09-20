@@ -5,6 +5,7 @@ const schema = a.schema({
   ParkingConfig: a
     .model({
       id: a.id().required(),
+      name: a.string(),
       totalSpots: a.integer().required(),
       updatedAt: a.datetime(),
       updatedBy: a.string(),
@@ -19,7 +20,11 @@ const schema = a.schema({
     .model({
       id: a.id().required(),
       email: a.email().required(),
+      name: a.string(),
+      phone: a.phone(),
+      building: a.string(),
       floor: a.string().required(),
+      unitNumber: a.string(),
       plate: a.string().required(),
       residentCode: a.string().required(),
       userId: a.string().required(),
