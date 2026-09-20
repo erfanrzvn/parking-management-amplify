@@ -21,7 +21,7 @@ const schema = a.schema({
       id: a.id().required(),
       email: a.email().required(),
       name: a.string(),
-      phone: a.phone(),
+      phone: a.string(),
       building: a.string(),
       floor: a.string().required(),
       unitNumber: a.string(),
