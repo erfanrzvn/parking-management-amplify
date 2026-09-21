@@ -14,8 +14,8 @@
     "aws_region": "ca-central-1"
   },
   "data": {
-    "url": "https://q7eguqs26vdwpjw7hf3jekqvvu.appsync-api.ca-central-1.amazonaws.com/graphql",
-    "api_key": "da2-htffbvr7enbyhj676ekudimrmy",
+    "url": "https://szwuay354vayfaoqqcg3y7gfke.appsync-api.ca-central-1.amazonaws.com/graphql",
+    "api_key": "da2-5rll2d4qm5dlxl5szpdw3ra3ra",
     "default_authorization_type": "API_KEY",
     "authorization_types": ["AMAZON_COGNITO_USER_POOLS", "API_KEY"],
     "aws_region": "ca-central-1"
