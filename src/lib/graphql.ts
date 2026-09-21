@@ -266,8 +266,8 @@ export async function listReservations(limit?: number, nextToken?: string) {
 
 export async function cancelReservation(id: string) {
   const mutation = `
-    mutation CancelReservation($reservationId: String!) {
-      cancelReservation(reservationId: $reservationId) {
+    mutation UpdateReservation($input: UpdateReservationInput!) {
+      updateReservation(input: $input) {
         id
         status
         deletedAt
@@ -275,9 +275,16 @@ export async function cancelReservation(id: string) {
     }
   `;
   
+  const now = new Date().toISOString();
   const result: any = await client.graphql({
     query: mutation,
-    variables: { reservationId: id }
+    variables: { 
+      input: {
+        id,
+        status: 'CANCELLED',
+        deletedAt: now
+      }
+    }
   });
-  return result.data.cancelReservation;
+  return result.data.updateReservation;
 }

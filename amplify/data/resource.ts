@@ -61,23 +61,6 @@ const schema = a.schema({
       allow.group('ADMIN'),
     ]),
 
-  // Custom Mutations
-  cancelReservation: a
-    .mutation()
-    .arguments({
-      reservationId: a.string().required(),
-    })
-    .returns(
-      a.ref('Reservation')
-    )
-    .authorization((allow) => [allow.publicApiKey(), allow.group('ADMIN')])
-    .handler(
-      a.handler.custom({
-        dataSource: a.ref('Reservation'),
-        entry: './cancelReservation.js',
-      })
-    ),
-
   // Custom Queries - Temporarily disabled for deploy
   // checkAvailability: a
   //   .query()
@@ -94,7 +77,7 @@ const schema = a.schema({
   //   .handler(
   //     a.handler.custom({
   //       dataSource: 'ReservationTable',
-  //       entry: './cancelReservation.js',
+  //       entry: './checkAvailability.js',
   //     })
   //   ),
 });

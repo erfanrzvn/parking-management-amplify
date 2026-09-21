@@ -76,6 +76,24 @@ type Mutation {
   cancelReservation(id: ID!): Reservation
   deleteReservation(id: ID!): Reservation
   verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
+  exportResidentsCSV: CSVExportResult
+  importResidentsCSV(csvData: String!): CSVImportResult
+}
+
+type CSVExportResult {
+  success: Boolean!
+  csvData: String
+  count: Int!
+  message: String!
+}
+
+type CSVImportResult {
+  success: Boolean!
+  created: Int!
+  updated: Int!
+  failed: Int!
+  errors: [String]
+  message: String!
 }
 
 type ResidentVerificationResult {
