@@ -336,6 +336,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       
       if (result.success) {
         setMessage(`✅ ${result.message}`);
+        // Only reload if import was successful
+        await loadResidents();
       } else {
         let errorMsg = `⚠️ ${result.message}`;
         if (result.errors && result.errors.length > 0) {
@@ -343,9 +345,6 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         }
         setMessage(errorMsg);
       }
-      
-      // Reload residents
-      await loadResidents();
       
     } catch (error: any) {
       console.error('Import error:', error);
@@ -1074,6 +1073,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                     <tr>
                       <th>Household</th>
                       <th>Building</th>
+                      <th>Floor</th>
                       <th>Unit</th>
                       <th>Resident Name</th>
                       <th>Phone</th>
@@ -1118,6 +1118,9 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             </td>
                             <td>
                               <strong>{resident.building || '-'}</strong>
+                            </td>
+                            <td>
+                              <strong>{resident.floor || '-'}</strong>
                             </td>
                             <td>
                               <strong>{resident.unitNumber || '-'}</strong>
