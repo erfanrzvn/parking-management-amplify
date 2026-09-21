@@ -132,7 +132,7 @@ exports.handler = async (event) => {
       // Continue execution - DynamoDB is source of truth
     }
     
-    // Audit log
+    // Audit log - ثبت تاریخچه تغییرات
     await logAction(
       'UPDATE_RESIDENT',
       updateResult.Attributes.email || currentResident.Item.email,

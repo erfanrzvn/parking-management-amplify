@@ -61,6 +61,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sortBy, setSortBy] = useState<'time-remaining' | 'plate' | 'start'>('time-remaining');
   
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [reservationFilter, setReservationFilter] = useState({
+    status: 'all', // 'all', 'active', 'expiring', 'expired'
+    dateFrom: '',
+    dateTo: '',
+    residentId: ''
+  });
+  
   // Resident management states
   const [showResidentModal, setShowResidentModal] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
@@ -519,11 +528,28 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     }
   };
 
+  // Filter residents by search query
+  const getFilteredResidents = () => {
+    if (!searchQuery.trim()) return residents;
+    
+    const query = searchQuery.toLowerCase();
+    return residents.filter(resident => 
+      resident.name?.toLowerCase().includes(query) ||
+      resident.email.toLowerCase().includes(query) ||
+      resident.plate?.toLowerCase().includes(query) ||
+      resident.building?.toLowerCase().includes(query) ||
+      resident.unitNumber?.toLowerCase().includes(query) ||
+      resident.floor?.toLowerCase().includes(query) ||
+      resident.phone?.toLowerCase().includes(query)
+    );
+  };
+
   // Group residents by household for display
   const groupResidentsByHousehold = () => {
+    const filtered = getFilteredResidents();
     const grouped = new Map<string, Resident[]>();
     
-    residents.forEach(resident => {
+    filtered.forEach(resident => {
       const householdId = resident.householdId || 'no-household';
       if (!grouped.has(householdId)) {
         grouped.set(householdId, []);
@@ -680,6 +706,33 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     const now = new Date();
     let active = reservations.filter(r => new Date(r.endTime) > now);
     
+    // Apply filters
+    if (reservationFilter.status !== 'all') {
+      if (reservationFilter.status === 'expiring') {
+        active = active.filter(r => {
+          const timeLeft = new Date(r.endTime).getTime() - now.getTime();
+          return timeLeft < 3600000; // Less than 1 hour
+        });
+      } else if (reservationFilter.status === 'expired') {
+        active = reservations.filter(r => new Date(r.endTime) <= now);
+      }
+    }
+    
+    if (reservationFilter.dateFrom) {
+      const fromDate = new Date(reservationFilter.dateFrom);
+      active = active.filter(r => new Date(r.startTime) >= fromDate);
+    }
+    
+    if (reservationFilter.dateTo) {
+      const toDate = new Date(reservationFilter.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      active = active.filter(r => new Date(r.startTime) <= toDate);
+    }
+    
+    if (reservationFilter.residentId) {
+      active = active.filter(r => r.residentId === reservationFilter.residentId);
+    }
+    
     // Sort by selected criteria
     if (sortBy === 'time-remaining') {
       active = active.sort((a, b) => 
@@ -697,7 +750,37 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   };
 
   const getAllReservationsForLogs = () => {
-    return [...reservations].sort((a, b) => 
+    let logs = [...reservations];
+    
+    // Apply filters
+    const now = new Date();
+    if (reservationFilter.status === 'active') {
+      logs = logs.filter(r => new Date(r.endTime) > now);
+    } else if (reservationFilter.status === 'expired') {
+      logs = logs.filter(r => new Date(r.endTime) <= now);
+    } else if (reservationFilter.status === 'expiring') {
+      logs = logs.filter(r => {
+        const timeLeft = new Date(r.endTime).getTime() - now.getTime();
+        return timeLeft > 0 && timeLeft < 3600000;
+      });
+    }
+    
+    if (reservationFilter.dateFrom) {
+      const fromDate = new Date(reservationFilter.dateFrom);
+      logs = logs.filter(r => new Date(r.startTime) >= fromDate);
+    }
+    
+    if (reservationFilter.dateTo) {
+      const toDate = new Date(reservationFilter.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      logs = logs.filter(r => new Date(r.startTime) <= toDate);
+    }
+    
+    if (reservationFilter.residentId) {
+      logs = logs.filter(r => r.residentId === reservationFilter.residentId);
+    }
+    
+    return logs.sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   };
@@ -843,6 +926,61 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               </div>
             </div>
 
+            {/* Filter Controls */}
+            <div className="search-filters-section">
+              <div className="filters-row">
+                <select 
+                  className="filter-select"
+                  value={reservationFilter.status}
+                  onChange={(e) => setReservationFilter({...reservationFilter, status: e.target.value})}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">✅ Active Only</option>
+                  <option value="expiring">⚠️ Expiring Soon (&lt;1h)</option>
+                  <option value="expired">⏰ Expired</option>
+                </select>
+
+                <input
+                  type="date"
+                  className="filter-input"
+                  placeholder="From Date"
+                  value={reservationFilter.dateFrom}
+                  onChange={(e) => setReservationFilter({...reservationFilter, dateFrom: e.target.value})}
+                />
+
+                <input
+                  type="date"
+                  className="filter-input"
+                  placeholder="To Date"
+                  value={reservationFilter.dateTo}
+                  onChange={(e) => setReservationFilter({...reservationFilter, dateTo: e.target.value})}
+                />
+
+                <select 
+                  className="filter-select"
+                  value={reservationFilter.residentId}
+                  onChange={(e) => setReservationFilter({...reservationFilter, residentId: e.target.value})}
+                >
+                  <option value="">All Residents</option>
+                  {residents.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.name || r.email} - {r.building || '?'}-{r.unitNumber || '?'}
+                    </option>
+                  ))}
+                </select>
+
+                {(reservationFilter.status !== 'all' || reservationFilter.dateFrom || reservationFilter.dateTo || reservationFilter.residentId) && (
+                  <button 
+                    className="clear-filters-btn"
+                    onClick={() => setReservationFilter({ status: 'all', dateFrom: '', dateTo: '', residentId: '' })}
+                    title="Clear all filters"
+                  >
+                    ✕ Clear Filters
+                  </button>
+                )}
+              </div>
+            </div>
+
             {activeReservations.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">🚗</div>
@@ -947,6 +1085,61 @@ export default function AdminPanel({ user }: AdminPanelProps) {
             <div className="section-header">
               <h2>All Reservation Logs</h2>
               <p className="section-subtitle">Complete history of all parking reservations</p>
+            </div>
+
+            {/* Filter Controls */}
+            <div className="search-filters-section">
+              <div className="filters-row">
+                <select 
+                  className="filter-select"
+                  value={reservationFilter.status}
+                  onChange={(e) => setReservationFilter({...reservationFilter, status: e.target.value})}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">✅ Active Only</option>
+                  <option value="expiring">⚠️ Expiring Soon (&lt;1h)</option>
+                  <option value="expired">⏰ Expired</option>
+                </select>
+
+                <input
+                  type="date"
+                  className="filter-input"
+                  placeholder="From Date"
+                  value={reservationFilter.dateFrom}
+                  onChange={(e) => setReservationFilter({...reservationFilter, dateFrom: e.target.value})}
+                />
+
+                <input
+                  type="date"
+                  className="filter-input"
+                  placeholder="To Date"
+                  value={reservationFilter.dateTo}
+                  onChange={(e) => setReservationFilter({...reservationFilter, dateTo: e.target.value})}
+                />
+
+                <select 
+                  className="filter-select"
+                  value={reservationFilter.residentId}
+                  onChange={(e) => setReservationFilter({...reservationFilter, residentId: e.target.value})}
+                >
+                  <option value="">All Residents</option>
+                  {residents.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.name || r.email} - {r.building || '?'}-{r.unitNumber || '?'}
+                    </option>
+                  ))}
+                </select>
+
+                {(reservationFilter.status !== 'all' || reservationFilter.dateFrom || reservationFilter.dateTo || reservationFilter.residentId) && (
+                  <button 
+                    className="clear-filters-btn"
+                    onClick={() => setReservationFilter({ status: 'all', dateFrom: '', dateTo: '', residentId: '' })}
+                    title="Clear all filters"
+                  >
+                    ✕ Clear Filters
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="logs-table-container">
@@ -1058,6 +1251,33 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                   + Add Resident
                 </button>
               </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="search-filters-section">
+              <div className="search-bar">
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="🔍 Search by name, email, plate, building, unit..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button 
+                    className="clear-search-btn"
+                    onClick={() => setSearchQuery('')}
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <div className="search-results-count">
+                  Found {getFilteredResidents().length} of {residents.length} residents
+                </div>
+              )}
             </div>
 
             {residents.length === 0 ? (
