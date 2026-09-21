@@ -31,6 +31,7 @@ const schema = a.schema({
       householdId: a.string(),
       createdAt: a.datetime(),
       updatedAt: a.datetime(),
+      deletedAt: a.datetime(),
     })
     .authorization((allow) => [
       allow.owner(),

@@ -73,6 +73,7 @@ export async function listResidents(limit?: number, nextToken?: string) {
           householdId
           createdAt
           updatedAt
+          deletedAt
         }
         nextToken
       }
@@ -83,7 +84,8 @@ export async function listResidents(limit?: number, nextToken?: string) {
     query,
     variables: { limit, nextToken }
   });
-  return result.data.listResidents.items;
+  // Filter out deleted residents
+  return result.data.listResidents.items.filter((r: any) => !r.deletedAt);
 }
 
 export async function getResidentByUserId(userId: string) {
