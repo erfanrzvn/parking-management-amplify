@@ -52,6 +52,8 @@ const schema = a.schema({
       guestEmail: a.email().required(),
       startTime: a.datetime().required(),
       endTime: a.datetime().required(),
+      status: a.string(),
+      deletedAt: a.datetime(),
       createdAt: a.datetime(),
     })
     .authorization((allow) => [
