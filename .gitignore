@@ -26,3 +26,8 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local API Testing (DO NOT COMMIT!)
+API-TEST-LOCAL.js
+test-local-*.js
+*-test-local.*

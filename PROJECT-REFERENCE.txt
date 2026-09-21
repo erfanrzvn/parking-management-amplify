@@ -393,6 +393,7 @@ Demo Accounts:
    🅿️  Reservation Management:
    ✓ مشاهده همه رزروها (listReservations)
    ✓ لغو رزرو (cancelReservation)
+   ✓ افزایش زمان رزرو (extend reservation) ⭐ جدید
    ✓ مشاهده active reservations
    ✓ مشاهده reservation logs (تاریخچه کامل)
    ✓ Sort & Filter
@@ -432,7 +433,10 @@ Demo Accounts:
      - نام، تلفن، ساختمان، طبقه، واحد، پلاک
 
    🅿️  Reservation Management:
-   ✓ ایجاد رزرو برای مهمان (createReservation)
+   ❌ RESIDENT نمیتونه خودش رزرو کنه! ⚠️
+   ✓ دریافت residentCode
+   ✓ اشتراک گذاری residentCode با مهمان
+   ✓ مهمان با این کد رزرو میکنه (Guest booking)
    ✓ مشاهده رزروهای خود (listReservations - filtered by residentId)
    ✓ لغو رزروهای خود (cancelReservation)
    
@@ -545,7 +549,8 @@ Demo Accounts:
   - CSV Import/Export         │  ✅   │   ❌     │  ❌   │
                               │       │          │       │
 🅿️  Reservation Management:   │       │          │       │
-  - Create Reservation        │  ✅   │   ✅     │  ✅   │
+  - Create Reservation        │  ✅   │   ❌     │  ✅   │
+  - Extend Reservation Time   │  ✅   │   ❌     │  ❌   │
   - View All Reservations     │  ✅   │   ❌     │  ❌   │
   - View Own Reservations     │  ✅   │   ✅     │  ❌   │
   - Cancel Any Reservation    │  ✅   │   ❌     │  ❌   │
@@ -566,8 +571,9 @@ Demo Accounts:
    ↳ No login, direct booking
 
 2️⃣  Resident User:
-   Landing Page → Login → Resident Dashboard → View Profile/Create Reservation
-   ↳ Login required, limited access
+   Landing Page → Login → Resident Dashboard → View residentCode → Share with Guest
+   ↳ Login required, NO direct booking
+   ↳ فقط کد میگیره و به مهمان میده
 
 3️⃣  Admin User:
    Landing Page → Login → Admin Dashboard → Full Management Access
@@ -673,3 +679,266 @@ Reservation:
 همه دسترسی‌ها و محدودیت‌ها مستند شدند ✅
 
 ⚠️  یادت باشه: قبل از هر تغییری این فایل رو بخون!
+
+
+================================================================================
+                    🧪 LOCAL API TESTING (بدون Deploy)
+================================================================================
+
+📄 فایل: API-TEST-LOCAL.js
+
+⚠️  این فایل در .gitignore است و commit نمیشه!
+
+🎯 استفاده:
+   node API-TEST-LOCAL.js
+
+📋 قابلیت‌ها:
+   ✓ تست همه CRUD operations
+   ✓ بدون نیاز به deploy
+   ✓ اتصال مستقیم به AWS AppSync
+   ✓ نتایج کامل با emoji و رنگ
+   ✓ Auto cleanup بعد از تست
+
+🔧 API های قابل تست:
+
+   🏢 Parking Config:
+   - testListParkingConfigs()
+   - testCreateParkingConfig(name, totalSpots)
+   - testDeleteParkingConfig(id)
+
+   👥 Residents:
+   - testListResidents()
+   - testCreateResident(email, name, building, floor, unit, plate)
+   - testUpdateResident(id, updates)
+   - testDeleteResident(id)
+
+   🅿️  Reservations:
+   - testListReservations()
+   - testCreateReservation(residentCode, plate, mobile, email, start, end)
+   - testCancelReservation(id)
+   - testExtendReservation(id, additionalHours) ⭐ جدید
+
+💡 مثال استفاده:
+   ```javascript
+   const { testCreateResident, testCreateReservation } = require('./API-TEST-LOCAL');
+   
+   // Create resident
+   const resident = await testCreateResident(
+     'test@example.com',
+     'Test User',
+     'Building A',
+     '5',
+     '502',
+     'ABC123'
+   );
+   
+   // Create reservation with their code
+   await testCreateReservation(
+     resident.residentCode,
+     'GUEST999',
+     '+989121234567',
+     'guest@test.com',
+     new Date(),
+     new Date(Date.now() + 3600000 * 3)
+   );
+   ```
+
+================================================================================
+                    ⚠️  تصحیحات و توضیحات مهم
+================================================================================
+
+🔴 RESIDENT نمیتونه خودش رزرو کنه!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+چرا؟
+- هر Resident یک پارکینگ اختصاصی داره
+- این پارکینگ برای خودش است
+- رزرو فقط برای GUEST ها (مهمان‌ها) است
+
+جریان کار:
+1. Resident login میکنه → ResidentPanel
+2. residentCode خودش رو میبینه (مثلا: RES12345)
+3. این کد رو به مهمان میده (SMS, WhatsApp, etc)
+4. مهمان وارد سایت میشه (بدون login)
+5. کد رو وارد میکنه + اطلاعات خودش
+6. رزرو ثبت میشه برای مهمان
+
+📌 پس:
+- RESIDENT = صاحب پارکینگ (دارای residentCode)
+- GUEST = مهمان ساکن (نیاز به residentCode دارد)
+- ADMIN = مدیر سیستم (کنترل همه چیز)
+
+🟢 ADMIN میتونه زمان رزرو رو extend کنه
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+چرا؟
+- گاهی مهمان دیرتر میره
+- Admin میتونه ساعت اضافه کنه
+
+چطوری؟
+1. Admin در لیست reservations
+2. کلیک روی "Add Time" button
+3. تعداد ساعت رو انتخاب میکنه (1-24 ساعت)
+4. endTime رزرو update میشه
+
+API:
+   mutation UpdateReservation($input: UpdateReservationInput!) {
+     updateReservation(input: $input) {
+       id
+       endTime
+     }
+   }
+
+   Variables: {
+     input: {
+       id: "reservation-id",
+       endTime: "new-end-time-iso"
+     }
+   }
+
+================================================================================
+                        📊 Workflow کامل سیستم
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         1. Admin Setup                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+   
+   Admin Login → Create Parking Config (مثلا 20 جای پارک)
+                ↓
+   Admin → Create Residents (با تمام اطلاعات + generate residentCode)
+                ↓
+   هر Resident یک residentCode منحصر به فرد میگیره
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    2. Resident Gets Code                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+   Resident Login → ResidentPanel
+                   ↓
+   میبینه: residentCode = "RES12345"
+                   ↓
+   Copy button → کد کپی میشه
+                   ↓
+   به مهمان ارسال میکنه (SMS/WhatsApp/Call)
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    3. Guest Makes Reservation                           │
+└─────────────────────────────────────────────────────────────────────────┘
+
+   مهمان به سایت میاد (NO LOGIN)
+                ↓
+   کلیک "Reserve Parking"
+                ↓
+   فرم رزرو:
+   - residentCode: RES12345 (از ساکن گرفته)
+   - guestPlate: GUEST999
+   - guestMobile: +989121234567
+   - guestEmail: guest@example.com
+   - startTime: انتخاب تاریخ/ساعت
+   - endTime: انتخاب تاریخ/ساعت
+                ↓
+   Submit → Reservation Created ✅
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    4. Admin Monitoring                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+   Admin Login → AdminPanel
+                ↓
+   میبینه:
+   - Available spots: 15/20
+   - Active reservations: 5
+   - Real-time countdown
+                ↓
+   میتونه:
+   - لغو رزرو (Cancel)
+   - افزایش زمان (Extend +2h)
+   - مشاهده logs
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    5. Reservation Ends                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+   زمان به پایان میرسه (endTime passed)
+                ↓
+   از لیست Active حذف میشه
+                ↓
+   در Logs نمایش داده میشه
+                ↓
+   Available spots + 1
+
+================================================================================
+                        🔑 نکات کلیدی سیستم
+================================================================================
+
+1️⃣  هر Resident = یک پارکینگ اختصاصی
+   - پارکینگ برای خودش است (نه برای رزرو!)
+   - رزرو فقط برای مهمان‌هاست
+
+2️⃣  residentCode = کلید اصلی سیستم
+   - منحصر به فرد
+   - لینک بین Resident و Reservation
+   - مهمان باید این کد رو داشته باشه
+
+3️⃣  Guest Booking = UX بهتر
+   - مهمان نباید اکانت بسازه
+   - فقط کد + اطلاعات خودش
+   - سریع و ساده
+
+4️⃣  Soft Delete = Audit Trail
+   - هیچ چیز physically پاک نمیشه
+   - deletedAt flag میزنیم
+   - برای گزارش و تاریخچه
+
+5️⃣  Admin Full Control
+   - مدیریت همه چیز
+   - Extend time
+   - Cancel reservations
+   - View all data
+
+================================================================================
+                        📚 فایل‌های مستندات
+================================================================================
+
+این پروژه دارای فایل‌های مستندات کامل است:
+
+📄 PROJECT-REFERENCE.txt (این فایل!)
+   → مرجع کامل پروژه
+   → معماری، Schema، Authorization، User Roles
+   → همه چیزی که باید بدونی!
+
+📄 SECURITY-RULES.md
+   → قوانین امنیتی
+   → Authorization rules
+   → مشکلات امنیتی شناخته شده
+
+📄 TODO-SECURITY.md
+   → چک لیست امنیتی
+   → کارهای باقی مونده
+   → اولویت‌بندی
+
+📄 API-TEST-LOCAL.js
+   → تست کامل API ها
+   → بدون نیاز به deploy
+   → از local اجرا میشه
+
+📄 .env.example
+   → Template برای environment variables
+   → راهنمای configuration
+
+⚠️  قبل از هر کاری این فایل‌ها رو بخون!
+
+================================================================================
+                            آخرین بروزرسانی
+================================================================================
+
+تاریخ: 2026-09-21
+بخش‌های اضافه شده:
+  ✅ Local API Testing
+  ✅ تصحیح: RESIDENT نمیتونه رزرو کنه
+  ✅ Admin Extend Time قابلیت
+  ✅ Workflow کامل سیستم
+  ✅ نکات کلیدی
+
+همه چیز مستند شد! 🎉
