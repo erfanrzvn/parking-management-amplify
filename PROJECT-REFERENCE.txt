@@ -350,3 +350,326 @@ Demo Accounts:
 ⚠️  قبل از هر کاری این فایل رو بخون!
 
 آخرین ویرایش: 2026-09-21 by Kiro AI
+
+
+================================================================================
+                        👥 User Roles & Permissions (مدل‌های کاربری)
+================================================================================
+
+📌 سیستم 3 نوع کاربر دارد:
+
+1️⃣  ADMIN (مدیر سیستم)
+2️⃣  RESIDENT (ساکن)
+3️⃣  GUEST (مهمان - بدون احراز هویت)
+
+================================================================================
+
+🔴 1. ADMIN (Administrator)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 مشخصات:
+- در Cognito User Pool: گروه 'ADMIN'
+- دسترسی کامل به همه بخش‌های سیستم
+- پنل اختصاصی: AdminPanel.tsx
+
+✅ دسترسی‌ها (Permissions):
+
+   🏢 Parking Management:
+   ✓ ایجاد پارکینگ جدید (createParkingConfig)
+   ✓ مشاهده لیست پارکینگ‌ها (listParkingConfigs)
+   ✓ ویرایش تعداد جای پارک (updateParkingConfig)
+   ✓ حذف پارکینگ (deleteParkingConfig)
+   ✓ مشاهده آمار real-time (occupied/available spots)
+
+   👥 Resident Management:
+   ✓ مشاهده لیست همه ساکنین (listResidents)
+   ✓ ایجاد ساکن جدید (createResident)
+   ✓ ویرایش اطلاعات ساکن (updateResident)
+   ✓ حذف ساکن - soft delete (deleteResident)
+   ✓ مشاهده household grouping (خانوارها)
+   ✓ Import از CSV
+   ✓ Export به CSV
+
+   🅿️  Reservation Management:
+   ✓ مشاهده همه رزروها (listReservations)
+   ✓ لغو رزرو (cancelReservation)
+   ✓ مشاهده active reservations
+   ✓ مشاهده reservation logs (تاریخچه کامل)
+   ✓ Sort & Filter
+
+🔐 Authentication:
+- Login: admin@parking.com
+- Cognito Group: ADMIN
+- Authorization: allow.group('ADMIN')
+
+📍 UI Location:
+- Component: src/components/AdminPanel.tsx
+- Route: Dashboard → Admin Panel
+- Badge: 👑 Admin
+
+🎯 Use Cases:
+- مدیریت کامل سیستم پارکینگ
+- نظارت بر رزروها
+- مدیریت ساکنین
+- گزارش‌گیری و آمار
+
+================================================================================
+
+🟢 2. RESIDENT (ساکن)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 مشخصات:
+- در Cognito User Pool: گروه 'RESIDENT'
+- دسترسی محدود به اطلاعات خود
+- پنل اختصاصی: ResidentPanel.tsx
+- دارای residentCode منحصر به فرد
+
+✅ دسترسی‌ها (Permissions):
+
+   👤 Profile Management:
+   ✓ مشاهده اطلاعات خود (getResident)
+   ✓ ویرایش اطلاعات شخصی (updateResident)
+     - نام، تلفن، ساختمان، طبقه، واحد، پلاک
+
+   🅿️  Reservation Management:
+   ✓ ایجاد رزرو برای مهمان (createReservation)
+   ✓ مشاهده رزروهای خود (listReservations - filtered by residentId)
+   ✓ لغو رزروهای خود (cancelReservation)
+   
+   📊 View Access:
+   ✓ مشاهده آمار پارکینگ (available spots)
+   ✓ مشاهده reservations فعال
+   ✓ تاریخچه رزروهای خود
+
+❌ محدودیت‌ها:
+   ✗ نمیتونه اطلاعات سایر ساکنین رو ببینه
+   ✗ نمیتونه پارکینگ ایجاد/ویرایش/حذف کنه
+   ✗ نمیتونه رزروهای دیگران رو لغو کنه
+   ✗ نمیتونه ساکن جدید اضافه کنه
+
+🔐 Authentication:
+- Login: resident@parking.com (demo)
+- Cognito Group: RESIDENT
+- Authorization: allow.owner() + allow.group('RESIDENT')
+- Unique Field: residentCode (e.g., "RES12345")
+
+📍 UI Location:
+- Component: src/components/ResidentPanel.tsx
+- Route: Dashboard → Resident Panel
+- Badge: 🏠 Resident
+
+🎯 Use Cases:
+- رزرو پارک برای مهمان
+- مدیریت اطلاعات شخصی
+- مشاهده رزروهای خود
+
+💡 نکته مهم:
+- هر Resident یک residentCode منحصر به فرد دارد
+- این کد برای لینک کردن Reservation به Resident استفاده میشه
+- Household members میتونن با householdId گروه بندی بشن
+
+================================================================================
+
+🔵 3. GUEST (مهمان - بدون احراز هویت)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 مشخصات:
+- هیچ احراز هویتی لازم نیست!
+- دسترسی محدود به ایجاد رزرو
+- از طریق صفحه عمومی: GuestReservation.tsx
+
+✅ دسترسی‌ها (Permissions):
+
+   🅿️  Reservation Only:
+   ✓ ایجاد رزرو جدید (createReservation)
+     - با استفاده از residentCode ساکن
+     - وارد کردن اطلاعات خودش:
+       * شماره پلاک (guestPlate)
+       * موبایل (guestMobile)
+       * ایمیل (guestEmail)
+       * تاریخ شروع/پایان (startTime/endTime)
+
+   ℹ️  Read-Only Access:
+   ✓ مشاهده available spots (readonly)
+   ✓ check availability
+
+❌ محدودیت‌ها:
+   ✗ نمیتونه login کنه
+   ✗ نمیتونه رزروها رو ببینه
+   ✗ نمیتونه رزرو لغو کنه
+   ✗ نمیتونه اطلاعات ساکنین رو ببینه
+   ✗ نمیتونه پارکینگ ببینه
+
+🔐 Authentication:
+- هیچ login ای لازم نیست
+- Authorization: allow.publicApiKey()
+- نیازمند: residentCode معتبر
+
+📍 UI Location:
+- Component: src/components/GuestReservation.tsx
+- Route: Home Page → "Reserve Parking" button
+- Public access
+
+🎯 Use Cases:
+- مهمان یک ساکن میخواد جای پارک رزرو کنه
+- Resident به مهمان residentCode خودش رو داده
+- مهمان وارد سایت میشه، بدون login رزرو میکنه
+
+💡 نکته امنیتی:
+- Guest فقط با داشتن residentCode معتبر میتونه رزرو کنه
+- هیچ دسترسی به اطلاعات حساس نداره
+- این برای راحتی کاربری است (UX)
+
+================================================================================
+
+📊 جدول مقایسه دسترسی‌ها
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+عملیات                      │ ADMIN │ RESIDENT │ GUEST │
+────────────────────────────────┼───────┼──────────┼───────┤
+🔐 Login Required             │  ✅   │   ✅     │  ❌   │
+                              │       │          │       │
+🏢 Parking Management:        │       │          │       │
+  - Create Parking            │  ✅   │   ❌     │  ❌   │
+  - View Parkings             │  ✅   │   ✅     │  ✅   │
+  - Update Parking            │  ✅   │   ❌     │  ❌   │
+  - Delete Parking            │  ✅   │   ❌     │  ❌   │
+                              │       │          │       │
+👥 Resident Management:       │       │          │       │
+  - View All Residents        │  ✅   │   ❌     │  ❌   │
+  - View Own Profile          │  ✅   │   ✅     │  ❌   │
+  - Create Resident           │  ✅   │   ❌     │  ❌   │
+  - Update Own Profile        │  ✅   │   ✅     │  ❌   │
+  - Update Other Resident     │  ✅   │   ❌     │  ❌   │
+  - Delete Resident           │  ✅   │   ❌     │  ❌   │
+  - CSV Import/Export         │  ✅   │   ❌     │  ❌   │
+                              │       │          │       │
+🅿️  Reservation Management:   │       │          │       │
+  - Create Reservation        │  ✅   │   ✅     │  ✅   │
+  - View All Reservations     │  ✅   │   ❌     │  ❌   │
+  - View Own Reservations     │  ✅   │   ✅     │  ❌   │
+  - Cancel Any Reservation    │  ✅   │   ❌     │  ❌   │
+  - Cancel Own Reservation    │  ✅   │   ✅     │  ❌   │
+  - View Reservation Logs     │  ✅   │   ✅     │  ❌   │
+                              │       │          │       │
+📊 Reports & Stats:           │       │          │       │
+  - View Stats Dashboard      │  ✅   │   ✅     │  ❌   │
+  - Export Reports            │  ✅   │   ❌     │  ❌   │
+
+================================================================================
+
+🔄 User Flow (جریان کاربر)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  Guest User:
+   Landing Page → "Reserve Parking" → Enter residentCode + Details → Submit
+   ↳ No login, direct booking
+
+2️⃣  Resident User:
+   Landing Page → Login → Resident Dashboard → View Profile/Create Reservation
+   ↳ Login required, limited access
+
+3️⃣  Admin User:
+   Landing Page → Login → Admin Dashboard → Full Management Access
+   ↳ Login required, full access
+
+================================================================================
+
+🛡️  Authorization در Schema (amplify/data/resource.ts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ParkingConfig:
+  .authorization((allow) => [
+    allow.group('ADMIN'),              → فقط Admin میتونه CRUD کنه
+    allow.publicApiKey().to(['read']), → همه میتونن بخونن
+  ])
+
+Resident:
+  .authorization((allow) => [
+    allow.owner(),                     → هر کاربر فقط خودش رو میبینه
+    allow.group('ADMIN'),              → Admin همه رو میبینه
+    allow.publicApiKey().to(['read']), → ⚠️  همه میتونن لیست ببینن (SECURITY ISSUE!)
+  ])
+
+Reservation:
+  .authorization((allow) => [
+    allow.publicApiKey(),              → همه میتونن رزرو کنن (برای Guest)
+    allow.group('ADMIN'),              → Admin کنترل کامل
+  ])
+
+================================================================================
+
+💼 User Management در Cognito
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📌 Groups:
+- ADMIN: مدیران سیستم
+- RESIDENT: ساکنین
+
+📌 Custom Attributes:
+- custom:residentCode: کد منحصر به فرد هر ساکن
+
+📌 Standard Attributes:
+- email: ایمیل (username)
+- name: نام کامل
+- phone_number: شماره تماس
+
+📌 Password Policy:
+- حداقل 8 کاراکتر
+- حداقل یک حرف بزرگ، یک عدد، یک نماد
+
+================================================================================
+
+🎓 نکات مهم در مورد User Roles
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Guest access ضروری است:
+   - برای UX بهتر
+   - مهمان‌ها نباید مجبور به ساخت اکانت باشن
+   - فقط با residentCode میتونن رزرو کنن
+
+2. Resident isolation:
+   - هر Resident فقط داده‌های خودش رو میبینه
+   - allow.owner() این رو تضمین میکنه
+   - householdId برای گروه‌بندی خانوارها
+
+3. Admin full access:
+   - برای مدیریت سیستم
+   - نظارت بر همه عملیات
+   - گزارش‌گیری و آمار
+
+4. Security consideration:
+   - API Key exposed است (لازم برای Guest)
+   - Resident public read باید حذف بشه!
+   - Rate limiting برای جلوگیری از abuse
+
+================================================================================
+
+📞 حساب‌های Demo
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔴 Admin Account:
+   Email: admin@parking.com
+   Password: [از Cognito]
+   Group: ADMIN
+   Access: Full system management
+
+🟢 Resident Account:
+   Email: resident@parking.com
+   Password: [از Cognito]
+   Group: RESIDENT
+   Access: Limited to own data + create reservations
+
+🔵 Guest Access:
+   No Account Needed!
+   Just need: valid residentCode
+
+================================================================================
+                            آخرین بروزرسانی
+================================================================================
+
+تاریخ: 2026-09-21
+بخش User Roles اضافه شد ✅
+همه دسترسی‌ها و محدودیت‌ها مستند شدند ✅
+
+⚠️  یادت باشه: قبل از هر تغییری این فایل رو بخون!
