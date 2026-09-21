@@ -266,17 +266,18 @@ export async function listReservations(limit?: number, nextToken?: string) {
 
 export async function cancelReservation(id: string) {
   const mutation = `
-    mutation CancelReservation($id: ID!) {
-      cancelReservation(id: $id) {
+    mutation CancelReservation($reservationId: String!) {
+      cancelReservation(reservationId: $reservationId) {
         id
         status
+        deletedAt
       }
     }
   `;
   
   const result: any = await client.graphql({
     query: mutation,
-    variables: { id }
+    variables: { reservationId: id }
   });
   return result.data.cancelReservation;
 }
