@@ -1,0 +1,352 @@
+================================================================================
+                    PARKING MANAGEMENT SYSTEM - مرجع کامل پروژه
+================================================================================
+
+📅 آخرین بروزرسانی: 2026-09-21
+🔧 وضعیت: در حال توسعه
+⚠️  قبل از هر تغییری این فایل رو بخون!
+
+================================================================================
+                                🏗️ معماری کلی
+================================================================================
+
+Frontend (React + Vite)
+    ↓ GraphQL API
+AppSync (Backend API)
+    ↓ Authorization & Resolvers
+DynamoDB (Database)
+    ↓ Data Storage
+Cognito (Authentication)
+
+همه داده‌ها در Backend (DynamoDB) ذخیره میشن!
+Frontend فقط UI است و هیچ داده‌ای ذخیره نمیکنه!
+
+================================================================================
+                            📂 ساختار فایل‌های مهم
+================================================================================
+
+📁 amplify/
+  ├─ data/
+  │  ├─ resource.ts          ← SCHEMA + AUTHORIZATION RULES (مهمترین فایل!)
+  │  ├─ cancelReservation.js ← Custom mutation handler (فعلا استفاده نمیشه)
+  │  └─ checkAvailability.js ← Custom query (disabled)
+  │
+  ├─ auth/
+  │  └─ resource.ts          ← Cognito configuration
+  │
+  └─ backend.ts              ← Backend entry point
+
+📁 src/
+  ├─ lib/
+  │  └─ graphql.ts           ← همه GraphQL queries/mutations
+  │
+  ├─ components/
+  │  ├─ AdminPanel.tsx       ← پنل مدیریت (residents, reservations, parkings)
+  │  ├─ LoginPage.tsx        ← صفحه لاگین
+  │  ├─ HomePage.tsx         ← صفحه اصلی
+  │  └─ Dashboard.tsx        ← داشبورد کاربر
+  │
+  └─ App.tsx                 ← Root component
+
+📄 amplify_outputs.json      ← API Configuration (API_KEY, URLs, Cognito)
+📄 amplify.yml               ← Build configuration (backend deployment commented out)
+📄 SECURITY-RULES.md         ← مستندات امنیتی
+📄 TODO-SECURITY.md          ← چک لیست امنیتی
+
+================================================================================
+                        🗄️ Database Schema (DynamoDB Tables)
+================================================================================
+
+1️⃣ ParkingConfig
+   ─────────────
+   - id: string (PK)
+   - name: string
+   - totalSpots: number
+   - updatedAt: datetime
+   - updatedBy: string
+
+   Authorization:
+   ✅ Admin: create, read, update, delete
+   ✅ Public: read only
+
+2️⃣ Resident
+   ─────────
+   - id: string (PK)
+   - email: email
+   - name: string
+   - phone: string
+   - building: string
+   - floor: string
+   - unitNumber: string
+   - plate: string
+   - residentCode: string
+   - userId: string
+   - householdId: string (برای گروه‌بندی خانوارها)
+   - createdAt: datetime
+   - updatedAt: datetime
+   - deletedAt: datetime (soft delete)
+
+   Authorization:
+   ✅ Owner: read, update own data
+   ✅ Admin: full access
+   ⚠️  Public: read (مشکل امنیتی! باید حذف بشه)
+
+3️⃣ Reservation
+   ───────────
+   - id: string (PK)
+   - residentId: string
+   - residentCode: string
+   - residentFloor: string
+   - residentPlate: string
+   - guestPlate: string
+   - guestMobile: phone
+   - guestEmail: email
+   - startTime: datetime
+   - endTime: datetime
+   - status: string (CANCELLED)
+   - deletedAt: datetime (soft delete)
+   - createdAt: datetime
+
+   Authorization:
+   ✅ Public: full access (برای guest booking)
+   ✅ Admin: full access
+
+================================================================================
+                            🔐 Authorization Rules
+================================================================================
+
+Default Mode: API_KEY
+API Key: da2-htffbvr7enbyhj676ekudimrmy
+API URL: https://q7eguqs26vdwpjw7hf3jekqvvu.appsync-api.ca-central-1.amazonaws.com/graphql
+
+User Pool ID: ca-central-1_dBeo5yZXq
+Client ID: 55mcsbc9dam8ncms93jrfakd0b
+
+⚠️  API Key در Frontend Exposed است! (ضروری برای guest reservations)
+
+قوانین دسترسی:
+- allow.owner() = فقط خود کاربر
+- allow.group('ADMIN') = فقط ادمین‌ها
+- allow.publicApiKey() = همه (حتی بدون login)
+- allow.authenticated() = کاربران لاگین شده
+
+================================================================================
+                        🔧 عملیات CRUD - چطور کار میکنه
+================================================================================
+
+CREATE RESIDENT:
+1. Frontend: createResident() در graphql.ts
+2. AppSync: mutation CreateResident
+3. DynamoDB: Insert به جدول Resident
+4. Frontend: reload data و نمایش
+
+DELETE RESIDENT (Soft Delete):
+1. Frontend: deleteResident() در graphql.ts
+2. AppSync: mutation UpdateResident با deletedAt=now
+3. DynamoDB: Update رکورد (NOT physically deleted!)
+4. Frontend: فیلتر کردن رکوردهای deletedAt != null
+
+CANCEL RESERVATION:
+1. Frontend: cancelReservation() در graphql.ts
+2. AppSync: mutation UpdateReservation
+3. DynamoDB: Update با status='CANCELLED', deletedAt=now
+4. Frontend: reload و نمایش
+
+================================================================================
+                            🎯 Features فعلی
+================================================================================
+
+✅ Authentication (Cognito)
+   - Login/Logout
+   - Role-based access (Admin / Resident)
+
+✅ Resident Management
+   - CRUD operations (با soft delete)
+   - Household grouping (رنگ‌بندی خانوارها)
+   - CSV Import/Export
+   - Search & filter (حذف شد از UI)
+
+✅ Reservation Management
+   - Create reservation (guest booking)
+   - Cancel reservation (soft delete)
+   - View active reservations
+   - View logs (all reservations)
+   - Real-time countdown timer
+   - Sort by time-remaining/plate/start
+
+✅ Parking Configuration
+   - Add/Remove parking lots
+   - Manage total spots
+   - Real-time stats (available/occupied)
+
+❌ چیزایی که نیست:
+   - Rate limiting
+   - Email notifications
+   - Real-time updates (WebSocket)
+   - Payment integration
+   - QR code generation
+
+================================================================================
+                        ⚠️  مشکلات امنیتی شناخته شده
+================================================================================
+
+🔴 CRITICAL:
+1. Resident model: allow.publicApiKey().to(['read'])
+   → هرکسی میتونه لیست همه ساکنین با اطلاعات شخصی رو ببینه!
+   → راه حل: حذف این خط از amplify/data/resource.ts
+
+🟡 WARNING:
+2. API Key Exposed در Frontend
+   → قابل مشاهده در View Source
+   → راه حل: Rate limiting + CloudFront WAF
+
+3. No Rate Limiting
+   → احتمال سوء استفاده از API
+   → راه حل: AWS AppSync rate limits
+
+🟢 INFO:
+4. Soft Delete بجای Hard Delete
+   → داده‌ها physically پاک نمیشن
+   → برای audit trail خوبه ولی فضا میگیره
+
+================================================================================
+                            🚀 Deployment Process
+================================================================================
+
+Build & Deploy:
+1. npm run build
+2. git add -A
+3. git commit -m "message"
+4. git push
+5. AWS Amplify auto-deploy (Job شروع میشه)
+6. منتظر SUCCEED status (~2-3 دقیقه)
+
+URL: https://d1b6dmf1w1balm.amplifyapp.com
+
+⚠️  Backend Deployment:
+- در amplify.yml کامنت شده (باعث fail میشد)
+- Schema changes باید manual deploy بشن
+
+================================================================================
+                        🐛 مشکلات رایج و راه حل
+================================================================================
+
+❌ Error: "Unauthorized" (401)
+   → API Key اشتباه یا منقضی شده
+   → چک کن: amplify_outputs.json → api_key
+   → چک کن: aws appsync list-api-keys --api-id b7rjz6vdtjauzlzqztpuiylhce
+
+❌ Error: "Field 'listReservations' undefined"
+   → Query name اشتباه است
+   → Schema رو چک کن: amplify/data/resource.ts
+
+❌ Delete کار نمیکنه
+   → Resolver نداره یا API ID اشتباهه
+   → از updateReservation استفاده کن بجای custom mutation
+
+❌ Build Failed
+   → Backend deployment فعال بوده
+   → amplify.yml رو چک کن - backend باید comment باشه
+
+❌ داده‌ها نمایش نمیشن
+   → API key یا URL اشتباه
+   → Browser console رو چک کن
+   → Network tab رو چک کن (401 یا 403؟)
+
+================================================================================
+                        📝 چک لیست قبل از هر Commit
+================================================================================
+
+[ ] فایل‌های test حذف شدن؟
+[ ] داده fake وجود نداره؟
+[ ] SECURITY-RULES.md بروز است؟
+[ ] TODO-SECURITY.md چک شده؟
+[ ] amplify_outputs.json API key درست است؟
+[ ] Build موفق بوده؟ (npm run build)
+[ ] Console error نداره؟
+
+================================================================================
+                            💡 نکات مهم
+================================================================================
+
+1. همیشه قبل از تغییر authorization rules این فایل رو بخون!
+
+2. Frontend هیچ داده‌ای ذخیره نمیکنه - همه چی در Backend!
+
+3. API Key باید در frontend exposed باشه (برای guest reservations)
+
+4. Soft delete استفاده میکنیم (deletedAt field)
+
+5. Resident public read access داره - مشکل امنیتی!
+
+6. Backend deployment در amplify.yml کامنت شده (باعث fail میشد)
+
+7. Custom mutations فعلا استفاده نمیشن - از built-in استفاده میکنیم
+
+8. Rate limiting فعال نیست - برای production باید فعال بشه
+
+9. همه passwords و secrets نباید hardcode بشن
+
+10. قبل از production TODO-SECURITY.md رو چک کن!
+
+================================================================================
+                        📞 Contacts & Resources
+================================================================================
+
+AWS Console: https://console.aws.amazon.com
+AppSync API ID: b7rjz6vdtjauzlzqztpuiylhce
+Amplify App ID: d1b6dmf1w1balm
+Region: ca-central-1
+
+GitHub: https://github.com/erfanrzvn/parking-management-amplify
+Deployment URL: https://d1b6dmf1w1balm.amplifyapp.com
+
+Demo Accounts:
+- Admin: admin@parking.com
+- Resident: resident@parking.com
+
+================================================================================
+                            📊 وضعیت فعلی پروژه
+================================================================================
+
+✅ Completed:
+- Frontend UI (React + Vite)
+- Backend Schema (Amplify + DynamoDB)
+- Authentication (Cognito)
+- CRUD operations (Residents, Reservations, Parking Config)
+- Soft delete implementation
+- CSV Import/Export
+- Documentation (این فایل!)
+
+🚧 In Progress:
+- Fix security issues (Resident public access)
+
+📋 TODO:
+- Rate limiting
+- Remove Resident public read access
+- Add CloudFront WAF
+- API key rotation plan
+- CORS policy review
+
+================================================================================
+                        🎓 یادگیری و بهبود
+================================================================================
+
+اگه میخوای چیزی اضافه کنی:
+1. اول این فایل رو بخون
+2. SECURITY-RULES.md رو بخون
+3. تغییرات رو اعمال کن
+4. این فایل رو UPDATE کن
+5. TODO-SECURITY.md رو بروز کن
+6. Test کن
+7. Commit کن
+
+================================================================================
+                                    پایان
+================================================================================
+
+⚠️  این فایل باید همیشه بروز باشه!
+⚠️  بعد از هر تغییر مهم این فایل رو UPDATE کن!
+⚠️  قبل از هر کاری این فایل رو بخون!
+
+آخرین ویرایش: 2026-09-21 by Kiro AI
