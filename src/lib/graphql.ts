@@ -265,26 +265,23 @@ export async function listReservations(limit?: number, nextToken?: string) {
 }
 
 export async function cancelReservation(id: string) {
-  // Using deleteReservation since UpdateReservationInput doesn't support status/deletedAt yet
   const mutation = `
-    mutation DeleteReservation($input: DeleteReservationInput!) {
-      deleteReservation(input: $input) {
+    mutation CancelReservation($id: ID!) {
+      cancelReservation(id: $id) {
         id
+        status
+        deletedAt
       }
     }
   `;
   
   console.log('🔧 cancelReservation called with ID:', id);
-  console.log('📤 Mutation:', mutation);
-  console.log('📤 Variables:', { input: { id } });
   
   const result: any = await client.graphql({
     query: mutation,
-    variables: { 
-      input: { id }
-    }
+    variables: { id }
   });
   
-  console.log('📥 Result:', result);
-  return result.data.deleteReservation;
+  console.log('✅ Cancel successful:', result);
+  return result.data.cancelReservation;
 }
