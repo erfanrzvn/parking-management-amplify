@@ -61,6 +61,10 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sortBy, setSortBy] = useState<'time-remaining' | 'plate' | 'start'>('time-remaining');
   
+  // Info modal state
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoReservation, setInfoReservation] = useState<Reservation | null>(null);
+  
   // Resident management states
   const [showResidentModal, setShowResidentModal] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
@@ -934,6 +938,17 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           <td>
                             <div className="action-buttons">
                               <button
+                                className="btn-action btn-info"
+                                onClick={() => {
+                                  setInfoReservation(reservation);
+                                  setShowInfoModal(true);
+                                }}
+                                title="View details"
+                                style={{ backgroundColor: '#3b82f6' }}
+                              >
+                                ℹ️ Info
+                              </button>
+                              <button
                                 className="btn-action btn-add-time"
                                 onClick={() => {
                                   setSelectedReservation(reservation);
@@ -1529,6 +1544,200 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Info Modal - Reservation Details */}
+      {showInfoModal && infoReservation && (
+        <div className="modal-overlay" onClick={() => setShowInfoModal(false)}>
+          <div className="modal-content modal-info" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+            <div className="modal-header">
+              <h2>📋 Reservation Details</h2>
+              <button className="modal-close" onClick={() => setShowInfoModal(false)}>
+                ×
+              </button>
+            </div>
+
+            <div className="info-modal-body">
+              {/* Guest Information */}
+              <div className="info-section">
+                <h3 className="info-section-title">🚗 Guest Information</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Email:</span>
+                    <span className="info-value">{infoReservation.guestEmail}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Mobile:</span>
+                    <span className="info-value">{infoReservation.guestMobile}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Plate Number:</span>
+                    <span className="info-value" style={{ fontWeight: 'bold', fontSize: '18px' }}>{infoReservation.guestPlate}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resident (Host) Information */}
+              <div className="info-section">
+                <h3 className="info-section-title">🏠 Host (Resident) Information</h3>
+                {(() => {
+                  const resident = residents.find(r => r.id === infoReservation.residentId);
+                  if (resident) {
+                    return (
+                      <div className="info-grid">
+                        <div className="info-item">
+                          <span className="info-label">Name:</span>
+                          <span className="info-value">{resident.name || '-'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Email:</span>
+                          <span className="info-value">{resident.email}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Phone:</span>
+                          <span className="info-value">{resident.phone || '-'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Building:</span>
+                          <span className="info-value">{resident.building || '-'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Floor:</span>
+                          <span className="info-value">{resident.floor || '-'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Unit Number:</span>
+                          <span className="info-value">{resident.unitNumber || '-'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Resident Plate:</span>
+                          <span className="info-value">{resident.plate || '-'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Resident Code:</span>
+                          <span className="info-value" style={{ fontWeight: 'bold', color: '#3b82f6' }}>{resident.residentCode}</span>
+                        </div>
+                        {resident.householdId && (
+                          <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                            <span className="info-label">Household ID:</span>
+                            <span className="info-value" style={{ fontSize: '12px', color: '#6b7280' }}>{resident.householdId}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="info-grid">
+                        <div className="info-item">
+                          <span className="info-label">Resident Code:</span>
+                          <span className="info-value">{infoReservation.residentCode}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Floor:</span>
+                          <span className="info-value">{infoReservation.residentFloor || '-'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Plate:</span>
+                          <span className="info-value">{infoReservation.residentPlate || '-'}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+
+              {/* Reservation Timing */}
+              <div className="info-section">
+                <h3 className="info-section-title">⏰ Reservation Timing</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Start Time:</span>
+                    <span className="info-value">
+                      {new Date(infoReservation.startTime).toLocaleString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">End Time:</span>
+                    <span className="info-value">
+                      {new Date(infoReservation.endTime).toLocaleString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Duration:</span>
+                    <span className="info-value">
+                      {Math.round((new Date(infoReservation.endTime).getTime() - new Date(infoReservation.startTime).getTime()) / (1000 * 60 * 60))} hours
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Created At:</span>
+                    <span className="info-value">
+                      {new Date(infoReservation.createdAt).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Time Remaining:</span>
+                    <span className="info-value" style={{ fontWeight: 'bold', color: new Date(infoReservation.endTime) < new Date() ? '#ef4444' : '#10b981' }}>
+                      {(() => {
+                        const remaining = new Date(infoReservation.endTime).getTime() - new Date().getTime();
+                        if (remaining <= 0) return 'Expired';
+                        const hours = Math.floor(remaining / 3600000);
+                        const minutes = Math.floor((remaining % 3600000) / 60000);
+                        return `${hours}h ${minutes}m`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Information */}
+              <div className="info-section">
+                <h3 className="info-section-title">🔧 System Information</h3>
+                <div className="info-grid">
+                  <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                    <span className="info-label">Reservation ID:</span>
+                    <span className="info-value" style={{ fontSize: '12px', fontFamily: 'monospace', color: '#6b7280' }}>{infoReservation.id}</span>
+                  </div>
+                  <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                    <span className="info-label">Resident ID:</span>
+                    <span className="info-value" style={{ fontSize: '12px', fontFamily: 'monospace', color: '#6b7280' }}>{infoReservation.residentId}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn-cancel"
+                onClick={() => setShowInfoModal(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
