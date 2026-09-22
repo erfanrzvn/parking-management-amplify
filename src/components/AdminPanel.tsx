@@ -866,18 +866,17 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               </div>
             ) : (
               <div className="reservations-table-container" style={{ overflowX: 'auto', width: '100%' }}>
-                <table className="reservations-table" style={{ minWidth: '1200px', width: '100%' }}>
+                <table className="reservations-table" style={{ minWidth: '1400px', width: '100%', tableLayout: 'auto' }}>
                   <thead>
                     <tr>
-                      <th style={{ minWidth: '150px' }}>Guest Email</th>
-                      <th style={{ minWidth: '120px' }}>Guest Plate</th>
-                      <th style={{ minWidth: '100px' }}>Guest Mobile</th>
-                      <th style={{ minWidth: '180px' }}>Host (Building, Unit)</th>
-                      <th style={{ minWidth: '150px' }}>Parking Name</th>
-                      <th style={{ minWidth: '150px' }}>Started Time</th>
-                      <th style={{ minWidth: '80px' }}>Duration</th>
-                      <th style={{ minWidth: '120px' }}>Remaining Time</th>
-                      <th style={{ minWidth: '120px' }}>Actions</th>
+                      <th style={{ minWidth: '150px', width: '150px' }}>Guest Plate</th>
+                      <th style={{ minWidth: '140px', width: '140px' }}>Guest Mobile</th>
+                      <th style={{ minWidth: '200px', width: '250px' }}>Host (Building, Unit)</th>
+                      <th style={{ minWidth: '150px', width: '180px' }}>Parking Name</th>
+                      <th style={{ minWidth: '180px', width: '200px' }}>Started Time</th>
+                      <th style={{ minWidth: '100px', width: '120px' }}>Duration</th>
+                      <th style={{ minWidth: '150px', width: '180px' }}>Remaining Time</th>
+                      <th style={{ minWidth: '200px', width: '220px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -891,13 +890,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
-                          <td>
-                            <div className="guest-name" title={reservation.guestEmail}>
-                              {reservation.guestEmail}
-                            </div>
-                          </td>
                           <td className="plate-cell">
-                            <strong>{reservation.guestPlate}</strong>
+                            <strong style={{ fontSize: '16px' }}>{reservation.guestPlate}</strong>
                           </td>
                           <td>
                             <small>{reservation.guestMobile}</small>
@@ -983,17 +977,17 @@ export default function AdminPanel({ user }: AdminPanelProps) {
             </div>
 
             <div className="logs-table-container" style={{ overflowX: 'auto', width: '100%' }}>
-              <table className="reservations-table" style={{ minWidth: '1200px', width: '100%' }}>
+              <table className="reservations-table" style={{ minWidth: '1400px', width: '100%', tableLayout: 'auto' }}>
                 <thead>
                   <tr>
-                    <th style={{ minWidth: '120px' }}>Status</th>
-                    <th style={{ minWidth: '120px' }}>Guest Plate</th>
-                    <th style={{ minWidth: '180px' }}>Resident</th>
-                    <th style={{ minWidth: '150px' }}>Started</th>
-                    <th style={{ minWidth: '150px' }}>Ended</th>
-                    <th style={{ minWidth: '80px' }}>Duration</th>
-                    <th style={{ minWidth: '180px' }}>Guest Email</th>
-                    <th style={{ minWidth: '140px' }}>Guest Mobile</th>
+                    <th style={{ minWidth: '120px', width: '140px' }}>Status</th>
+                    <th style={{ minWidth: '140px', width: '160px' }}>Guest Plate</th>
+                    <th style={{ minWidth: '200px', width: '240px' }}>Resident</th>
+                    <th style={{ minWidth: '180px', width: '200px' }}>Started</th>
+                    <th style={{ minWidth: '180px', width: '200px' }}>Ended</th>
+                    <th style={{ minWidth: '100px', width: '120px' }}>Duration</th>
+                    <th style={{ minWidth: '160px', width: '180px' }}>Guest Mobile</th>
+                    <th style={{ minWidth: '150px', width: '160px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1019,7 +1013,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           )}
                         </td>
                         <td className="plate-cell">
-                          <strong>{reservation.guestPlate}</strong>
+                          <strong style={{ fontSize: '16px' }}>{reservation.guestPlate}</strong>
                         </td>
                         <td>
                           <div className="resident-info">
@@ -1045,14 +1039,22 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           })}
                           {!isExpired && <span className="pulse-dot"></span>}
                         </td>
-                        <td>{duration}h</td>
-                        <td>
-                          <div title={reservation.guestEmail}>
-                            {reservation.guestEmail}
-                          </div>
-                        </td>
+                        <td><span className="duration-badge">{duration}h</span></td>
                         <td>
                           {reservation.guestMobile}
+                        </td>
+                        <td>
+                          <button
+                            className="btn-action btn-info"
+                            onClick={() => {
+                              setInfoReservation(reservation);
+                              setShowInfoModal(true);
+                            }}
+                            title="View details"
+                            style={{ backgroundColor: '#3b82f6', width: '100%' }}
+                          >
+                            ℹ️ Info
+                          </button>
                         </td>
                       </tr>
                     );
