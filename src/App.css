@@ -3116,3 +3116,58 @@ body {
     padding: 6px 4px !important;
   }
 }
+
+/* Sticky Actions Column */
+.reservations-table thead th:last-child,
+.reservations-table tbody td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+  z-index: 10;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.reservations-table thead th:last-child {
+  z-index: 11;
+  background: var(--surface-light);
+}
+
+/* Ensure actions are visible */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  min-width: 200px;
+}
+
+.btn-action {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Better table scroll indicator */
+.reservations-table-container::after,
+.logs-table-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  background: linear-gradient(to left, rgba(15, 23, 42, 0.8), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.reservations-table-container:not(:hover)::after,
+.logs-table-container:not(:hover)::after {
+  opacity: 1;
+}
+
+.reservations-table-container,
+.logs-table-container {
+  position: relative;
+}
