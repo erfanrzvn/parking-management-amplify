@@ -869,14 +869,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <table className="reservations-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: '10%' }}>Plate</th>
-                      <th style={{ width: '12%' }}>Mobile</th>
-                      <th style={{ width: '15%' }}>Host</th>
-                      <th style={{ width: '12%' }}>Parking</th>
-                      <th style={{ width: '13%' }}>Started</th>
-                      <th style={{ width: '8%' }}>Duration</th>
+                      <th style={{ width: '15%' }}>Plate</th>
+                      <th style={{ width: '20%' }}>Host</th>
+                      <th style={{ width: '15%' }}>Parking</th>
+                      <th style={{ width: '15%' }}>Started</th>
+                      <th style={{ width: '10%' }}>Duration</th>
                       <th style={{ width: '12%' }}>Remaining</th>
-                      <th style={{ width: '18%' }}>Actions</th>
+                      <th style={{ width: '13%' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -886,25 +885,22 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       const residentInfo = getResidentInfo(reservation.residentId);
                       const startTime = new Date(reservation.startTime);
                       const endTime = new Date(reservation.endTime);
-                      const durationHours = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
+                      const durationHours = Math.round((endTime.getTime() - startTime.getTime()) / (1000 / 60 / 60));
                       
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
                           <td className="plate-cell">
-                            <strong style={{ fontSize: '14px' }}>{reservation.guestPlate}</strong>
-                          </td>
-                          <td style={{ fontSize: '12px' }}>
-                            {reservation.guestMobile.replace('+1', '')}
+                            <strong style={{ fontSize: '15px' }}>{reservation.guestPlate}</strong>
                           </td>
                           <td>
-                            <div style={{ fontSize: '12px' }}>
+                            <div style={{ fontSize: '13px' }}>
                               <div><strong>{residentInfo.building || '-'}</strong></div>
                               {residentInfo.unitNumber && (
-                                <small style={{ fontSize: '11px' }}>U{residentInfo.unitNumber}</small>
+                                <small style={{ fontSize: '11px' }}>Unit {residentInfo.unitNumber}</small>
                               )}
                             </div>
                           </td>
-                          <td style={{ fontSize: '12px' }}>
+                          <td style={{ fontSize: '13px' }}>
                             {parkings.length > 0 ? parkings[0].name : 'N/A'}
                           </td>
                           <td style={{ fontSize: '12px' }}>
@@ -916,15 +912,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             })}
                           </td>
                           <td>
-                            <span className="duration-badge" style={{ fontSize: '11px', padding: '2px 6px' }}>{durationHours}h</span>
+                            <span className="duration-badge" style={{ fontSize: '12px' }}>{durationHours}h</span>
                           </td>
                           <td className="time-remaining-cell">
-                            <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`} style={{ fontSize: '12px' }}>
+                            <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`} style={{ fontSize: '13px' }}>
                               {timeRemaining}
                             </div>
                           </td>
                           <td>
-                            <div className="action-buttons" style={{ gap: '4px', flexWrap: 'nowrap' }}>
+                            <div className="action-buttons" style={{ gap: '3px', flexWrap: 'nowrap', justifyContent: 'center' }}>
                               <button
                                 className="btn-action btn-info"
                                 onClick={() => {
@@ -932,7 +928,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                   setShowInfoModal(true);
                                 }}
                                 title="View details"
-                                style={{ backgroundColor: '#3b82f6', fontSize: '11px', padding: '4px 8px' }}
+                                style={{ backgroundColor: '#3b82f6', fontSize: '16px', padding: '5px 8px', minWidth: '36px' }}
                               >
                                 ℹ️
                               </button>
@@ -943,7 +939,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                   setShowAddTimeModal(true);
                                 }}
                                 title="Add more time"
-                                style={{ fontSize: '11px', padding: '4px 8px' }}
+                                style={{ fontSize: '16px', padding: '5px 8px', minWidth: '36px' }}
                               >
                                 ⏱️
                               </button>
@@ -951,7 +947,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                 className="btn-action btn-delete"
                                 onClick={() => handleCancelReservation(reservation)}
                                 title="Delete reservation"
-                                style={{ fontSize: '11px', padding: '4px 8px' }}
+                                style={{ fontSize: '16px', padding: '5px 8px', minWidth: '36px' }}
                               >
                                 🗑️
                               </button>
@@ -991,14 +987,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               <table className="reservations-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
-                    <th style={{ width: '10%' }}>Status</th>
-                    <th style={{ width: '12%' }}>Plate</th>
-                    <th style={{ width: '18%' }}>Resident</th>
-                    <th style={{ width: '13%' }}>Started</th>
-                    <th style={{ width: '13%' }}>Ended</th>
-                    <th style={{ width: '8%' }}>Duration</th>
-                    <th style={{ width: '14%' }}>Mobile</th>
-                    <th style={{ width: '12%' }}>Actions</th>
+                    <th style={{ width: '12%' }}>Status</th>
+                    <th style={{ width: '15%' }}>Plate</th>
+                    <th style={{ width: '20%' }}>Resident</th>
+                    <th style={{ width: '15%' }}>Started</th>
+                    <th style={{ width: '15%' }}>Ended</th>
+                    <th style={{ width: '10%' }}>Duration</th>
+                    <th style={{ width: '13%' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1024,23 +1019,23 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           )}
                         </td>
                         <td className="plate-cell">
-                          <strong style={{ fontSize: '14px' }}>{reservation.guestPlate}</strong>
+                          <strong style={{ fontSize: '15px' }}>{reservation.guestPlate}</strong>
                         </td>
                         <td>
-                          <div style={{ fontSize: '12px' }}>
+                          <div style={{ fontSize: '13px' }}>
                             <div><strong>{residentInfo.name}</strong></div>
                             {residentInfo.floor && (
-                              <small style={{ fontSize: '10px' }}>F{residentInfo.floor}</small>
+                              <small style={{ fontSize: '11px' }}>Floor {residentInfo.floor}</small>
                             )}
                           </div>
                         </td>
-                        <td style={{ fontSize: '11px' }}>{start.toLocaleString('en-US', {
+                        <td style={{ fontSize: '12px' }}>{start.toLocaleString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
                         })}</td>
-                        <td style={{ fontSize: '11px' }} className={isExpired ? '' : 'in-progress'}>
+                        <td style={{ fontSize: '12px' }} className={isExpired ? '' : 'in-progress'}>
                           {end.toLocaleString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -1049,10 +1044,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           })}
                           {!isExpired && <span className="pulse-dot"></span>}
                         </td>
-                        <td><span className="duration-badge" style={{ fontSize: '11px', padding: '2px 6px' }}>{duration}h</span></td>
-                        <td style={{ fontSize: '11px' }}>
-                          {reservation.guestMobile.replace('+1', '')}
-                        </td>
+                        <td><span className="duration-badge" style={{ fontSize: '12px' }}>{duration}h</span></td>
                         <td>
                           <button
                             className="btn-action btn-info"
@@ -1061,7 +1053,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               setShowInfoModal(true);
                             }}
                             title="View details"
-                            style={{ backgroundColor: '#3b82f6', width: '100%', fontSize: '11px', padding: '6px' }}
+                            style={{ backgroundColor: '#3b82f6', width: '100%', fontSize: '16px', padding: '6px' }}
                           >
                             ℹ️
                           </button>
