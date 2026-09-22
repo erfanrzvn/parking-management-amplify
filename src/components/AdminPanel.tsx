@@ -861,18 +861,19 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <p>All parking spots are currently available</p>
               </div>
             ) : (
-              <div className="reservations-table-container">
-                <table className="reservations-table">
+              <div className="reservations-table-container" style={{ overflowX: 'auto', width: '100%' }}>
+                <table className="reservations-table" style={{ minWidth: '1200px', width: '100%' }}>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Plate</th>
-                      <th>Host (Building, Unit)</th>
-                      <th>Parking Name</th>
-                      <th>Started Time</th>
-                      <th>Duration</th>
-                      <th>Remaining Time</th>
-                      <th>Actions</th>
+                      <th style={{ minWidth: '150px' }}>Guest Email</th>
+                      <th style={{ minWidth: '120px' }}>Guest Plate</th>
+                      <th style={{ minWidth: '100px' }}>Guest Mobile</th>
+                      <th style={{ minWidth: '180px' }}>Host (Building, Unit)</th>
+                      <th style={{ minWidth: '150px' }}>Parking Name</th>
+                      <th style={{ minWidth: '150px' }}>Started Time</th>
+                      <th style={{ minWidth: '80px' }}>Duration</th>
+                      <th style={{ minWidth: '120px' }}>Remaining Time</th>
+                      <th style={{ minWidth: '120px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -887,9 +888,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
                           <td>
-                            <div className="guest-name">
-                              {reservation.guestEmail.split('@')[0]}
+                            <div className="guest-name" title={reservation.guestEmail}>
+                              {reservation.guestEmail}
                             </div>
+                          </td>
+                          <td className="plate-cell">
+                            <strong>{reservation.guestPlate}</strong>
+                          </td>
+                          <td>
+                            <small>{reservation.guestMobile}</small>
                           </td>
                           <td className="plate-cell">
                             <strong>{reservation.guestPlate}</strong>
@@ -960,17 +967,18 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               <p className="section-subtitle">Complete history of all parking reservations</p>
             </div>
 
-            <div className="logs-table-container">
-              <table className="reservations-table">
+            <div className="logs-table-container" style={{ overflowX: 'auto', width: '100%' }}>
+              <table className="reservations-table" style={{ minWidth: '1200px', width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>Status</th>
-                    <th>Guest Plate</th>
-                    <th>Resident</th>
-                    <th>Started</th>
-                    <th>Ended</th>
-                    <th>Duration</th>
-                    <th>Contact</th>
+                    <th style={{ minWidth: '120px' }}>Status</th>
+                    <th style={{ minWidth: '120px' }}>Guest Plate</th>
+                    <th style={{ minWidth: '180px' }}>Resident</th>
+                    <th style={{ minWidth: '150px' }}>Started</th>
+                    <th style={{ minWidth: '150px' }}>Ended</th>
+                    <th style={{ minWidth: '80px' }}>Duration</th>
+                    <th style={{ minWidth: '180px' }}>Guest Email</th>
+                    <th style={{ minWidth: '140px' }}>Guest Mobile</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1024,10 +1032,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                         </td>
                         <td>{duration}h</td>
                         <td>
-                          <div className="contact-info-compact">
-                            <div title={reservation.guestEmail}>📧 {reservation.guestEmail.substring(0, 20)}...</div>
-                            <div>📱 {reservation.guestMobile}</div>
+                          <div title={reservation.guestEmail}>
+                            {reservation.guestEmail}
                           </div>
+                        </td>
+                        <td>
+                          {reservation.guestMobile}
                         </td>
                       </tr>
                     );
