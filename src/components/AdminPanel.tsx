@@ -148,7 +148,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     try {
       const data = await listReservations();
       if (data) {
-        setReservations(data.map((item: any) => ({
+        // Filter out cancelled reservations
+        const activeReservations = data.filter((item: any) => 
+          !item.status || item.status !== 'CANCELLED'
+        );
+        
+        setReservations(activeReservations.map((item: any) => ({
           id: item.id,
           residentId: item.residentId || '',
           residentCode: item.residentCode || '',
