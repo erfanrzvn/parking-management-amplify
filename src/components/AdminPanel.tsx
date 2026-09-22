@@ -865,18 +865,18 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <p>All parking spots are currently available</p>
               </div>
             ) : (
-              <div className="reservations-table-container" style={{ overflowX: 'auto', width: '100%' }}>
-                <table className="reservations-table" style={{ minWidth: '1400px', width: '100%', tableLayout: 'auto' }}>
+              <div className="reservations-table-container" style={{ width: '100%' }}>
+                <table className="reservations-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th style={{ minWidth: '150px', width: '150px' }}>Guest Plate</th>
-                      <th style={{ minWidth: '140px', width: '140px' }}>Guest Mobile</th>
-                      <th style={{ minWidth: '200px', width: '250px' }}>Host (Building, Unit)</th>
-                      <th style={{ minWidth: '150px', width: '180px' }}>Parking Name</th>
-                      <th style={{ minWidth: '180px', width: '200px' }}>Started Time</th>
-                      <th style={{ minWidth: '100px', width: '120px' }}>Duration</th>
-                      <th style={{ minWidth: '150px', width: '180px' }}>Remaining Time</th>
-                      <th style={{ minWidth: '200px', width: '220px' }}>Actions</th>
+                      <th style={{ width: '10%' }}>Plate</th>
+                      <th style={{ width: '12%' }}>Mobile</th>
+                      <th style={{ width: '15%' }}>Host</th>
+                      <th style={{ width: '12%' }}>Parking</th>
+                      <th style={{ width: '13%' }}>Started</th>
+                      <th style={{ width: '8%' }}>Duration</th>
+                      <th style={{ width: '12%' }}>Remaining</th>
+                      <th style={{ width: '18%' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -891,29 +891,23 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
                           <td className="plate-cell">
-                            <strong style={{ fontSize: '16px' }}>{reservation.guestPlate}</strong>
+                            <strong style={{ fontSize: '14px' }}>{reservation.guestPlate}</strong>
+                          </td>
+                          <td style={{ fontSize: '12px' }}>
+                            {reservation.guestMobile.replace('+1', '')}
                           </td>
                           <td>
-                            <small>{reservation.guestMobile}</small>
-                          </td>
-                          <td className="plate-cell">
-                            <strong>{reservation.guestPlate}</strong>
-                          </td>
-                          <td>
-                            <div className="resident-info">
+                            <div style={{ fontSize: '12px' }}>
                               <div><strong>{residentInfo.building || '-'}</strong></div>
                               {residentInfo.unitNumber && (
-                                <small>Unit {residentInfo.unitNumber}</small>
-                              )}
-                              {residentInfo.floor && !residentInfo.unitNumber && (
-                                <small>Floor {residentInfo.floor}</small>
+                                <small style={{ fontSize: '11px' }}>U{residentInfo.unitNumber}</small>
                               )}
                             </div>
                           </td>
-                          <td>
+                          <td style={{ fontSize: '12px' }}>
                             {parkings.length > 0 ? parkings[0].name : 'N/A'}
                           </td>
-                          <td className="time-cell">
+                          <td style={{ fontSize: '12px' }}>
                             {startTime.toLocaleString('en-US', {
                               month: 'short',
                               day: 'numeric',
@@ -922,15 +916,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             })}
                           </td>
                           <td>
-                            <span className="duration-badge">{durationHours}h</span>
+                            <span className="duration-badge" style={{ fontSize: '11px', padding: '2px 6px' }}>{durationHours}h</span>
                           </td>
                           <td className="time-remaining-cell">
-                            <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`}>
+                            <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`} style={{ fontSize: '12px' }}>
                               {timeRemaining}
                             </div>
                           </td>
                           <td>
-                            <div className="action-buttons">
+                            <div className="action-buttons" style={{ gap: '4px', flexWrap: 'nowrap' }}>
                               <button
                                 className="btn-action btn-info"
                                 onClick={() => {
@@ -938,9 +932,9 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                   setShowInfoModal(true);
                                 }}
                                 title="View details"
-                                style={{ backgroundColor: '#3b82f6' }}
+                                style={{ backgroundColor: '#3b82f6', fontSize: '11px', padding: '4px 8px' }}
                               >
-                                ℹ️ Info
+                                ℹ️
                               </button>
                               <button
                                 className="btn-action btn-add-time"
@@ -949,11 +943,28 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                   setShowAddTimeModal(true);
                                 }}
                                 title="Add more time"
+                                style={{ fontSize: '11px', padding: '4px 8px' }}
                               >
-                                ⏱️ +Time
+                                ⏱️
                               </button>
                               <button
                                 className="btn-action btn-delete"
+                                onClick={() => handleCancelReservation(reservation)}
+                                title="Delete reservation"
+                                style={{ fontSize: '11px', padding: '4px 8px' }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
                                 onClick={() => handleCancelReservation(reservation)}
                                 title="Delete reservation"
                               >
@@ -976,18 +987,18 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               <p className="section-subtitle">Complete history of all parking reservations</p>
             </div>
 
-            <div className="logs-table-container" style={{ overflowX: 'auto', width: '100%' }}>
-              <table className="reservations-table" style={{ minWidth: '1400px', width: '100%', tableLayout: 'auto' }}>
+            <div className="logs-table-container" style={{ width: '100%' }}>
+              <table className="reservations-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
-                    <th style={{ minWidth: '120px', width: '140px' }}>Status</th>
-                    <th style={{ minWidth: '140px', width: '160px' }}>Guest Plate</th>
-                    <th style={{ minWidth: '200px', width: '240px' }}>Resident</th>
-                    <th style={{ minWidth: '180px', width: '200px' }}>Started</th>
-                    <th style={{ minWidth: '180px', width: '200px' }}>Ended</th>
-                    <th style={{ minWidth: '100px', width: '120px' }}>Duration</th>
-                    <th style={{ minWidth: '160px', width: '180px' }}>Guest Mobile</th>
-                    <th style={{ minWidth: '150px', width: '160px' }}>Actions</th>
+                    <th style={{ width: '10%' }}>Status</th>
+                    <th style={{ width: '12%' }}>Plate</th>
+                    <th style={{ width: '18%' }}>Resident</th>
+                    <th style={{ width: '13%' }}>Started</th>
+                    <th style={{ width: '13%' }}>Ended</th>
+                    <th style={{ width: '8%' }}>Duration</th>
+                    <th style={{ width: '14%' }}>Mobile</th>
+                    <th style={{ width: '12%' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1003,34 +1014,33 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       <tr key={reservation.id} className={`log-row ${isExpired ? 'log-expired' : 'log-active'}`}>
                         <td>
                           {isExpired ? (
-                            <span className="status-badge status-expired">
-                              ✅ Completed
+                            <span className="status-badge status-expired" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                              ✅ Done
                             </span>
                           ) : (
-                            <span className="status-badge status-active">
-                              🚗 In Progress
+                            <span className="status-badge status-active" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                              🚗 Active
                             </span>
                           )}
                         </td>
                         <td className="plate-cell">
-                          <strong style={{ fontSize: '16px' }}>{reservation.guestPlate}</strong>
+                          <strong style={{ fontSize: '14px' }}>{reservation.guestPlate}</strong>
                         </td>
                         <td>
-                          <div className="resident-info">
+                          <div style={{ fontSize: '12px' }}>
                             <div><strong>{residentInfo.name}</strong></div>
                             {residentInfo.floor && (
-                              <small>Floor {residentInfo.floor}</small>
+                              <small style={{ fontSize: '10px' }}>F{residentInfo.floor}</small>
                             )}
-                            <small>Code: {residentInfo.code}</small>
                           </div>
                         </td>
-                        <td>{start.toLocaleString('en-US', {
+                        <td style={{ fontSize: '11px' }}>{start.toLocaleString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
                         })}</td>
-                        <td className={isExpired ? '' : 'in-progress'}>
+                        <td style={{ fontSize: '11px' }} className={isExpired ? '' : 'in-progress'}>
                           {end.toLocaleString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -1039,9 +1049,9 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           })}
                           {!isExpired && <span className="pulse-dot"></span>}
                         </td>
-                        <td><span className="duration-badge">{duration}h</span></td>
-                        <td>
-                          {reservation.guestMobile}
+                        <td><span className="duration-badge" style={{ fontSize: '11px', padding: '2px 6px' }}>{duration}h</span></td>
+                        <td style={{ fontSize: '11px' }}>
+                          {reservation.guestMobile.replace('+1', '')}
                         </td>
                         <td>
                           <button
@@ -1051,9 +1061,9 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               setShowInfoModal(true);
                             }}
                             title="View details"
-                            style={{ backgroundColor: '#3b82f6', width: '100%' }}
+                            style={{ backgroundColor: '#3b82f6', width: '100%', fontSize: '11px', padding: '6px' }}
                           >
-                            ℹ️ Info
+                            ℹ️
                           </button>
                         </td>
                       </tr>

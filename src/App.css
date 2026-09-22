@@ -3117,57 +3117,57 @@ body {
   }
 }
 
-/* Sticky Actions Column */
-.reservations-table thead th:last-child,
-.reservations-table tbody td:last-child {
-  position: sticky;
-  right: 0;
-  background: var(--surface);
-  z-index: 10;
-  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+/* Compact Table - No Scroll */
+.reservations-table-container,
+.logs-table-container {
+  width: 100%;
+  overflow: visible;
 }
 
-.reservations-table thead th:last-child {
-  z-index: 11;
-  background: var(--surface-light);
+.reservations-table {
+  width: 100%;
+  table-layout: fixed;
+  font-size: 13px;
 }
 
-/* Ensure actions are visible */
+.reservations-table th,
+.reservations-table td {
+  padding: 8px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reservations-table th {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Action buttons compact */
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
-  min-width: 200px;
 }
 
 .btn-action {
   white-space: nowrap;
   flex-shrink: 0;
+  min-width: auto;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
-/* Better table scroll indicator */
+/* Remove sticky and scroll stuff */
+.reservations-table thead th:last-child,
+.reservations-table tbody td:last-child {
+  position: static;
+  box-shadow: none;
+}
+
 .reservations-table-container::after,
 .logs-table-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 40px;
-  background: linear-gradient(to left, rgba(15, 23, 42, 0.8), transparent);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.reservations-table-container:not(:hover)::after,
-.logs-table-container:not(:hover)::after {
-  opacity: 1;
-}
-
-.reservations-table-container,
-.logs-table-container {
-  position: relative;
+  display: none;
 }
