@@ -199,14 +199,20 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     
     setLoading(true);
     try {
-      await cancelReservation(reservation.id);
+      console.log('🔍 Cancelling reservation:', reservation.id);
+      const result = await cancelReservation(reservation.id);
+      console.log('✅ Cancel successful:', result);
       
       setMessage('✅ Reservation deleted successfully');
       loadReservations();
       setTimeout(() => setMessage(''), 3000);
     } catch (error: any) {
-      console.error('Error cancelling reservation:', error);
-      setMessage(`❌ Error: ${error.message}`);
+      console.error('❌ Error cancelling reservation:', error);
+      console.error('📋 Error details:', JSON.stringify(error, null, 2));
+      if (error.errors) {
+        console.error('🚨 GraphQL Errors:', error.errors);
+      }
+      setMessage(`❌ Error: ${error.message || 'Failed to delete'}`);
     } finally {
       setLoading(false);
     }

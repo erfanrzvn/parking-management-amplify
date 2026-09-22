@@ -274,11 +274,17 @@ export async function cancelReservation(id: string) {
     }
   `;
   
+  console.log('🔧 cancelReservation called with ID:', id);
+  console.log('📤 Mutation:', mutation);
+  console.log('📤 Variables:', { input: { id } });
+  
   const result: any = await client.graphql({
     query: mutation,
     variables: { 
       input: { id }
     }
   });
+  
+  console.log('📥 Result:', result);
   return result.data.deleteReservation;
 }
