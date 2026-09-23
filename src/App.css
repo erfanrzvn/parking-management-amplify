@@ -2894,226 +2894,270 @@ body {
 
 /* Responsive Table for Mobile */
 @media (max-width: 1024px) {
-  .reservations-table-container,
-  .logs-table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
   .reservations-table {
-    font-size: 13px;
+    font-size: 12px;
   }
   
   .reservations-table th,
   .reservations-table td {
-    padding: 10px 8px !important;
-  }
-}
-
-@media (max-width: 768px) {  
-  /* Mobile Card Layout */
-  .reservation-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    box-shadow: var(--shadow);
+    padding: 8px 4px !important;
   }
   
-  .reservation-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
+  .btn-action {
+    font-size: 14px !important;
+    padding: 4px 6px !important;
+    min-width: 32px !important;
   }
   
-  .reservation-card-plate {
-    font-size: 20px;
-    font-weight: bold;
-    color: var(--primary-light);
-  }
-  
-  .reservation-card-status {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  
-  .status-active {
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
-  }
-  
-  .status-ending-soon {
-    background: rgba(245, 158, 11, 0.2);
-    color: #f59e0b;
-  }
-  
-  .status-expired {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-  }
-  
-  .reservation-card-body {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  
-  .card-info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-  }
-  
-  .card-info-label {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-  
-  .card-info-value {
-    font-size: 14px;
-    color: var(--text-primary);
-    font-weight: 500;
-    text-align: right;
-  }
-  
-  .card-time-remaining {
-    background: rgba(99, 102, 241, 0.1);
-    padding: 12px;
-    border-radius: 8px;
-    text-align: center;
-    margin: 12px 0;
-  }
-  
-  .card-time-remaining-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  .card-time-remaining-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--primary-light);
-    margin-top: 4px;
-  }
-  
-  .card-time-remaining-value.warning {
-    color: var(--warning);
-  }
-  
-  .card-time-remaining-value.expired {
-    color: var(--danger);
-  }
-  
-  .reservation-card-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-  }
-  
-  .reservation-card-actions .btn-action {
-    width: 100%;
-    padding: 10px;
-    font-size: 13px;
-  }
-  
-  /* Keep tables for tablet landscape */
-  .reservations-table-container,
-  .logs-table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Stats grid responsive */
   .stats-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+}
+
+@media (max-width: 768px) {
+  /* Body and main container */
+  body {
+    font-size: 14px;
+  }
   
-  .stat-card-wide {
-    grid-column: 1 / -1;
+  .admin-dashboard {
+    padding: 10px;
   }
   
   /* Dashboard header */
   .dashboard-header {
-    flex-direction: column;
+    flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 12px;
+    gap: 10px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 22px !important;
   }
   
   .dashboard-header .btn-create-parking {
     width: 100%;
+    font-size: 14px !important;
+  }
+  
+  /* Stats grid */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  
+  .stat-card {
+    padding: 12px !important;
+  }
+  
+  .stat-value {
+    font-size: 24px !important;
+  }
+  
+  .stat-label {
+    font-size: 12px !important;
+  }
+  
+  /* Tabs */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    gap: 5px;
+  }
+  
+  .tab {
+    font-size: 11px !important;
+    padding: 8px 12px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   
   /* Section header */
   .section-header {
-    flex-direction: column;
+    flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 12px;
+    gap: 10px;
+  }
+  
+  .section-header h2 {
+    font-size: 18px !important;
   }
   
   .header-actions {
     width: 100%;
-    flex-direction: column;
+    flex-direction: column !important;
     gap: 8px;
   }
   
   .header-actions .sort-select,
   .header-actions .btn-refresh {
-    width: 100%;
-  }
-  
-  /* Action buttons in table */
-  .action-buttons {
-    display: flex;
-    flex-direction: column !important;
-    gap: 4px !important;
-  }
-  
-  .action-buttons .btn-action {
     width: 100% !important;
-    font-size: 12px !important;
-    padding: 6px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr !important;
+    font-size: 13px !important;
   }
   
-  .reservation-card-actions {
-    grid-template-columns: 1fr !important;
+  /* Tables */
+  .reservations-table-container,
+  .logs-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
   
-  .tabs {
-    flex-wrap: wrap;
-  }
-  
-  .tab {
-    flex: 1 1 45%;
-    font-size: 12px;
-    padding: 8px;
-  }
-  
-  /* Smaller fonts for mobile */
   .reservations-table {
+    min-width: 600px !important;
     font-size: 11px !important;
   }
   
   .reservations-table th,
   .reservations-table td {
-    padding: 6px 4px !important;
+    padding: 6px 3px !important;
+  }
+  
+  .reservations-table th {
+    font-size: 10px !important;
+  }
+  
+  /* Action buttons */
+  .action-buttons {
+    gap: 2px !important;
+  }
+  
+  .btn-action {
+    font-size: 14px !important;
+    padding: 3px 5px !important;
+    min-width: 28px !important;
+  }
+  
+  /* Modals */
+  .modal-content {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 10px !important;
+    max-height: 90vh !important;
+    overflow-y: auto;
+  }
+  
+  .modal-header h2 {
+    font-size: 18px !important;
+  }
+  
+  .modal-form {
+    font-size: 13px !important;
+  }
+  
+  .modal-form input,
+  .modal-form select,
+  .modal-form textarea {
+    font-size: 14px !important;
+  }
+  
+  /* Info modal */
+  .info-modal-body {
+    padding: 12px !important;
+    max-height: 60vh !important;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .info-section-title {
+    font-size: 14px !important;
+  }
+  
+  .info-label {
+    font-size: 11px !important;
+  }
+  
+  .info-value {
+    font-size: 13px !important;
+  }
+  
+  /* Resident management */
+  .residents-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .residents-table {
+    min-width: 600px !important;
+  }
+  
+  /* Empty state */
+  .empty-state h3 {
+    font-size: 16px !important;
+  }
+  
+  .empty-state p {
+    font-size: 13px !important;
+  }
+  
+  /* Buttons */
+  .btn-primary,
+  .btn-secondary,
+  .btn-cancel,
+  .btn-submit {
+    font-size: 13px !important;
+    padding: 10px 16px !important;
+  }
+  
+  /* Alert messages */
+  .alert {
+    font-size: 13px !important;
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard {
+    padding: 8px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 18px !important;
+  }
+  
+  .stat-value {
+    font-size: 20px !important;
+  }
+  
+  .tabs {
+    gap: 3px;
+  }
+  
+  .tab {
+    font-size: 10px !important;
+    padding: 6px 8px !important;
+  }
+  
+  .reservations-table {
+    min-width: 500px !important;
+    font-size: 10px !important;
+  }
+  
+  .reservations-table th,
+  .reservations-table td {
+    padding: 4px 2px !important;
+  }
+  
+  .btn-action {
+    font-size: 12px !important;
+    padding: 2px 4px !important;
+    min-width: 24px !important;
+  }
+  
+  .modal-content {
+    margin: 5px !important;
+  }
+  
+  .modal-footer {
+    flex-direction: column !important;
+    gap: 8px;
+  }
+  
+  .modal-footer button {
+    width: 100% !important;
   }
 }
 
