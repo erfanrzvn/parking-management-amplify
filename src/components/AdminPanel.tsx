@@ -1106,10 +1106,10 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       <th>Building</th>
                       <th>Floor</th>
                       <th>Unit</th>
+                      <th>Resident Code</th>
                       <th>Resident Name</th>
                       <th>Phone</th>
                       <th>Email</th>
-                      <th>Plate</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -1157,6 +1157,11 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               <strong>{resident.unitNumber || '-'}</strong>
                             </td>
                             <td>
+                              <strong style={{ color: '#818cf8', fontFamily: 'monospace' }}>
+                                {resident.residentCode || '-'}
+                              </strong>
+                            </td>
+                            <td>
                               {resident.name || resident.email.split('@')[0]}
                             </td>
                             <td>
@@ -1164,15 +1169,6 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             </td>
                             <td>
                               {resident.email}
-                            </td>
-                            <td>
-                              <span style={{ 
-                                fontWeight: 600, 
-                                color: '#374151',
-                                fontFamily: 'monospace'
-                              }}>
-                                {resident.plate || '-'}
-                              </span>
                             </td>
                             <td>
                               <div className="action-buttons">
