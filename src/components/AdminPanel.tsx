@@ -894,7 +894,9 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             <strong style={{ fontSize: '15px' }}>{reservation.guestPlate}</strong>
                           </td>
                           <td style={{ fontSize: '13px' }}>
-                            <strong style={{ color: '#818cf8' }}>{residentInfo.code}</strong>
+                            <strong style={{ color: '#818cf8' }}>
+                              {reservation.residentCode || residentInfo.code || 'N/A'}
+                            </strong>
                           </td>
                           <td>
                             <div style={{ fontSize: '13px' }}>
