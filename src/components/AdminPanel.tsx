@@ -965,21 +965,6 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               </div>
             )}
           </div>
-                                onClick={() => handleCancelReservation(reservation)}
-                                title="Delete reservation"
-                              >
-                                🗑️ Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         ) : activeTab === 'logs' ? (
           <div className="logs-section">
             <div className="section-header">
