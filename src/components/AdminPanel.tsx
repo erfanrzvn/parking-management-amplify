@@ -869,13 +869,14 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <table className="reservations-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: '15%' }}>Plate</th>
-                      <th style={{ width: '20%' }}>Host</th>
-                      <th style={{ width: '15%' }}>Parking</th>
-                      <th style={{ width: '15%' }}>Started</th>
-                      <th style={{ width: '10%' }}>Duration</th>
-                      <th style={{ width: '12%' }}>Remaining</th>
-                      <th style={{ width: '13%' }}>Actions</th>
+                      <th style={{ width: '12%' }}>Plate</th>
+                      <th style={{ width: '12%' }}>Resident Code</th>
+                      <th style={{ width: '18%' }}>Host</th>
+                      <th style={{ width: '14%' }}>Parking</th>
+                      <th style={{ width: '14%' }}>Started</th>
+                      <th style={{ width: '8%' }}>Duration</th>
+                      <th style={{ width: '10%' }}>Remaining</th>
+                      <th style={{ width: '12%' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -885,12 +886,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       const residentInfo = getResidentInfo(reservation.residentId);
                       const startTime = new Date(reservation.startTime);
                       const endTime = new Date(reservation.endTime);
-                      const durationHours = Math.round((endTime.getTime() - startTime.getTime()) / (1000 / 60 / 60));
+                      const durationHours = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
                       
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
                           <td className="plate-cell">
                             <strong style={{ fontSize: '15px' }}>{reservation.guestPlate}</strong>
+                          </td>
+                          <td style={{ fontSize: '13px' }}>
+                            <strong style={{ color: '#818cf8' }}>{residentInfo.code}</strong>
                           </td>
                           <td>
                             <div style={{ fontSize: '13px' }}>
@@ -920,7 +924,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             </div>
                           </td>
                           <td>
-                            <div className="action-buttons" style={{ gap: '3px', flexWrap: 'nowrap', justifyContent: 'center' }}>
+                            <div className="action-buttons" style={{ gap: '4px', flexWrap: 'nowrap', justifyContent: 'center' }}>
                               <button
                                 className="btn-action btn-info"
                                 onClick={() => {
@@ -928,7 +932,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                   setShowInfoModal(true);
                                 }}
                                 title="View details"
-                                style={{ backgroundColor: '#3b82f6', fontSize: '16px', padding: '5px 8px', minWidth: '36px' }}
+                                style={{ backgroundColor: '#3b82f6', fontSize: '16px', padding: '6px 10px' }}
                               >
                                 ℹ️
                               </button>
@@ -939,7 +943,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                   setShowAddTimeModal(true);
                                 }}
                                 title="Add more time"
-                                style={{ fontSize: '16px', padding: '5px 8px', minWidth: '36px' }}
+                                style={{ fontSize: '16px', padding: '6px 10px' }}
                               >
                                 ⏱️
                               </button>
@@ -947,7 +951,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                 className="btn-action btn-delete"
                                 onClick={() => handleCancelReservation(reservation)}
                                 title="Delete reservation"
-                                style={{ fontSize: '16px', padding: '5px 8px', minWidth: '36px' }}
+                                style={{ fontSize: '16px', padding: '6px 10px' }}
                               >
                                 🗑️
                               </button>
