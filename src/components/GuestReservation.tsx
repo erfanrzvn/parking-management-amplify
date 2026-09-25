@@ -99,18 +99,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     setValidationErrors(errors);
   }, [residentCode, unitNumber, guestPlate, guestMobile, guestEmail]);
 
-  const handleCreateAnother = () => {
-    setResidentCode('');
-    setUnitNumber('');
-    setGuestPlate('');
-    setGuestMobile('');
-    setGuestEmail('');
-    setDurationHours(2);
-    setDurationMinutes(0);
-    setSuccess(false);
-    setMessage('');
-    setValidationErrors({});
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,38 +128,6 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
     setMessage('');
 
     try {
-      // Verify resident code and unit number match (backend validation)
-      const verifyMutation = `
-        mutation VerifyResidentCredentials($residentCode: String!, $unitNumber: String!) {
-          verifyResidentCredentials(residentCode: $residentCode, unitNumber: $unitNumber) {
-            isValid
-            residentId
-            residentFloor
-            residentPlate
-            message
-          }
-        }
-      `;
-      
-      const { generateClient } = await import('aws-amplify/api');
-      const client = generateClient();
-      
-      const verifyResult: any = await client.graphql({
-        query: verifyMutation,
-        variables: {
-          residentCode: residentCode.toUpperCase(),
-          unitNumber: unitNumber
-        }
-      });
-
-      const verification = verifyResult.data.verifyResidentCredentials;
-      
-      if (!verification.isValid) {
-        setMessage(`❌ ${verification.message}`);
-        setLoading(false);
-        return;
-      }
-
       // Clean phone number format
       const cleanedMobile = guestMobile.replace(/[\s-]/g, '');
 
@@ -180,10 +136,8 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
       
       // Send duration to backend, let backend calculate exact times
       await createReservation({
-        residentId: verification.residentId,
-        residentCode: residentCode.toUpperCase(),
-        residentFloor: verification.residentFloor,
-        residentPlate: verification.residentPlate,
+        residentCode: residentCode.trim().toUpperCase(),
+        unitNumber: unitNumber.trim(),
         guestPlate: guestPlate.toUpperCase(),
         guestMobile: cleanedMobile,
         guestEmail: guestEmail.toLowerCase(),

@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Unified parking API runtime; attaches to the existing AppSync API without replacing data tables.
+Parameters:
+  ApiId:
+    Type: String
+  CodeBucket:
+    Type: String
+  CodeKey:
+    Type: String
+  ResidentTableName:
+    Type: String
+    Default: Resident
+  ReservationTableName:
+    Type: String
+    Default: Reservation
+  ParkingTableName:
+    Type: String
+    Default: ParkingConfig
+  AuditTableName:
+    Type: String
+    Default: AuditLog
+  UserPoolId:
+    Type: String
+Resources:
+  HouseholdRegistry:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+  RateLimit:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: key
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+  RuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ParkingData
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:ConditionCheckItem
+                Resource:
+                  - !GetAtt HouseholdRegistry.Arn
+                  - !GetAtt RateLimit.Arn
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ResidentTableName}
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ReservationTableName}
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ParkingTableName}
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AuditTableName}
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                Resource: !Sub arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: api.handler
+      Role: !GetAtt RuntimeRole.Arn
+      Timeout: 30
+      MemorySize: 512
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref CodeKey
+      Environment:
+        Variables:
+          RESIDENT_TABLE: !Ref ResidentTableName
+          RESERVATION_TABLE: !Ref ReservationTableName
+          PARKING_CONFIG_TABLE: !Ref ParkingTableName
+          AUDIT_LOG_TABLE: !Ref AuditTableName
+          HOUSEHOLD_TABLE: !Ref HouseholdRegistry
+          RATE_LIMIT_TABLE: !Ref RateLimit
+          USER_POOL_ID: !Ref UserPoolId
+  AppSyncRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: appsync.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeParkingApi
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt ApiFunction.Arn
+  ApiDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !Ref ApiId
+      Name: ParkingUnifiedApi
+      Type: AWS_LAMBDA
+      ServiceRoleArn: !GetAtt AppSyncRole.Arn
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt ApiFunction.Arn
+Outputs:
+  FunctionName:
+    Value: !Ref ApiFunction
+  HouseholdTable:
+    Value: !Ref HouseholdRegistry
+  DataSourceName:
+    Value: !GetAtt ApiDataSource.Name

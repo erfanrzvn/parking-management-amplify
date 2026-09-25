@@ -1,3 +1,21 @@
+CURRENT RELEASE — 2026-09-25
+============================
+This section supersedes historical notes below. See RELEASE.md for deployment,
+validation, rollback, and known operational limits.
+Active API: p6u7zkzkhrbuter3jhkvujkhpa (ca-central-1)
+Canonical contract: schema.graphql; runtime: lambda/api.js (23 operations).
+One account per person; one automatically generated code per building/unit;
+one active guest per household. Codes cannot be manually supplied or changed.
+Cognito protects private data and management actions; guests use code + unit.
+The user explicitly confirmed old business records were test data and authorized
+resetting them; ADMIN access and parking configuration are preserved.
+Regression tests are retained for repeatable validation; test fixtures, credentials
+and backups are excluded from Git under build/. Do not redeploy legacy Gen2
+scaffolding or the old CloudFormation snapshot over the current runtime.
+
+HISTORICAL REFERENCE (not deployment authority)
+==============================================
+
 ================================================================================
                     PARKING MANAGEMENT SYSTEM - مرجع کامل پروژه
 ================================================================================

@@ -1,6 +1,6 @@
 import { generateClient } from 'aws-amplify/api';
 
-const client = generateClient();
+const client = generateClient({ authMode: 'userPool' });
 
 export async function listParkingConfigs() {
   const query = `
@@ -16,7 +16,7 @@ export async function listParkingConfigs() {
     }
   `;
   
-  const result: any = await client.graphql({ query });
+  const result: any = await client.graphql({ query, authMode: 'apiKey' });
   return result.data.listParkingConfigs;
 }
 
@@ -81,12 +81,15 @@ export async function listResidents(limit?: number, nextToken?: string) {
     }
   `;
   
-  const result: any = await client.graphql({ 
-    query,
-    variables: { limit, nextToken }
-  });
-  // Filter out deleted residents
-  return result.data.listResidents.items.filter((r: any) => !r.deletedAt);
+  const items: any[] = [];
+  let token = nextToken;
+  do {
+    const result: any = await client.graphql({ query, variables: { limit: limit || 100, nextToken: token } });
+    const page = result.data.listResidents;
+    items.push(...(page.items || []).filter(Boolean));
+    token = page.nextToken;
+  } while (token);
+  return items.filter((r: any) => !r.deletedAt);
 }
 
 export async function getResidentByUserId(userId: string) {
@@ -216,6 +219,7 @@ export async function createReservation(input: any) {
         id
         residentId
         householdId
+        residentCode
         residentFloor
         residentPlate
         guestPlate
@@ -230,6 +234,7 @@ export async function createReservation(input: any) {
   
   const result: any = await client.graphql({
     query: mutation,
+    authMode: 'apiKey',
     variables: { input }
   });
   return result.data.createReservation;
@@ -243,6 +248,8 @@ export async function listReservations(limit?: number, nextToken?: string) {
           id
           residentId
           residentCode
+          householdId
+          deletedAt
           residentFloor
           residentPlate
           guestPlate
@@ -258,11 +265,15 @@ export async function listReservations(limit?: number, nextToken?: string) {
     }
   `;
   
-  const result: any = await client.graphql({ 
-    query,
-    variables: { limit, nextToken }
-  });
-  return result.data.listReservations.items;
+  const items: any[] = [];
+  let token = nextToken;
+  do {
+    const result: any = await client.graphql({ query, variables: { limit: limit || 100, nextToken: token } });
+    const page = result.data.listReservations;
+    items.push(...(page.items || []).filter(Boolean));
+    token = page.nextToken;
+  } while (token);
+  return items;
 }
 
 export async function cancelReservation(id: string) {
@@ -276,13 +287,13 @@ export async function cancelReservation(id: string) {
     }
   `;
   
-  console.log('🔧 cancelReservation called with ID:', id);
+
   
   const result: any = await client.graphql({
     query: mutation,
     variables: { id }
   });
   
-  console.log('✅ Cancel successful:', result);
+
   return result.data.cancelReservation;
 }

@@ -1,3 +1,5 @@
+> Superseded by [RELEASE.md](RELEASE.md), 2026-09-25. The rules below describe the old deployment. The canonical schema now restricts public access to availability and guest booking; Lambda enforces group/household access. Server-generated household codes and atomic rate limiting are implemented. Keep regression tests; never commit fixtures or credentials.
+
 # 🔧 TODO: Security Fixes
 
 ## ❌ فوری - باید قبل از production انجام بشه

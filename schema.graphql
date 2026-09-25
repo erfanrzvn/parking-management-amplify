@@ -1,5 +1,5 @@
-# Schema version 5 - Changed phone from AWSPhone to String for flexible formats
-type ParkingConfig {
+# Canonical AppSync schema. All resolvers route to lambda/api.js.
+type ParkingConfig @aws_api_key @aws_cognito_user_pools {
   id: ID!
   name: String
   totalSpots: Int!
@@ -8,15 +8,15 @@ type ParkingConfig {
   updatedAt: AWSDateTime!
 }
 
-type Resident {
+type Resident @aws_cognito_user_pools {
   id: ID!
   email: AWSEmail!
   name: String
   phone: String
-  building: String!
-  floor: String!
-  unitNumber: String!
-  plate: String!
+  building: String
+  floor: String
+  unitNumber: String
+  plate: String
   residentCode: String!
   userId: String!
   householdId: String
@@ -25,7 +25,8 @@ type Resident {
   updatedAt: AWSDateTime!
 }
 
-type Reservation {
+type Reservation @aws_api_key @aws_cognito_user_pools {
+  householdId: String
   id: ID!
   residentId: String!
   residentCode: String!
@@ -43,44 +44,52 @@ type Reservation {
 }
 
 type Query {
-  getParkingConfig(id: ID!): ParkingConfig
-  listParkingConfigs: [ParkingConfig]
-  getResident(id: ID!): Resident
-  getResidentByUserId(userId: String!): Resident
-  listResidents(limit: Int, nextToken: String): ResidentConnection
-  getReservation(id: ID!): Reservation
-  listReservations(limit: Int, nextToken: String): ReservationConnection
-  checkAvailability: AvailabilityResponse
-  exportResidentsCSV: String
+  getParkingConfig(id: ID!): ParkingConfig @aws_api_key @aws_cognito_user_pools
+  listParkingConfigs: [ParkingConfig] @aws_api_key @aws_cognito_user_pools
+  getResident(id: ID!): Resident @aws_cognito_user_pools
+  getResidentByUserId(userId: String!): Resident @aws_cognito_user_pools
+  listResidents(limit: Int, nextToken: String): ResidentConnection @aws_cognito_user_pools
+  getReservation(id: ID!): Reservation @aws_cognito_user_pools
+  listReservations(limit: Int, nextToken: String): ReservationConnection @aws_cognito_user_pools
+  checkAvailability: AvailabilityResponse @aws_api_key @aws_cognito_user_pools
+  exportResidentsCSV: String @aws_cognito_user_pools
 }
 
-type ResidentConnection {
+type ResidentConnection @aws_cognito_user_pools {
   items: [Resident]
   nextToken: String
 }
 
-type ReservationConnection {
+type ReservationConnection @aws_cognito_user_pools {
   items: [Reservation]
   nextToken: String
 }
 
-type Mutation {
-  createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig
-  updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig
-  deleteParkingConfig(id: ID!): ParkingConfig
-  createResident(input: CreateResidentInput!): Resident
-  createResidentWithCognito(input: CreateResidentWithCognitoInput!): ResidentWithCredentials
-  updateResident(input: UpdateResidentInput!): Resident
-  deleteResident(id: ID!): Resident
-  createReservation(input: CreateReservationInput!): Reservation
-  updateReservation(input: UpdateReservationInput!): Reservation
-  cancelReservation(id: ID!): Reservation
-  deleteReservation(id: ID!): Reservation
-  verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult
-  importResidentsCSV(csvData: String!): ImportResult
+type CSVExportResult @aws_cognito_user_pools {
+  count: Int!
+  csvData: String
+  message: String!
+  success: Boolean!
 }
 
-type ResidentVerificationResult {
+type Mutation {
+  exportResidentsCSV: CSVExportResult @aws_cognito_user_pools
+  createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig @aws_cognito_user_pools
+  updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig @aws_cognito_user_pools
+  deleteParkingConfig(id: ID!): ParkingConfig @aws_cognito_user_pools
+  createResident(input: CreateResidentInput!): Resident @aws_cognito_user_pools
+  createResidentWithCognito(input: CreateResidentWithCognitoInput!): ResidentWithCredentials @aws_cognito_user_pools
+  updateResident(input: UpdateResidentInput!): Resident @aws_cognito_user_pools
+  deleteResident(id: ID!): Resident @aws_cognito_user_pools
+  createReservation(input: CreateReservationInput!): Reservation @aws_api_key @aws_cognito_user_pools
+  updateReservation(input: UpdateReservationInput!): Reservation @aws_cognito_user_pools
+  cancelReservation(id: ID!): Reservation @aws_cognito_user_pools
+  deleteReservation(id: ID!): Reservation @aws_cognito_user_pools
+  verifyResidentCredentials(residentCode: String!, unitNumber: String!): ResidentVerificationResult @aws_api_key @aws_cognito_user_pools
+  importResidentsCSV(csvData: String!): ImportResult @aws_cognito_user_pools
+}
+
+type ResidentVerificationResult @aws_api_key @aws_cognito_user_pools {
   isValid: Boolean!
   residentId: String
   residentFloor: String
@@ -88,7 +97,7 @@ type ResidentVerificationResult {
   message: String
 }
 
-type ResidentWithCredentials {
+type ResidentWithCredentials @aws_cognito_user_pools {
   id: ID!
   email: AWSEmail!
   name: String
@@ -127,9 +136,6 @@ input CreateResidentInput {
   floor: String!
   unitNumber: String!
   plate: String!
-  residentCode: String!
-  userId: String!
-  householdId: String
 }
 
 input CreateResidentWithCognitoInput {
@@ -140,7 +146,6 @@ input CreateResidentWithCognitoInput {
   floor: String!
   unitNumber: String!
   plate: String!
-  householdId: String
 }
 
 input UpdateResidentInput {
@@ -152,11 +157,11 @@ input UpdateResidentInput {
   floor: String
   unitNumber: String
   plate: String
-  householdId: String
 }
 
 input CreateReservationInput {
-  residentId: String!
+  unitNumber: String!
+  residentId: String
   residentCode: String!
   residentFloor: String
   residentPlate: String
@@ -172,7 +177,7 @@ input UpdateReservationInput {
   endTime: AWSDateTime
 }
 
-type AvailabilityResponse {
+type AvailabilityResponse @aws_api_key @aws_cognito_user_pools {
   available: Boolean!
   availableSpots: Int!
   totalSpots: Int!
@@ -180,7 +185,14 @@ type AvailabilityResponse {
   message: String!
 }
 
-type ImportResult {
+type ImportedCredential @aws_cognito_user_pools {
+  email: AWSEmail!
+  residentCode: String!
+  tempPassword: String!
+}
+
+type ImportResult @aws_cognito_user_pools {
+  credentials: [ImportedCredential!]!
   success: Boolean!
   created: Int!
   updated: Int!

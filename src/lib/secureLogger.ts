@@ -66,7 +66,7 @@ function sanitizeObject(obj: any, depth = 0): any {
  * Secure console.log - sanitizes sensitive data before logging
  */
 export function secureLog(message: string, ...args: any[]): void {
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.MODE === 'production') {
     // In production, only log message without details
     console.log(message);
     return;
@@ -89,7 +89,7 @@ export function secureLog(message: string, ...args: any[]): void {
 export function secureError(message: string, error?: any): void {
   console.error(message);
   
-  if (process.env.NODE_ENV !== 'production' && error) {
+  if (import.meta.env.MODE !== 'production' && error) {
     if (error instanceof Error) {
       console.error('Error name:', error.name);
       console.error('Error message:', error.message);

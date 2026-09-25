@@ -1,3 +1,4 @@
+const { requireAdmin } = require('./access');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, UpdateCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { CognitoIdentityProviderClient, AdminDisableUserCommand, AdminDeleteUserCommand } = require('@aws-sdk/client-cognito-identity-provider');
@@ -11,7 +12,7 @@ const USER_POOL_ID = process.env.USER_POOL_ID || 'ca-central-1_dBeo5yZXq';
 const RESIDENT_TABLE = process.env.RESIDENT_TABLE || 'Resident';
 
 exports.handler = async (event) => {
-  console.log('DeleteResident request received');
+  requireAdmin(event);
   
   try {
     const { id } = event.arguments;
@@ -32,7 +33,7 @@ exports.handler = async (event) => {
       throw new Error(`Resident with ID ${id} not found`);
     }
     
-    const userId = resident.Item.userId;
+    const userId = resident.Item.cognitoUsername || resident.Item.userId;
     const email = resident.Item.email;
     
     // Step 2: Soft delete in DynamoDB (set deletedAt timestamp)
@@ -48,6 +49,7 @@ exports.handler = async (event) => {
         ':deletedAt': now,
         ':updatedAt': now
       },
+      ConditionExpression: 'attribute_exists(id)',
       ReturnValues: 'ALL_NEW'
     });
     
@@ -80,10 +82,10 @@ exports.handler = async (event) => {
         */
       }
     } catch (cognitoError) {
-      // Log but don't fail if Cognito operation fails
+      // The profile is already disabled in the API; surface a retryable failure until Cognito is disabled too.
       console.error('Warning: Failed to disable Cognito user:', cognitoError.message);
       console.error('DynamoDB was updated successfully, but Cognito user remains active');
-      // Continue execution - DynamoDB is source of truth
+      throw new Error('Resident was archived, but sign-in disabling failed. Retry deletion.');
     }
     
     // Audit log
@@ -99,10 +101,7 @@ exports.handler = async (event) => {
       id
     );
     
-    return {
-      id: updateResult.Attributes.id,
-      deletedAt: updateResult.Attributes.deletedAt
-    };
+    return updateResult.Attributes;
     
   } catch (error) {
     console.error('Error deleting resident:', error);

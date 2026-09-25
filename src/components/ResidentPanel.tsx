@@ -42,7 +42,7 @@ export default function ResidentPanel({ user }: ResidentPanelProps) {
         floor: resident.floor || 'N/A',
         unitNumber: resident.unitNumber || 'N/A',
         licensePlate: resident.plate || 'N/A',
-        residentCode: resident.residentCode || 'N/A',
+        residentCode: resident.householdId || resident.residentCode || 'N/A',
       });
     } catch (error: any) {
       console.error('Error loading resident data:', error);

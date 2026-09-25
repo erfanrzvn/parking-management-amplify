@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signIn } from 'aws-amplify/auth';
+import { signIn, confirmSignIn } from 'aws-amplify/auth';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -11,6 +11,10 @@ export default function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [newPasswordRequired, setNewPasswordRequired] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [missingAttributes, setMissingAttributes] = useState<string[]>([]);
+  const [attributes, setAttributes] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,16 +22,18 @@ export default function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
     setError('');
 
     try {
-      const result = await signIn({
-        username: email,
-        password: password,
-      });
+      const result = newPasswordRequired
+        ? await confirmSignIn({ challengeResponse: newPassword, options: { userAttributes: attributes } })
+        : await signIn({ username: email.trim().toLowerCase(), password });
       
       // Check if sign in was successful
       if (result.isSignedIn) {
-        // Wait a moment for Cognito to sync
-        await new Promise(resolve => setTimeout(resolve, 500));
         onLoginSuccess();
+      } else if (result.nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        setNewPasswordRequired(true);
+        setMissingAttributes(result.nextStep.missingAttributes || []);
+      } else {
+        setError(`Additional sign-in step required: ${result.nextStep.signInStep}. Contact your administrator.`);
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -41,6 +47,7 @@ export default function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
       } else {
         setError(err.message || 'An error occurred during sign in');
       }
+    } finally {
       setLoading(false);
     }
   };
@@ -82,22 +89,29 @@ export default function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
                 placeholder="admin@parking.com"
                 required
                 autoComplete="email"
+                readOnly={newPasswordRequired}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">{newPasswordRequired ? "Choose a new password" : "Password"}</label>
               <input
                 id="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={newPasswordRequired ? newPassword : password}
+                onChange={(e) => newPasswordRequired ? setNewPassword(e.target.value) : setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                autoComplete="current-password"
+                autoComplete={newPasswordRequired ? "new-password" : "current-password"}
               />
             </div>
 
+            {missingAttributes.map(attribute => (
+              <div className="form-group" key={attribute}>
+                <label htmlFor={attribute}>{attribute}</label>
+                <input id={attribute} required value={attributes[attribute] || ''} onChange={e => setAttributes({ ...attributes, [attribute]: e.target.value })} />
+              </div>
+            ))}
             <button 
               type="submit" 
               className="btn-login-submit"
@@ -110,27 +124,13 @@ export default function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
                 </>
               ) : (
                 <>
-                  🔐 Sign In
+                  {newPasswordRequired ? "Set Password and Sign In" : "🔐 Sign In"}
                 </>
               )}
             </button>
           </form>
 
-          <div className="login-footer">
-            <p className="login-hint">
-              <strong>Demo Accounts:</strong>
-            </p>
-            <div className="demo-accounts">
-              <div className="demo-account">
-                <span className="demo-badge admin">Admin</span>
-                <code>admin@parking.com</code>
-              </div>
-              <div className="demo-account">
-                <span className="demo-badge resident">Resident</span>
-                <code>resident@parking.com</code>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

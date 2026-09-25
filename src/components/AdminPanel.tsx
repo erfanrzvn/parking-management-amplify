@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { listParkingConfigs, createParkingConfig, deleteParkingConfig, listReservations, listResidents, createResident, updateResident, deleteResident, cancelReservation } from '../lib/graphql';
+import { listParkingConfigs, createParkingConfig, deleteParkingConfig, listReservations, listResidents, updateResident, deleteResident, cancelReservation } from '../lib/graphql';
 import { generateClient } from 'aws-amplify/api';
 
-const graphqlClient = generateClient();
+const graphqlClient = generateClient({ authMode: 'userPool' });
 
 interface AdminPanelProps {
   user: any;
@@ -41,6 +41,8 @@ interface Reservation {
   startTime: string;
   endTime: string;
   createdAt: string;
+  status?: string;
+  deletedAt?: string;
 }
 
 export default function AdminPanel({ user }: AdminPanelProps) {
@@ -56,7 +58,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [additionalHours, setAdditionalHours] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<'reservations' | 'parkings' | 'logs' | 'residents'>('reservations');
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [, setRefreshInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sortBy, setSortBy] = useState<'time-remaining' | 'plate' | 'start'>('time-remaining');
   
@@ -133,7 +135,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           floor: item.floor,
           unitNumber: item.unitNumber,
           plate: item.plate,
-          householdId: item.householdId || '',
+          householdId: item.householdId || item.residentCode || '',
           userId: item.userId || ''
         })));
       }
@@ -150,15 +152,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     try {
       const data = await listReservations();
       if (data) {
-        // Filter out cancelled reservations
-        const activeReservations = data.filter((item: any) => 
-          !item.status || item.status !== 'CANCELLED'
-        );
-        
-        setReservations(activeReservations.map((item: any) => ({
+        setReservations(data.map((item: any) => ({
+          status: item.status,
+          deletedAt: item.deletedAt,
           id: item.id,
           residentId: item.residentId || '',
-          householdId: item.householdId || '',
+          householdId: item.householdId || item.residentCode || '',
           residentFloor: item.residentFloor,
           residentPlate: item.residentPlate,
           guestPlate: item.guestPlate || '',
@@ -268,18 +267,6 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   };
 
   // Resident Management Functions
-  const generateResidentCode = (): string => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const nums = '0123456789';
-    let code = '';
-    for (let i = 0; i < 3; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    for (let i = 0; i < 3; i++) {
-      code += nums.charAt(Math.floor(Math.random() * nums.length));
-    }
-    return code;
-  };
 
   const handleExportCSV = async () => {
     setLoading(true);
@@ -305,6 +292,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
       setMessage('✅ CSV exported successfully');
     } catch (error: any) {
@@ -346,6 +334,18 @@ export default function AdminPanel({ user }: AdminPanelProps) {
       });
       
       const result = response.data.importResidentsCSV;
+      if (result.credentials?.length) {
+        const csv = ['email,residentCode,tempPassword', ...result.credentials.map((row: any) => [row.email, row.residentCode, row.tempPassword].map(value => '"' + String(value).replace(/"/g, '""') + '"').join(','))].join('\n');
+        const downloadUrl = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        const download = document.createElement('a');
+        download.href = downloadUrl;
+        download.download = 'new-resident-credentials.csv';
+        document.body.appendChild(download);
+        download.click();
+        download.remove();
+        URL.revokeObjectURL(downloadUrl);
+      }
+      await loadResidents();
       
       if (result.success) {
         setMessage(`✅ ${result.message}`);
@@ -385,7 +385,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         userId: resident.userId
       });
     } else {
-      // Create mode - householdId will be provided by admin
+      // The server assigns the household code.
       setEditingResident(null);
       setResidentForm({
         email: '',
@@ -395,7 +395,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         floor: '',
         unitNumber: '',
         plate: '',
-        householdId: '', // Admin will provide household code
+        householdId: '', // Server generated
         userId: ''
       });
     }
@@ -460,7 +460,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           }
         `;
         
-        const response = await graphqlClient.graphql({
+        const response: any = await graphqlClient.graphql({
           query: mutation,
           variables: {
             input: {
@@ -471,7 +471,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               floor: residentForm.floor,
               unitNumber: residentForm.unitNumber,
               plate: residentForm.plate,
-              householdId: residentForm.householdId,
+
             }
           }
         });
@@ -553,7 +553,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     });
   };
 
-  const getHouseholdColor = (householdId: string, index: number) => {
+  const getHouseholdColor = (_householdId: string, index: number) => {
     const colors = [
       '#3b82f6', // blue
       '#10b981', // green
@@ -692,7 +692,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
 
   const getActiveReservations = () => {
     const now = new Date();
-    let active = reservations.filter(r => new Date(r.endTime) > now);
+    let active = reservations.filter(r => !r.deletedAt && r.status?.toUpperCase() !== 'CANCELLED' && new Date(r.startTime) <= now && new Date(r.endTime) > now);
     
     // Sort by selected criteria
     if (sortBy === 'time-remaining') {
@@ -720,7 +720,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
     const activeRes = getActiveReservations();
     const totalSpots = parkings.reduce((sum, p) => sum + p.totalSpots, 0);
     const occupiedSpots = activeRes.length;
-    const availableSpots = totalSpots - occupiedSpots;
+    const availableSpots = Math.max(0, totalSpots - occupiedSpots);
     
     return {
       totalParkings: parkings.length,
@@ -992,13 +992,14 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                     const end = new Date(reservation.endTime);
                     const now = new Date();
                     const isExpired = end < now;
+                    const isCancelled = !!reservation.deletedAt || reservation.status?.toUpperCase() === 'CANCELLED';
                     const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60));
                     const residentInfo = getResidentInfo(reservation.residentId);
                     
                     return (
                       <tr key={reservation.id} className={`log-row ${isExpired ? 'log-expired' : 'log-active'}`}>
                         <td>
-                          {isExpired ? (
+                          {isCancelled ? (<span className="status-badge">Cancelled</span>) : isExpired ? (
                             <span className="status-badge status-expired" style={{ fontSize: '11px', padding: '3px 8px' }}>
                               ✅ Done
                             </span>
@@ -1437,6 +1438,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                 <input
                   type="email"
                   value={residentForm.email}
+                  readOnly={!!editingResident}
                   onChange={(e) => setResidentForm({...residentForm, email: e.target.value})}
                   placeholder="resident@example.com"
                   required
@@ -1515,17 +1517,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               </div>
 
               <div className="form-group">
-                <label>Resident Code *</label>
+                <label>Resident Code</label>
                 <input
                   type="text"
-                  value={residentForm.householdId}
-                  onChange={(e) => setResidentForm({...residentForm, householdId: e.target.value.toUpperCase()})}
-                  placeholder="ABC123"
-                  maxLength={6}
-                  minLength={6}
-                  required
+                  value={editingResident ? residentForm.householdId : "Generated automatically after saving"}
+                  readOnly
                 />
-                <small>💡 6-character code - same for all family members</small>
+                <small>Generated by the server. Residents in the same building and unit share one code.</small>
               </div>
 
               <div className="modal-actions">
