@@ -63,7 +63,14 @@ async function main() {
   Amplify.configure(outputs);
   async function login(email, tempPassword) {
     await auth.signOut();
-    const first = await auth.signIn({ username: email, password: tempPassword });
+    let first;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try { first = await auth.signIn({ username: email, password: tempPassword }); break; }
+      catch (error) {
+        if (error.name !== 'NotAuthorizedException' || attempt === 3) throw error;
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
+    }
     assert.equal(first.nextStep.signInStep, 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED');
     const result = await auth.confirmSignIn({ challengeResponse: `Aa1!${randomBytes(18).toString('base64url')}` });
     assert.equal(result.isSignedIn, true);
@@ -86,6 +93,10 @@ async function main() {
     await cognito.send(new cognitoSDK.AdminGetUserCommand({ UserPoolId: pool, Username: adminEmail }));
   }
   await cognito.send(new cognitoSDK.AdminAddUserToGroupCommand({ UserPoolId: pool, Username: adminEmail, GroupName: 'ADMIN' }));
+  // Set the known temporary credential on this run's disposable account even
+  // when AdminCreateUser had to recover from an ambiguous retry response.
+  await cognito.send(new cognitoSDK.AdminSetUserPasswordCommand({ UserPoolId: pool, Username: adminEmail, Password: password, Permanent: false }));
+  console.log('Temporary admin account prepared; validating Cognito sign-in.');
   const adminToken = await login(adminEmail, password);
   passed.push('Cognito SRP login and temporary-password challenge');
   await step('public parking/availability queries', async () => {
