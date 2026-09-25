@@ -26,9 +26,8 @@ const schema = a.schema({
       floor: a.string(),
       unitNumber: a.string(),
       plate: a.string(),
-      residentCode: a.string().required(),
       userId: a.string().required(),
-      householdId: a.string(),
+      householdId: a.string().required(), // Household code - shared by all family members
       createdAt: a.datetime(),
       updatedAt: a.datetime(),
       deletedAt: a.datetime(),
@@ -44,7 +43,7 @@ const schema = a.schema({
     .model({
       id: a.id().required(),
       residentId: a.string().required(),
-      residentCode: a.string().required(),
+      householdId: a.string().required(), // Household code instead of residentCode
       residentFloor: a.string(),
       residentPlate: a.string(),
       guestPlate: a.string().required(),

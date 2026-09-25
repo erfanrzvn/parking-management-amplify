@@ -70,9 +70,8 @@ export async function listResidents(limit?: number, nextToken?: string) {
           floor
           unitNumber
           plate
-          residentCode
-          userId
           householdId
+          userId
           createdAt
           updatedAt
           deletedAt
@@ -102,7 +101,7 @@ export async function getResidentByUserId(userId: string) {
         floor
         unitNumber
         plate
-        residentCode
+        householdId
         userId
         createdAt
       }
@@ -128,7 +127,7 @@ export async function getResident(id: string) {
         floor
         unitNumber
         plate
-        residentCode
+        householdId
         userId
         createdAt
       }
@@ -154,7 +153,7 @@ export async function createResident(input: any) {
         floor
         unitNumber
         plate
-        residentCode
+        householdId
         userId
         createdAt
       }
@@ -180,7 +179,7 @@ export async function updateResident(input: any) {
         floor
         unitNumber
         plate
-        residentCode
+        householdId
         userId
         createdAt
       }
@@ -216,7 +215,7 @@ export async function createReservation(input: any) {
       createReservation(input: $input) {
         id
         residentId
-        residentCode
+        householdId
         residentFloor
         residentPlate
         guestPlate

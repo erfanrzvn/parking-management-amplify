@@ -79,12 +79,15 @@ Frontend فقط UI است و هیچ داده‌ای ذخیره نمیکنه!
    - floor: string
    - unitNumber: string
    - plate: string
-   - residentCode: string
    - userId: string
-   - householdId: string (برای گروه‌بندی خانوارها)
+   - householdId: string (برای گروه‌بندی خانوارها - UNIQUE per household)
    - createdAt: datetime
    - updatedAt: datetime
    - deletedAt: datetime (soft delete)
+
+   ⚠️  IMPORTANT: residentCode حذف شد!
+   → هر HOUSEHOLD یک کد مشترک دارد (householdId)
+   → نه هر RESIDENT جداگانه!
 
    Authorization:
    ✅ Owner: read, update own data
@@ -95,7 +98,7 @@ Frontend فقط UI است و هیچ داده‌ای ذخیره نمیکنه!
    ───────────
    - id: string (PK)
    - residentId: string
-   - residentCode: string
+   - householdId: string (کد خانوار - به جای residentCode!)
    - residentFloor: string
    - residentPlate: string
    - guestPlate: string
@@ -106,6 +109,9 @@ Frontend فقط UI است و هیچ داده‌ای ذخیره نمیکنه!
    - status: string (CANCELLED)
    - deletedAt: datetime (soft delete)
    - createdAt: datetime
+
+   ⚠️  تغییر مهم: residentCode → householdId
+   → هر reservation به یک household لینک میشه، نه یک resident
 
    Authorization:
    ✅ Public: full access (برای guest booking)
@@ -468,9 +474,10 @@ Demo Accounts:
 - مشاهده رزروهای خود
 
 💡 نکته مهم:
-- هر Resident یک residentCode منحصر به فرد دارد
-- این کد برای لینک کردن Reservation به Resident استفاده میشه
-- Household members میتونن با householdId گروه بندی بشن
+- هر Household یک householdId منحصر به فرد دارد (مثل یک کد خانوار)
+- همه اعضای یک خانواره این householdId رو دارن
+- Reservation با householdId لینک میشه، نه با residentCode
+- Guest فقط باید householdId رو بدونه تا رزرو کنه
 
 ================================================================================
 
@@ -942,3 +949,169 @@ API:
   ✅ نکات کلیدی
 
 همه چیز مستند شد! 🎉
+
+
+================================================================================
+            🏠 تغییر مهم: HOUSEHOLD CODE بجای RESIDENT CODE
+================================================================================
+
+📅 تاریخ تغییر: 2026-09-24
+
+🔴 تغییر اصلی:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ قبل:
+   - هر Resident یک residentCode داشت
+   - مشکل: اگه 3 نفر توی یک خونه باشن، 3 تا کد جدا داشتن!
+   - مهمان باید کدوم کد رو استفاده کنه؟ 🤔
+
+✅ بعد:
+   - هر HOUSEHOLD یک householdId دارد (کد خانوار)
+   - همه اعضای یک خانواره این کد مشترک رو دارن
+   - مهمان با یک کد میتونه برای کل خانوار رزرو کنه ✅
+
+================================================================================
+
+📋 Schema Changes
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Model: Resident
+   ❌ حذف: residentCode field
+   ✅ نگهداری: householdId (این همون کد خانوار است!)
+
+Model: Reservation
+   ❌ حذف: residentCode field
+   ✅ تغییر: householdId (لینک به household, نه به resident)
+
+================================================================================
+
+🔧 تغییرات Backend (amplify/data/resource.ts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Resident model:
+   ```typescript
+   .model('Resident', {
+     // ... other fields
+     householdId: a.string().required(),  // ← این کد خانوار است!
+     // residentCode: REMOVED!
+   })
+   ```
+
+Reservation model:
+   ```typescript
+   .model('Reservation', {
+     residentId: a.id().required(),
+     householdId: a.string().required(),  // ← لینک به household
+     // residentCode: REMOVED!
+   })
+   ```
+
+================================================================================
+
+🎨 تغییرات Frontend
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📄 src/lib/graphql.ts:
+   - listResidents: حذف residentCode از query
+   - createReservation: householdId به جای residentCode
+
+📄 src/components/AdminPanel.tsx:
+   ✅ Residents Tab:
+      - ستون "Household Code" نمایش householdId
+      - همه اعضای یک خانواده یک کد دارن
+      - رنگ‌بندی household ها
+
+   ✅ Active Reservations Tab:
+      - ستون "Household Code" نمایش householdId
+      - لینک به کد خانوار صاحب رزرو
+
+📄 src/components/ResidentPanel.tsx:
+   - نمایش householdId به جای residentCode
+   - اشتراک‌گذاری کد خانوار با مهمان
+
+📄 src/components/GuestReservation.tsx:
+   - فیلد "Household Code" به جای "Resident Code"
+   - مهمان کد خانوار رو وارد میکنه
+
+================================================================================
+
+💡 مثال کاربردی
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+خانواده احمدی در ساختمان A، واحد 502:
+
+┌─────────────────────────────────────────────────┐
+│  Household: AHMAD502                            │
+│  householdId: "household_123456789"             │
+├─────────────────────────────────────────────────┤
+│  👨 علی احمدی    - ali@example.com             │
+│  👩 سارا احمدی   - sara@example.com            │
+│  👦 رضا احمدی    - reza@example.com            │
+└─────────────────────────────────────────────────┘
+
+همه 3 نفر householdId یکسان دارن: "household_123456789"
+
+وقتی مهمان میخواد رزرو کنه:
+   - فقط یک کد لازم داره: "household_123456789"
+   - نه 3 تا کد جدا!
+   - ساده‌تر و منطقی‌تر ✅
+
+================================================================================
+
+🚀 مراحل Migration (اگه داده قبلی داریم)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  اگه Residents قبلی با residentCode داری:
+
+1. همه residents رو لیست کن
+2. بر اساس householdId گروه‌بندی کن
+3. برای هر household یک کد یکتا بساز
+4. همه reservations رو update کن (residentCode → householdId)
+
+یا ساده‌تر:
+   → همه داده‌ها رو پاک کن و از نو شروع کن!
+   → (چون هنوز production نیست)
+
+================================================================================
+
+📊 مزایای این تغییر
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ ساده‌تر برای کاربر:
+   - یک کد برای کل خانواده
+   - نه 3 تا کد مختلف!
+
+✅ منطقی‌تر:
+   - هر خونه = یک پارکینگ
+   - پس یک کد کافیه
+
+✅ کمتر Confusing:
+   - مهمان نمیدونست از کدوم کد استفاده کنه
+   - حالا فقط یک کد وجود داره
+
+✅ Scalable:
+   - اگه بعداً اعضای خانوار زیاد بشه
+   - همه از یک کد استفاده میکنن
+
+================================================================================
+
+🎓 یادآوری
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  از این به بعد:
+   - دیگه residentCode وجود نداره!
+   - فقط householdId استفاده میشه
+   - هر household = یک کد منحصر به فرد
+
+⚠️  وقتی Resident جدید اضافه میکنی:
+   - اگه عضو خانواده قبلی است → از householdId قبلی استفاده کن
+   - اگه خانواده جدیده → یک householdId جدید بساز
+
+================================================================================
+                            آخرین بروزرسانی
+================================================================================
+
+تاریخ: 2026-09-24
+تغییر: HOUSEHOLD CODE به جای RESIDENT CODE
+وضعیت: ✅ مستند شد - آماده برای implementation
+
