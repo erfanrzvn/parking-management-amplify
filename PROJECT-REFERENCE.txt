@@ -1151,8 +1151,11 @@ Guest Reservation Page:
 ================================================================================
 
 تاریخ: 2026-09-24
-تغییر: HOUSEHOLD CODE به جای RESIDENT CODE
-دلیل: هر خونه یک پارک، یک کد، یک رزرو فعال
-وضعیت: ✅ مستند شد - آماده برای implementation
+تغییر: RESIDENT CODE (6 حرفی) - یک کد مشترک برای هر خونه
+Field Name: householdId (backend) → نمایش: "Resident Code" (frontend)
+Format: 6 کاراکتر (حروف بزرگ + اعداد، مثال: ABC123)
+Validation: برای رزرو Guest باید: Resident Code + Unit Number
+دلیل: هر خونه = یک پارک = یک کد = فقط یک رزرو فعال
+وضعیت: ✅ مستند شد - Implementation در حال انجام
 
 

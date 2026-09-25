@@ -485,7 +485,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         const householdId = result.householdId || 'N/A';
         const tempPassword = result.tempPassword || 'N/A';
         
-        setMessage(`✅ Resident created successfully!\n\n🏠 Household Code: ${householdId}\n🔐 Temporary Password: ${tempPassword}\n\n📧 Please share these credentials with the resident.`);
+        setMessage(`✅ Resident created successfully!\n\n🔑 Resident Code: ${householdId}\n🔐 Temporary Password: ${tempPassword}\n\n📧 Please share these credentials with the resident.`);
       }
 
       handleCloseResidentModal();
@@ -869,7 +869,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                   <thead>
                     <tr>
                       <th style={{ width: '12%' }}>Plate</th>
-                      <th style={{ width: '12%' }}>Household Code</th>
+                      <th style={{ width: '12%' }}>Resident Code</th>
                       <th style={{ width: '18%' }}>Host</th>
                       <th style={{ width: '14%' }}>Parking</th>
                       <th style={{ width: '14%' }}>Started</th>
@@ -1105,7 +1105,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       <th>Building</th>
                       <th>Floor</th>
                       <th>Unit</th>
-                      <th>Household Code</th>
+                      <th>Resident Code</th>
                       <th>Resident Name</th>
                       <th>Phone</th>
                       <th>Email</th>
@@ -1515,15 +1515,17 @@ export default function AdminPanel({ user }: AdminPanelProps) {
               </div>
 
               <div className="form-group">
-                <label>Household Code *</label>
+                <label>Resident Code *</label>
                 <input
                   type="text"
                   value={residentForm.householdId}
                   onChange={(e) => setResidentForm({...residentForm, householdId: e.target.value.toUpperCase()})}
-                  placeholder="HOUSE123"
+                  placeholder="ABC123"
+                  maxLength={6}
+                  minLength={6}
                   required
                 />
-                <small>💡 Same code for all family members in this household</small>
+                <small>💡 6-character code - same for all family members</small>
               </div>
 
               <div className="modal-actions">
@@ -1616,7 +1618,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           <span className="info-value">{resident.plate || '-'}</span>
                         </div>
                         <div className="info-item">
-                          <span className="info-label">Household Code:</span>
+                          <span className="info-label">Resident Code:</span>
                           <span className="info-value" style={{ fontWeight: 'bold', color: '#3b82f6' }}>{resident.householdId}</span>
                         </div>
                         {resident.householdId && (
@@ -1631,7 +1633,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                     return (
                       <div className="info-grid">
                         <div className="info-item">
-                          <span className="info-label">Household Code:</span>
+                          <span className="info-label">Resident Code:</span>
                           <span className="info-value">{infoReservation.householdId}</span>
                         </div>
                         <div className="info-item">
