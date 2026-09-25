@@ -7,7 +7,7 @@ const { randomBytes } = require('node:crypto');
 const { createRequire } = require('node:module');
 const local = createRequire(path.resolve(__dirname, '../lambda/api.js'));
 const cognitoSDK = local('@aws-sdk/client-cognito-identity-provider');
-const { DynamoDBClient } = local('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, DescribeTableCommand } = local('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, DeleteCommand, ScanCommand } = local('@aws-sdk/lib-dynamodb');
 const outputs = require('../amplify_outputs.json');
 if (process.env.TEST_API_CONFIG) {
@@ -200,6 +200,18 @@ async function cleanup() {
     try { await db.send(new DeleteCommand({ TableName: process.env.HOUSEHOLD_TABLE, Key: { id } })); }
     catch (error) { errors.push(`Registry: ${error.name}`); }
   }
+  // AuditLog may have a composite key; remove only events for this run's IDs.
+  const auditKeys = (await db.send(new DescribeTableCommand({ TableName: 'AuditLog' }))).Table.KeySchema.map(k => k.AttributeName);
+  const resourceIds = new Set([...fixture.Resident, ...fixture.Reservation, ...fixture.ParkingConfig]);
+  ExclusiveStartKey = undefined;
+  do {
+    const page = await db.send(new ScanCommand({ TableName: 'AuditLog', ExclusiveStartKey }));
+    for (const row of (page.Items || []).filter(r => resourceIds.has(r.resourceId))) {
+      try { await db.send(new DeleteCommand({ TableName: 'AuditLog', Key: Object.fromEntries(auditKeys.map(k => [k, row[k]])) })); }
+      catch (error) { errors.push(`AuditLog: ${error.name}`); }
+    }
+    ExclusiveStartKey = page.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
   return errors;
 }
 (async () => {

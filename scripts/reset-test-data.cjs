@@ -5,7 +5,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { createRequire } = require('node:module');
 const local = createRequire(path.resolve(__dirname, '../lambda/api.js'));
-const { DynamoDBClient } = local('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, DescribeTableCommand } = local('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, BatchWriteCommand } = local('@aws-sdk/lib-dynamodb');
 const { CognitoIdentityProviderClient, AdminGetUserCommand, AdminListGroupsForUserCommand, AdminDeleteUserCommand, ListUsersInGroupCommand } = local('@aws-sdk/client-cognito-identity-provider');
 const { scanAll } = require('../lambda/households');
@@ -15,11 +15,16 @@ async function main() {
   const account = JSON.parse(execFileSync('aws',['sts','get-caller-identity','--output','json'],{encoding:'utf8'})).Account;
   if (account !== '103103683543') throw new Error('Unexpected AWS account');
   const region = 'ca-central-1', UserPoolId = 'ca-central-1_dBeo5yZXq';
-  const db = DynamoDBDocumentClient.from(new DynamoDBClient({ region }));
+  const dynamo = new DynamoDBClient({ region });
+  const db = DynamoDBDocumentClient.from(dynamo);
   const cognito = new CognitoIdentityProviderClient({ region });
   const tables = ['Resident','Reservation','AuditLog','RateLimit',process.env.HOUSEHOLD_TABLE,process.env.NEW_RATE_LIMIT_TABLE];
-  const snapshots = {};
-  for (const TableName of tables) snapshots[TableName] = await scanAll(db, { TableName, ConsistentRead: true });
+  const snapshots = {}, keySchemas = {};
+  for (const TableName of tables) {
+    keySchemas[TableName] = (await dynamo.send(new DescribeTableCommand({ TableName }))).Table.KeySchema.map(k => k.AttributeName);
+    snapshots[TableName] = await scanAll(db, { TableName, ConsistentRead: true });
+    if (snapshots[TableName].some(row => keySchemas[TableName].some(key => row[key] === undefined))) throw new Error('Incomplete table key; reset halted');
+  }
   const users = new Map(), preservedAdmins = new Set();
   for (const resident of snapshots.Resident) {
     let user;
@@ -53,10 +58,10 @@ async function main() {
   fs.writeFileSync(path.join(backup, 'cognito-users.json'), JSON.stringify([...users.values()], null, 2));
   for (const Username of users.keys()) await cognito.send(new AdminDeleteUserCommand({ UserPoolId, Username }));
   for (const TableName of tables) {
-    const keyName = TableName === 'RateLimit' || TableName === process.env.NEW_RATE_LIMIT_TABLE ? 'key' : 'id';
+    const keyNames = keySchemas[TableName];
     const rows = snapshots[TableName];
     for (let index = 0; index < rows.length; index += 25) {
-      let RequestItems = { [TableName]: rows.slice(index, index + 25).map(r => ({ DeleteRequest: { Key: { [keyName]: r[keyName] } } })) };
+      let RequestItems = { [TableName]: rows.slice(index, index + 25).map(r => ({ DeleteRequest: { Key: Object.fromEntries(keyNames.map(key => [key, r[key]])) } })) };
       for (let attempt = 0; attempt < 6; attempt++) {
         const result = await db.send(new BatchWriteCommand({ RequestItems }));
         RequestItems = result.UnprocessedItems || {};
