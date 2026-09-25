@@ -2146,7 +2146,7 @@ body {
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -2549,11 +2549,7 @@ body {
   transform: translateY(-2px);
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
+
 
 .code-input-container {
   display: flex;
@@ -2893,326 +2889,100 @@ body {
   }
 }
 
-/* Responsive Table for Mobile */
+/* Shared sizing: grid and flex children must be allowed to shrink. */
+#root, .app, .main-content, .tab-content, .form-group,
+.form-row > *, .stat-content, .dashboard-header > *, .header-actions,
+.datetime-text, .time-picker-group, .info-value { min-width: 0; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; min-width: 0; max-width: 100%;
+}
+.user-email, .info-value, .alert, .message, .code-description {
+  overflow-wrap: anywhere;
+}
+.form-row { align-items: start; }
+.time-picker-container { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.time-picker-input { width: 100%; min-width: 0; max-width: 130px; }
+.time-picker-group { width: 100%; }
+.datetime-display { flex-wrap: wrap; }
+.datetime-text { flex: 1 1 140px; }
+.section-header, .header-actions, .parking-card-header, .parking-card-actions { flex-wrap: wrap; gap: 1rem; }
+.stats-grid { grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); }
+.parkings-grid { grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
+.reservations-table-container, .logs-table-container, .residents-table-container {
+  max-width: 100%; overflow-x: auto; scrollbar-width: thin;
+}
+.reservations-table-container::-webkit-scrollbar,
+.logs-table-container::-webkit-scrollbar,
+.residents-table-container::-webkit-scrollbar { display: block; height: 8px; }
+.reservations-table { width: 100%; min-width: 1050px; table-layout: auto; }
+.reservations-table td { overflow-wrap: anywhere; }
+.action-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.btn-action, .btn-spot-control, .modal-close { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+.modal-overlay { padding: 1rem; }
+.modal-content { width: 100%; max-height: calc(100dvh - 2rem); overscroll-behavior: contain; }
+.modal-header { gap: 1rem; }
+.modal-actions { flex-wrap: wrap; }
+.login-page { min-height: 100dvh; overflow: auto; }
+
 @media (max-width: 1024px) {
-  .reservations-table {
-    font-size: 12px;
-  }
-  
-  .reservations-table th,
-  .reservations-table td {
-    padding: 8px 4px !important;
-  }
-  
-  .btn-action {
-    font-size: 14px !important;
-    padding: 4px 6px !important;
-    min-width: 32px !important;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
+  .admin-dashboard { padding: 1.25rem; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-header { gap: 1rem; flex-wrap: wrap; }
 }
 
 @media (max-width: 768px) {
-  /* Body and main container */
-  body {
-    font-size: 14px;
-  }
-  
-  .admin-dashboard {
-    padding: 10px;
-  }
-  
-  /* Dashboard header */
-  .dashboard-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 10px;
-  }
-  
-  .dashboard-header h1 {
-    font-size: 22px !important;
-  }
-  
-  .dashboard-header .btn-create-parking {
-    width: 100%;
-    font-size: 14px !important;
-  }
-  
-  /* Stats grid */
-  .stats-grid {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-  }
-  
-  .stat-card {
-    padding: 12px !important;
-  }
-  
-  .stat-value {
-    font-size: 24px !important;
-  }
-  
-  .stat-label {
-    font-size: 12px !important;
-  }
-  
-  /* Tabs */
-  .tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap !important;
-    gap: 5px;
-  }
-  
-  .tab {
-    font-size: 11px !important;
-    padding: 8px 12px !important;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  
-  /* Section header */
-  .section-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 10px;
-  }
-  
-  .section-header h2 {
-    font-size: 18px !important;
-  }
-  
-  .header-actions {
-    width: 100%;
-    flex-direction: column !important;
-    gap: 8px;
-  }
-  
-  .header-actions .sort-select,
-  .header-actions .btn-refresh {
-    width: 100% !important;
-    font-size: 13px !important;
-  }
-  
-  /* Tables */
-  .reservations-table-container,
-  .logs-table-container {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .reservations-table {
-    min-width: 600px !important;
-    font-size: 11px !important;
-  }
-  
-  .reservations-table th,
-  .reservations-table td {
-    padding: 6px 3px !important;
-  }
-  
-  .reservations-table th {
-    font-size: 10px !important;
-  }
-  
-  /* Action buttons */
-  .action-buttons {
-    gap: 2px !important;
-  }
-  
-  .btn-action {
-    font-size: 14px !important;
-    padding: 3px 5px !important;
-    min-width: 28px !important;
-  }
-  
-  /* Modals */
-  .modal-content {
-    width: 95% !important;
-    max-width: 95% !important;
-    margin: 10px !important;
-    max-height: 90vh !important;
-    overflow-y: auto;
-  }
-  
-  .modal-header h2 {
-    font-size: 18px !important;
-  }
-  
-  .modal-form {
-    font-size: 13px !important;
-  }
-  
-  .modal-form input,
-  .modal-form select,
-  .modal-form textarea {
-    font-size: 14px !important;
-  }
-  
-  /* Info modal */
-  .info-modal-body {
-    padding: 12px !important;
-    max-height: 60vh !important;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-  }
-  
-  .info-section-title {
-    font-size: 14px !important;
-  }
-  
-  .info-label {
-    font-size: 11px !important;
-  }
-  
-  .info-value {
-    font-size: 13px !important;
-  }
-  
-  /* Resident management */
-  .residents-table-container {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .residents-table {
-    min-width: 600px !important;
-  }
-  
-  /* Empty state */
-  .empty-state h3 {
-    font-size: 16px !important;
-  }
-  
-  .empty-state p {
-    font-size: 13px !important;
-  }
-  
-  /* Buttons */
-  .btn-primary,
-  .btn-secondary,
-  .btn-cancel,
-  .btn-submit {
-    font-size: 13px !important;
-    padding: 10px 16px !important;
-  }
-  
-  /* Alert messages */
-  .alert {
-    font-size: 13px !important;
-    padding: 12px !important;
-  }
+  .guest-reservation { padding: 1rem; overflow: visible; }
+  .reservation-container { padding: 1.5rem 1rem; border-radius: 18px; }
+  .reservation-header { margin-bottom: 1.5rem; }
+  .reservation-header h1 { font-size: clamp(1.65rem, 5vw, 2rem); }
+  .form-section { padding: 1rem; }
+  .form-section h3 { font-size: 1.15rem; }
+  .form-row { grid-template-columns: minmax(0, 1fr); }
+  .form-group input, .form-group select, .modal-form input, .modal-form select { font-size: 16px; }
+  .time-picker-container { padding: 1rem; gap: 0.5rem; }
+  .time-picker-input { padding: 0.75rem 0.5rem; font-size: 1.5rem; }
+  .datetime-display { padding: 0.75rem; gap: 0.5rem; }
+  .login-card { padding: 1.5rem; }
+  .header-content { padding: 1rem; align-items: stretch; }
+  .header-content h1 { font-size: 1.25rem; }
+  .app-header { position: static; }
+  .app-header .header-actions { flex-direction: row; justify-content: space-between; }
+  .admin-dashboard, .resident-panel { padding: 1rem; }
+  .dashboard-header, .section-header { flex-direction: column; align-items: stretch; }
+  .dashboard-header h1 { font-size: 1.5rem; }
+  .header-actions > button, .header-actions > select { flex: 1 1 auto; }
+  .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+  .tab { min-width: 0; white-space: normal; font-size: 0.875rem; padding: 0.75rem 0.5rem; }
+  .stat-card { padding: 1rem; }
+  .stat-icon { font-size: 1.75rem; }
+  .stat-value { font-size: 1.75rem; }
+  .stat-card-wide { grid-column: 1 / -1; }
+  .dashboard-container .dashboard-header, .info-card, .guest-code-card, .instructions-card { padding: 1rem; }
+  .code-display { padding: 1rem 0.5rem; min-width: 0; }
+  .code-text { font-size: clamp(1.4rem, 7vw, 2rem); letter-spacing: 3px; }
+  .info-item { min-width: 0; }
+  .modal-content { padding: 1.25rem; width: 100%; }
+  .modal-info { max-width: 100% !important; }
+  .modal-header h2 { font-size: 1.25rem; }
+  .modal-actions > button { flex: 1 1 120px; }
+  .info-modal-body { max-height: none; padding: 0; }
+  .info-grid { grid-template-columns: minmax(0, 1fr); }
+  /* Each row becomes a labelled card, keeping all fields and actions visible. */
+  .reservations-table { min-width: 0; table-layout: auto !important; display: block; }
+  .reservations-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .reservations-table tbody { display: grid; gap: 1rem; }
+  .reservations-table tr { display: block; padding: 0.75rem; border: 1px solid var(--border); border-radius: 12px; }
+  .reservations-table td { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 0.75rem; padding: 0.65rem 0.25rem; white-space: normal; font-size: 0.875rem; }
+  .reservations-table td::before { content: attr(data-label); font-weight: 600; color: var(--text-muted); }
+  .reservations-table td > * { min-width: 0; }
+  .reservations-table td:last-child { position: static; box-shadow: none; }
+  .reservations-table-container, .logs-table-container, .residents-table-container { border: 0; overflow: visible; }
+  .reservations-table-container::after, .logs-table-container::after { display: none; }
 }
-
-@media (max-width: 480px) {
-  .admin-dashboard {
-    padding: 8px;
-  }
-  
-  .dashboard-header h1 {
-    font-size: 18px !important;
-  }
-  
-  .stat-value {
-    font-size: 20px !important;
-  }
-  
-  .tabs {
-    gap: 3px;
-  }
-  
-  .tab {
-    font-size: 10px !important;
-    padding: 6px 8px !important;
-  }
-  
-  .reservations-table {
-    min-width: 500px !important;
-    font-size: 10px !important;
-  }
-  
-  .reservations-table th,
-  .reservations-table td {
-    padding: 4px 2px !important;
-  }
-  
-  .btn-action {
-    font-size: 12px !important;
-    padding: 2px 4px !important;
-    min-width: 24px !important;
-  }
-  
-  .modal-content {
-    margin: 5px !important;
-  }
-  
-  .modal-footer {
-    flex-direction: column !important;
-    gap: 8px;
-  }
-  
-  .modal-footer button {
-    width: 100% !important;
-  }
-}
-
-/* Compact Table - No Scroll */
-.reservations-table-container,
-.logs-table-container {
-  width: 100%;
-  overflow: visible;
-}
-
-.reservations-table {
-  width: 100%;
-  table-layout: fixed;
-  font-size: 13px;
-}
-
-.reservations-table th,
-.reservations-table td {
-  padding: 8px 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.reservations-table th {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* Action buttons compact */
-.action-buttons {
-  display: flex;
-  gap: 4px;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-items: center;
-}
-
-.btn-action {
-  white-space: nowrap;
-  flex-shrink: 0;
-  min-width: auto;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-/* Remove sticky and scroll stuff */
-.reservations-table thead th:last-child,
-.reservations-table tbody td:last-child {
-  position: static;
-  box-shadow: none;
-}
-
-.reservations-table-container::after,
-.logs-table-container::after {
-  display: none;
+@media (max-width: 380px) {
+  .guest-reservation { padding: 0.5rem; }
+  .reservation-container, .login-card { padding: 1rem; }
+  .stats-grid { grid-template-columns: minmax(0, 1fr); }
+  .parking-stats { gap: 0.5rem; }
+  .parking-card { padding: 1rem; }
 }

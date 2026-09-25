@@ -889,15 +889,15 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                       
                       return (
                         <tr key={reservation.id} className={`reservation-row status-${status}`}>
-                          <td className="plate-cell">
+                          <td data-label="Plate" className="plate-cell">
                             <strong style={{ fontSize: '15px' }}>{reservation.guestPlate}</strong>
                           </td>
-                          <td style={{ fontSize: '13px' }}>
+                          <td data-label="Resident Code" style={{ fontSize: '13px' }}>
                             <strong style={{ color: '#818cf8' }}>
                               {reservation.householdId || residentInfo.code || 'N/A'}
                             </strong>
                           </td>
-                          <td>
+                          <td data-label="Host">
                             <div style={{ fontSize: '13px' }}>
                               <div><strong>{residentInfo.building || '-'}</strong></div>
                               {residentInfo.unitNumber && (
@@ -905,10 +905,10 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               )}
                             </div>
                           </td>
-                          <td style={{ fontSize: '13px' }}>
+                          <td data-label="Parking" style={{ fontSize: '13px' }}>
                             {parkings.length > 0 ? parkings[0].name : 'N/A'}
                           </td>
-                          <td style={{ fontSize: '12px' }}>
+                          <td data-label="Started" style={{ fontSize: '12px' }}>
                             {startTime.toLocaleString('en-US', {
                               month: 'short',
                               day: 'numeric',
@@ -916,16 +916,16 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               minute: '2-digit'
                             })}
                           </td>
-                          <td>
+                          <td data-label="Duration">
                             <span className="duration-badge" style={{ fontSize: '12px' }}>{durationHours}h</span>
                           </td>
-                          <td className="time-remaining-cell">
+                          <td data-label="Remaining" className="time-remaining-cell">
                             <div className={`countdown ${status === 'ending-soon' ? 'countdown-warning' : ''} ${status === 'expired' ? 'countdown-expired' : ''}`} style={{ fontSize: '13px' }}>
                               {timeRemaining}
                             </div>
                           </td>
-                          <td>
-                            <div className="action-buttons" style={{ gap: '4px', flexWrap: 'nowrap', justifyContent: 'center' }}>
+                          <td data-label="Actions">
+                            <div className="action-buttons" >
                               <button
                                 className="btn-action btn-info"
                                 onClick={() => {
@@ -998,7 +998,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                     
                     return (
                       <tr key={reservation.id} className={`log-row ${isExpired ? 'log-expired' : 'log-active'}`}>
-                        <td>
+                        <td data-label="Status">
                           {isCancelled ? (<span className="status-badge">Cancelled</span>) : isExpired ? (
                             <span className="status-badge status-expired" style={{ fontSize: '11px', padding: '3px 8px' }}>
                               ✅ Done
@@ -1009,10 +1009,10 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             </span>
                           )}
                         </td>
-                        <td className="plate-cell">
+                        <td data-label="Plate" className="plate-cell">
                           <strong style={{ fontSize: '15px' }}>{reservation.guestPlate}</strong>
                         </td>
-                        <td>
+                        <td data-label="Resident">
                           <div style={{ fontSize: '13px' }}>
                             <div><strong>{residentInfo.name}</strong></div>
                             {residentInfo.floor && (
@@ -1020,13 +1020,13 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                             )}
                           </div>
                         </td>
-                        <td style={{ fontSize: '12px' }}>{start.toLocaleString('en-US', {
+                        <td data-label="Started" style={{ fontSize: '12px' }}>{start.toLocaleString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
                         })}</td>
-                        <td style={{ fontSize: '12px' }} className={isExpired ? '' : 'in-progress'}>
+                        <td data-label="Ended" style={{ fontSize: '12px' }} className={isExpired ? '' : 'in-progress'}>
                           {end.toLocaleString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -1035,8 +1035,8 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                           })}
                           {!isExpired && <span className="pulse-dot"></span>}
                         </td>
-                        <td><span className="duration-badge" style={{ fontSize: '12px' }}>{duration}h</span></td>
-                        <td>
+                        <td data-label="Duration"><span className="duration-badge" style={{ fontSize: '12px' }}>{duration}h</span></td>
+                        <td data-label="Actions">
                           <button
                             className="btn-action btn-info"
                             onClick={() => {
@@ -1060,7 +1060,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
           <div className="residents-section">
             <div className="section-header">
               <h2>Resident Management</h2>
-              <div style={{display: 'flex', gap: '10px'}}>
+              <div className="header-actions">
                 <button 
                   className="btn-secondary"
                   onClick={handleExportCSV}
@@ -1128,7 +1128,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                               borderLeft: householdId !== 'no-household' ? `4px solid ${householdColor}` : 'none'
                             }}
                           >
-                            <td>
+                            <td data-label="Household">
                               {isFirstInHousehold && householdId !== 'no-household' ? (
                                 <div className="household-cell">
                                   <div 
@@ -1147,30 +1147,30 @@ export default function AdminPanel({ user }: AdminPanelProps) {
                                 <div style={{ paddingLeft: '20px', color: '#9ca3af' }}>↳</div>
                               )}
                             </td>
-                            <td>
+                            <td data-label="Building">
                               <strong>{resident.building || '-'}</strong>
                             </td>
-                            <td>
+                            <td data-label="Floor">
                               <strong>{resident.floor || '-'}</strong>
                             </td>
-                            <td>
+                            <td data-label="Unit">
                               <strong>{resident.unitNumber || '-'}</strong>
                             </td>
-                            <td>
+                            <td data-label="Resident Code">
                               <strong style={{ color: '#818cf8', fontFamily: 'monospace' }}>
                                 {resident.householdId || '-'}
                               </strong>
                             </td>
-                            <td>
+                            <td data-label="Resident Name">
                               {resident.name || resident.email.split('@')[0]}
                             </td>
-                            <td>
+                            <td data-label="Phone">
                               {resident.phone || '-'}
                             </td>
-                            <td>
+                            <td data-label="Email">
                               {resident.email}
                             </td>
-                            <td>
+                            <td data-label="Actions">
                               <div className="action-buttons">
                                 <button
                                   className="btn-action btn-edit"

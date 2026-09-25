@@ -387,8 +387,9 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                 </label>
                 <div className="time-picker-container">
                   <div className="time-picker-group">
-                    <label className="time-picker-label">Hours</label>
+                    <label className="time-picker-label" htmlFor="durationHours">Hours</label>
                     <input
+                      id="durationHours"
                       type="number"
                       min="0"
                       max="23"
@@ -402,8 +403,9 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                   <div className="time-picker-separator">:</div>
 
                   <div className="time-picker-group">
-                    <label className="time-picker-label">Minutes</label>
+                    <label className="time-picker-label" htmlFor="durationMinutes">Minutes</label>
                     <input
+                      id="durationMinutes"
                       type="number"
                       min="0"
                       max="59"
