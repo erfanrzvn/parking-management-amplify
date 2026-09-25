@@ -357,7 +357,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                   {validationErrors.guestEmail ? (
                     <small className="error-text">⚠️ {validationErrors.guestEmail}</small>
                   ) : (
-                    <small>We'll send confirmation to this email</small>
+                    <small>Contact email for this reservation</small>
                   )}
                 </div>
               </div>

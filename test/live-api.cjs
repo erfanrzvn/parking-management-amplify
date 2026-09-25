@@ -71,8 +71,20 @@ async function main() {
   }
   const adminEmail = `codex-parking-admin-${suffix}@example.com`;
   const password = `Aa1!${randomBytes(18).toString('base64url')}`;
-  await cognito.send(new cognitoSDK.AdminCreateUserCommand({ UserPoolId: pool, Username: adminEmail, TemporaryPassword: password, MessageAction: 'SUPPRESS', UserAttributes: [{ Name: 'email', Value: adminEmail }, { Name: 'email_verified', Value: 'true' }] }));
+  // Track before the call: a successful create may lose its response and then
+  // return UsernameExists on an SDK retry. Cleanup must still remove that user.
+  try {
+    await cognito.send(new cognitoSDK.AdminGetUserCommand({ UserPoolId: pool, Username: adminEmail }));
+    throw new Error('Generated fixture name already exists; refusing to reuse it');
+  } catch (error) { if (error.name !== 'UserNotFoundException') throw error; }
   fixture.users.push(adminEmail); persist();
+  try {
+    await cognito.send(new cognitoSDK.AdminCreateUserCommand({ UserPoolId: pool, Username: adminEmail, TemporaryPassword: password, MessageAction: 'SUPPRESS', UserAttributes: [{ Name: 'email', Value: adminEmail }, { Name: 'email_verified', Value: 'true' }] }));
+  } catch (error) {
+    if (error.name !== 'UsernameExistsException') throw error;
+    // The preflight proved the account did not exist before this create.
+    await cognito.send(new cognitoSDK.AdminGetUserCommand({ UserPoolId: pool, Username: adminEmail }));
+  }
   await cognito.send(new cognitoSDK.AdminAddUserToGroupCommand({ UserPoolId: pool, Username: adminEmail, GroupName: 'ADMIN' }));
   const adminToken = await login(adminEmail, password);
   passed.push('Cognito SRP login and temporary-password challenge');
@@ -217,7 +229,7 @@ async function cleanup() {
 (async () => {
   let cleanupErrors = [];
   try { await main(); }
-  catch (error) { failure = error.message; console.error('FAIL', failure); }
+  catch (error) { failure = `${error.name}: ${error.message}`; console.error('FAIL', failure); }
   finally { if (fixture.users.length) { try { cleanupErrors = await cleanup(); } catch (error) { cleanupErrors.push(error.message); } } }
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, JSON.stringify({ mode: process.env.TEST_LAMBDA_FUNCTION ? 'AWS Lambda + local GraphQL executor' : 'AWS AppSync', time: new Date().toISOString(), passed, coverage: [...coverage].sort(), failure: failure || null, cleanupErrors }, null, 2));
