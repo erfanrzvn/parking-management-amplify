@@ -2986,3 +2986,10 @@ body {
   .parking-stats { gap: 0.5rem; }
   .parking-card { padding: 1rem; }
 }
+
+/* Guard views share responsive form and detail-card primitives. */
+.guard-search { margin-top: 1.5rem; max-width: 480px; }
+.guard-bookings, .guard-accounts { margin-top: 1.5rem; }
+.guard-create-form { margin-top: 1.5rem; max-width: 800px; }
+.guard-panel .info-item { align-items: flex-start; flex-direction: column; gap: 0.5rem; }
+.guard-panel .info-value { font-size: 1rem; }

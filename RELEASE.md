@@ -7,7 +7,7 @@ Cognito pool `ca-central-1_dBeo5yZXq`, and Amplify app `d1b6dmf1w1balm`, branch
 ## Authoritative implementation
 
 - `schema.graphql`: deployed GraphQL contract and public/private field access.
-- `lambda/api.js`: all 23 query/mutation operations, including the legacy CSV
+- `lambda/api.js`: all 27 query/mutation operations, including the legacy CSV
   export mutation. Every resolver delegates to this handler.
 - `lambda/households.js`: one server-generated six-character code per normalized
   building/unit, shared by separate resident accounts. A transactional registry
@@ -114,3 +114,32 @@ implemented in the custom login form. Per-IP limits are not a substitute for WAF
 
 AWS references: [AppSync resolver context](https://docs.aws.amazon.com/appsync/latest/devguide/resolver-context-reference.html),
 [Lambda Node.js packaging](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html).
+
+## Guard access — 2026-09-28
+
+Cognito group `GUARD` has one allowed business API: `Query.listGuardReservations`.
+The router rejects all other operations for guard tokens, even a token containing
+both GUARD and ADMIN. The dedicated response includes guest plate/contact,
+booking timestamps and the associated host's name/contact/address/plate. It does
+not expose household booking codes, authentication identifiers or unrelated
+residents. Only started, unexpired, uncancelled and undeleted bookings are shown.
+This is a view of active reservations, not physical vehicle entry/exit tracking.
+
+Administrators manage guard accounts in the `Guard Accounts` tab. The existing
+Cognito pool uses email usernames. An admin enters the email, optional name and
+temporary password; Cognito requires a new password at first sign-in. Invitation
+email delivery is suppressed. Passwords are not stored in application tables or
+returned in account lists. Creation never upgrades an existing account, and
+failed group assignment rolls back the newly created Cognito user.
+
+`createGuard`, `listGuards` and `setGuardEnabled` require ADMIN and reject GUARD.
+Enable/disable is limited to guard-only accounts. Disabling also signs out the
+user globally; each guard data request checks the Cognito account's Enabled flag,
+so an already-issued token cannot continue reading. The dashboard refreshes every
+30 seconds and clears its displayed records when requests fail.
+
+The runtime template owns the GUARD group and the scoped Cognito permissions.
+The new APIs are additive; no data reset is part of this release. Local browser
+fixtures exercise admin creation/disabling, guard plate search, read-only controls
+and seven viewport widths. Real integration uses only scoped disposable accounts
+and reservations and removes them afterwards.

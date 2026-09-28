@@ -11,7 +11,7 @@ process.env.RESERVATION_TABLE = 'Reservation';
 process.env.PARKING_CONFIG_TABLE = 'ParkingConfig';
 process.env.HOUSEHOLD_TABLE = 'HouseholdRegistry';
 process.env.RATE_LIMIT_TABLE = 'RateLimit';
-let db, cognitoCalls, failCognitoGroup, failResidentPut, scanSize;
+let db, cognitoCalls, failCognitoGroup, failResidentPut, scanSize, guardEnabled, guardGroups;
 const clone = value => value === undefined ? undefined : structuredClone(value);
 const items = table => db[table] ||= new Map();
 const key = value => value.id ?? value.key;
@@ -69,6 +69,11 @@ async function cognitoSend(command) {
   const name = command.constructor.name;
   cognitoCalls.push(name);
   if (failCognitoGroup && name === 'AdminAddUserToGroupCommand') throw new Error('Group failure');
+  if (name === 'AdminGetUserCommand') return { Username: command.input.Username, Enabled: guardEnabled, UserStatus: 'CONFIRMED', UserAttributes: [{Name:'email', Value:'guard@example.com'}] };
+  if (name === 'AdminListGroupsForUserCommand') return { Groups: guardGroups.map(GroupName => ({GroupName})) };
+  if (name === 'ListUsersInGroupCommand') return { Users: [] };
+  if (name === 'AdminDisableUserCommand') guardEnabled = false;
+  if (name === 'AdminEnableUserCommand') guardEnabled = true;
   if (name === 'AdminCreateUserCommand') return { User: { Username: command.input.Username, Attributes: [{ Name: 'sub', Value: `sub:${command.input.Username}` }] } };
   return {};
 }
@@ -82,6 +87,7 @@ const invoke = (fieldName, args = {}, identity = admin) => handler({ info: { fie
 const residentInput = () => ({ email: 'new@example.com', name: 'Resident', phone: '+14165551234', building: 'A', floor: '1', unitNumber: '101', plate: 'ABC123' });
 const booking = () => ({ residentId: 'r1', residentCode: 'ABC123', unitNumber: '101', guestPlate: 'GUEST1', guestMobile: '+14165551234', guestEmail: 'guest@example.com', startTime: new Date().toISOString(), endTime: new Date(Date.now() + 3600000).toISOString() });
 beforeEach(() => {
+  guardEnabled = true; guardGroups = ['GUARD'];
   db = {}; cognitoCalls = []; failCognitoGroup = false; failResidentPut = false; scanSize = 2;
   items('ParkingConfig').set('p1', { id: 'p1', name: 'Main', totalSpots: 2 });
   items('Resident').set('r1', { id: 'r1', email: 'existing@example.com', userId: 'user-1', householdId: 'ABC123', residentCode: 'ABC123', building: 'A', unitNumber: '101', floor: '1', plate: 'ABC1' });
@@ -89,7 +95,7 @@ beforeEach(() => {
 
 test('every frontend GraphQL document conforms to the canonical schema', () => {
   const schema = buildSchema('directive @aws_api_key on OBJECT | FIELD_DEFINITION\ndirective @aws_cognito_user_pools on OBJECT | FIELD_DEFINITION\nscalar AWSDateTime\nscalar AWSEmail\nscalar AWSPhone\n' + fs.readFileSync('schema.graphql', 'utf8'));
-  for (const file of ['src/lib/graphql.ts','src/components/AdminPanel.tsx','src/components/GuestReservation.tsx']) {
+  for (const file of ['src/lib/graphql.ts','src/components/AdminPanel.tsx','src/components/GuestReservation.tsx','src/components/GuardPanel.tsx','src/components/GuardManagement.tsx']) {
     const source = fs.readFileSync(file, 'utf8');
     for (const match of source.matchAll(/`\s*((?:query|mutation)\s[\s\S]*?)`/g)) {
       assert.deepEqual(validate(schema, parse(match[1])).map(e => e.message), [], file);
@@ -240,4 +246,49 @@ test('four separate accounts share one code and one booking, visible to househol
   await assert.rejects(invoke('createReservation', { input: { ...booking(), guestPlate: 'GUEST2' } }, null), /Household/);
   assert.equal((await invoke('cancelReservation', { id: reservation.id }, member)).status, 'CANCELLED');
   assert.equal(items('Resident').size, 4);
+});
+
+const guardIdentity = { sub: 'guard-1', username: 'guard-1', claims: { 'cognito:groups': ['GUARD'] } };
+test('guard token is denied every operation except its dedicated read query', async () => {
+  const schema = parse(fs.readFileSync('schema.graphql', 'utf8'));
+  for (const type of schema.definitions.filter(d => ['Query','Mutation'].includes(d.name?.value))) {
+    for (const field of type.fields) if (field.name.value !== 'listGuardReservations') {
+      await assert.rejects(invoke(field.name.value, {input: booking()}, guardIdentity), /Unauthorized/, field.name.value);
+    }
+  }
+  assert.equal(cognitoCalls.length, 0);
+  await assert.rejects(invoke('createParkingConfig', {input:{totalSpots:1}}, {...guardIdentity,claims:{'cognito:groups':['GUARD','ADMIN']}}), /Unauthorized/);
+});
+test('guard only sees current bookings and related emergency details, without resident codes', async () => {
+  const current = { ...booking(), id:'current', createdAt:new Date().toISOString(), status:'ACTIVE' };
+  for (const r of [current, {...current,id:'expired',endTime:new Date(Date.now()-1000).toISOString()}, {...current,id:'future',startTime:new Date(Date.now()+60000).toISOString()}, {...current,id:'cancelled',status:'CANCELLED'}, {...current,id:'deleted',deletedAt:new Date().toISOString()}]) items('Reservation').set(r.id,r);
+  const rows=[];let nextToken;
+  do { const result=await invoke('listGuardReservations',{limit:2,nextToken},guardIdentity);rows.push(...result.items);nextToken=result.nextToken; }while(nextToken);
+  assert.equal(rows.length,1);assert.equal(rows[0].id,'current');assert.equal(rows[0].host.email,'existing@example.com');
+  assert.equal(rows[0].householdId,undefined);assert.equal(rows[0].residentCode,undefined);assert.equal(rows[0].host.userId,undefined);
+  await assert.rejects(invoke('listGuardReservations',{},residentIdentity), /Unauthorized/);
+  await assert.rejects(invoke('listGuardReservations',{},null), /Unauthorized/);
+  guardEnabled=false;
+  await assert.rejects(invoke('listGuardReservations',{},guardIdentity), /Unauthorized/);
+});
+test('guard creation validates credentials and rolls back if group assignment fails', async () => {
+  await assert.rejects(invoke('createGuard',{input:{email:'guard@example.com',temporaryPassword:'weak'}}),/Temporary password/);
+  assert.equal(cognitoCalls.length,0);
+  const input={email:'guard@example.com',temporaryPassword:'StrongTest1!'};
+  failCognitoGroup=true;
+  await assert.rejects(invoke('createGuard',{input}),/Group failure/);
+  assert.ok(cognitoCalls.includes('AdminDeleteUserCommand'));
+  failCognitoGroup=false;
+  const result=await invoke('createGuard',{input});
+  assert.equal(result.username,input.email);assert.equal(result.temporaryPassword,undefined);
+  await assert.rejects(invoke('createGuard',{input},residentIdentity),/Unauthorized/);
+});
+test('guard management refuses other roles and revokes guard access', async () => {
+  guardGroups=['ADMIN'];
+  await assert.rejects(invoke('setGuardEnabled',{username:'admin',enabled:false}),/guard-only/);
+  guardGroups=['GUARD','RESIDENT'];
+  await assert.rejects(invoke('setGuardEnabled',{username:'resident',enabled:false}),/guard-only/);
+  guardGroups=['GUARD'];
+  const result=await invoke('setGuardEnabled',{username:'guard',enabled:false});
+  assert.equal(result.enabled,false);assert.ok(cognitoCalls.includes('AdminUserGlobalSignOutCommand'));
 });

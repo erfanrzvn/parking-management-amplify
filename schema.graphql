@@ -43,7 +43,44 @@ type Reservation @aws_api_key @aws_cognito_user_pools {
   updatedAt: AWSDateTime!
 }
 
+type GuardHost @aws_cognito_user_pools {
+  name: String
+  email: AWSEmail
+  phone: String
+  building: String
+  floor: String
+  unitNumber: String
+  plate: String
+}
+type GuardReservation @aws_cognito_user_pools {
+  id: ID!
+  guestPlate: String!
+  guestMobile: String!
+  guestEmail: AWSEmail!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+  createdAt: AWSDateTime!
+  host: GuardHost
+}
+type GuardReservationConnection @aws_cognito_user_pools {
+  items: [GuardReservation!]!
+  nextToken: String
+}
+type GuardAccount @aws_cognito_user_pools {
+  username: String!
+  email: AWSEmail!
+  name: String
+  enabled: Boolean!
+  status: String!
+}
+input CreateGuardInput {
+  email: AWSEmail!
+  name: String
+  temporaryPassword: String!
+}
 type Query {
+  listGuardReservations(limit: Int, nextToken: String): GuardReservationConnection! @aws_cognito_user_pools
+  listGuards: [GuardAccount!]! @aws_cognito_user_pools
   getParkingConfig(id: ID!): ParkingConfig @aws_api_key @aws_cognito_user_pools
   listParkingConfigs: [ParkingConfig] @aws_api_key @aws_cognito_user_pools
   getResident(id: ID!): Resident @aws_cognito_user_pools
@@ -73,6 +110,8 @@ type CSVExportResult @aws_cognito_user_pools {
 }
 
 type Mutation {
+  createGuard(input: CreateGuardInput!): GuardAccount! @aws_cognito_user_pools
+  setGuardEnabled(username: String!, enabled: Boolean!): GuardAccount! @aws_cognito_user_pools
   exportResidentsCSV: CSVExportResult @aws_cognito_user_pools
   createParkingConfig(input: CreateParkingConfigInput!): ParkingConfig @aws_cognito_user_pools
   updateParkingConfig(input: UpdateParkingConfigInput!): ParkingConfig @aws_cognito_user_pools

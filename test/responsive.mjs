@@ -43,7 +43,16 @@ const server = await createServer({
     load(id){
       if(id==='\0layout-data') return fixtures;
       if(id==='\0layout-auth') return auth;
-      if(id==='\0layout-api') return 'export const generateClient=()=>({graphql:async()=>({data:{}})});';
+      if(id==='\0layout-api') return fixtures + `
+        let guards=[];
+        export const generateClient=()=>({graphql:async({query,variables})=>{
+          if(query.includes('GuardActiveBookings')) return {data:{listGuardReservations:{items:[{...reservation,host:resident}],nextToken:null}}};
+          if(query.includes('CreateGuard')) { const g={username:'guard-1',email:variables.input.email,name:variables.input.name,enabled:true,status:'FORCE_CHANGE_PASSWORD'};guards.push(g);return {data:{createGuard:g}}; }
+          if(query.includes('SetGuardEnabled')) {guards=guards.map(g=>({...g,enabled:variables.enabled}));return {data:{setGuardEnabled:guards[0]}};}
+          if(query.includes('ListGuards')) return {data:{listGuards:guards}};
+          return {data:{}};
+        }});
+      `;
     }
   }]
 });
@@ -126,6 +135,24 @@ try {
         await page.locator('.modal-close').click();
       }
     }
+    await page.getByRole('button',{name:'Guard Accounts',exact:true}).click();
+    await page.getByLabel('Username (email)').fill('guard@example.com');
+    await page.getByLabel('Temporary password').fill('GuardTest1!');
+    await page.getByRole('button',{name:'Create guard',exact:true}).click();
+    await page.getByText('Guard account created for', {exact:false}).waitFor();
+    await page.getByRole('button',{name:'Disable access'}).waitFor();
+    await check('admin-guards');
+    page.once('dialog',dialog=>dialog.accept());
+    await page.getByRole('button',{name:'Disable access'}).click();
+    await page.getByRole('button',{name:'Enable access'}).waitFor();
+    await page.goto('http://127.0.0.1:5174/?role=GUARD');
+    await page.getByRole('heading',{name:'GUEST-123',exact:true}).waitFor();
+    await check('guard');
+    assert.deepEqual((await page.getByRole('button').allTextContents()).map(s=>s.trim()).sort(),['Refresh','Sign Out']);
+    await page.getByLabel('Search license plate').fill('NO-MATCH');
+    await page.getByText('No matching active bookings.').waitFor();
+    await page.getByLabel('Search license plate').fill('guest-123');
+    await page.getByRole('heading',{name:'GUEST-123',exact:true}).waitFor();
     await page.goto('http://127.0.0.1:5174/?role=RESIDENT');
     await page.locator('.code-text').waitFor();
     await check('resident');

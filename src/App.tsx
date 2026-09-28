@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
+import GuardPanel from './components/GuardPanel';
 import AdminPanel from './components/AdminPanel';
 import ResidentPanel from './components/ResidentPanel';
 import GuestReservation from './components/GuestReservation';
@@ -9,7 +10,7 @@ import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<'admin' | 'resident' | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'resident' | 'guard' | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState<any>(null);
 
@@ -46,7 +47,9 @@ function App() {
       // Removed sensitive groups logging
       
       // Check for both uppercase and proper case
-      if (groups?.some(g => g.toLowerCase() === 'admin')) {
+      if (groups?.some(g => g.toUpperCase() === 'GUARD')) {
+        setUserRole('guard');
+      } else if (groups?.some(g => g.toLowerCase() === 'admin')) {
         console.log('User role: Admin');
         setUserRole('admin');
       } else if (groups?.some(g => g.toLowerCase() === 'resident')) {
@@ -107,7 +110,7 @@ function App() {
             <h1>🅿️ Parking Management System</h1>
             <div className="header-actions">
               <span className="user-badge">
-                {userRole === 'admin' ? '👑 Admin' : '🏠 Resident'}
+                {userRole === 'admin' ? '👑 Admin' : userRole === 'guard' ? 'Guard · Read-only' : '🏠 Resident'}
               </span>
               <button onClick={handleSignOut} className="btn-signout">
                 Sign Out
@@ -117,7 +120,7 @@ function App() {
         </header>
 
         <main className="main-content">
-          {userRole === 'admin' ? (
+          {userRole === 'guard' ? <GuardPanel /> : userRole === 'admin' ? (
             <AdminPanel user={user} />
           ) : (
             <ResidentPanel user={user} />

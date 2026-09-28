@@ -159,6 +159,45 @@ async function main() {
     assert.equal(outcomes.filter(r => r.status === 'fulfilled').length, 1, JSON.stringify(outcomes.map(r => r.status === 'rejected' ? r.reason.message : 'success')));
     reservation = outcomes.find(r => r.status === 'fulfilled').value; coverage.add('Mutation.createReservation');
   });
+  const guardEmail = `codex-parking-guard-${suffix}@example.com`;
+  const guardPassword = `Aa1!${randomBytes(18).toString('base64url')}`;
+  fixture.users.push(guardEmail); persist();
+  let guard;
+  await step('admin creates a Cognito guard with a temporary password', async () => {
+    guard = (await gql('mutation($input:CreateGuardInput!){createGuard(input:$input){username email enabled status}}', {input:{email:guardEmail,name:'Test guard',temporaryPassword:guardPassword}}, adminToken)).createGuard;
+    assert.equal(guard.enabled,true);assert.equal(guard.status,'FORCE_CHANGE_PASSWORD');
+    const groups = await cognito.send(new cognitoSDK.AdminListGroupsForUserCommand({UserPoolId:pool,Username:guard.username}));
+    assert.deepEqual(groups.Groups.map(g=>g.GroupName),['GUARD']);
+    const list=(await gql('{listGuards{username email enabled status}}',{},adminToken)).listGuards;
+    assert.ok(list.some(g=>g.username===guard.username));
+    coverage.add('Mutation.createGuard');coverage.add('Query.listGuards');
+  });
+  const guardToken = await login(guardEmail, guardPassword);
+  const guardQuery='query($token:String){listGuardReservations(limit:2,nextToken:$token){items{id guestPlate guestEmail guestMobile startTime endTime createdAt host{name email phone building floor unitNumber plate}} nextToken}}';
+  async function guardRows() {
+    const rows=[];let token;
+    do {const page=(await gql(guardQuery,{token},guardToken)).listGuardReservations;rows.push(...page.items);token=page.nextToken;}while(token);
+    return rows;
+  }
+  await step('guard sees active vehicle and host details with no write access', async () => {
+    const row=(await guardRows()).find(r=>r.id===reservation.id);
+    assert.ok(row);assert.equal(row.host.email,first.email);assert.equal(row.host.unitNumber,'1');
+    await assert.rejects(gql(guardQuery,{},residentToken),/authorized/i);
+    await assert.rejects(gql(guardQuery),/authorized/i);
+    coverage.add('Query.listGuardReservations');
+    const {buildSchema,getNamedType,isInputObjectType,isObjectType}=require('graphql');
+    const schema=buildSchema('directive @aws_api_key on OBJECT | FIELD_DEFINITION\ndirective @aws_cognito_user_pools on OBJECT | FIELD_DEFINITION\nscalar AWSDateTime\nscalar AWSEmail\nscalar AWSPhone\n'+fs.readFileSync(path.resolve(__dirname,'../schema.graphql'),'utf8'));
+    const valueFor=type=>{const t=getNamedType(type);if(isInputObjectType(t))return Object.fromEntries(Object.values(t.getFields()).map(f=>[f.name,valueFor(f.type)]));return ({Int:1,Float:1,Boolean:false,AWSDateTime:new Date().toISOString(),AWSEmail:'test@example.com',AWSPhone:'+14165551234'})[t.name]??'denied-test';};
+    for(const [op,type] of [['query',schema.getQueryType()],['mutation',schema.getMutationType()]]) for(const field of Object.values(type.getFields())) {
+      if(field.name==='listGuardReservations')continue;
+      const declarations=field.args.map(a=>`$${a.name}:${a.type}`).join(',');
+      const args=field.args.map(a=>`${a.name}:$${a.name}`).join(',');
+      const resultType=getNamedType(field.type);
+      const selection=isObjectType(resultType)?'{__typename}':'';
+      const query=`${op}${declarations?'('+declarations+')':''}{${field.name}${args?'('+args+')':''}${selection}}`;
+      await assert.rejects(gql(query,Object.fromEntries(field.args.map(a=>[a.name,valueFor(a.type)])),guardToken),/authorized/i,field.name);
+    }
+  });
   await step('all household members see the same reservation', async () => {
     const data = await gql('query($id:ID!){getReservation(id:$id){id} listReservations {items{id} nextToken}}', { id: reservation.id }, secondToken);
     assert.equal(data.getReservation.id, reservation.id); assert.ok(data.listReservations.items.some(r => r.id === reservation.id));
@@ -175,6 +214,15 @@ async function main() {
     const cancelled = (await gql('mutation($id:ID!){cancelReservation(id:$id){id status deletedAt}}', { id: reservation.id }, secondToken)).cancelReservation;
     assert.equal(cancelled.status, 'CANCELLED'); coverage.add('Mutation.cancelReservation');
     await gql('mutation($id:ID!){deleteReservation(id:$id){id}}', { id: reservation.id }, adminToken); coverage.add('Mutation.deleteReservation');
+  });
+  await step('cancelled booking disappears and disabled guard loses access', async () => {
+    assert.ok(!(await guardRows()).some(r=>r.id===reservation.id));
+    const mutation='mutation($username:String!,$enabled:Boolean!){setGuardEnabled(username:$username,enabled:$enabled){username enabled}}';
+    const disabled=(await gql(mutation,{username:guard.username,enabled:false},adminToken)).setGuardEnabled;
+    assert.equal(disabled.enabled,false);
+    await assert.rejects(guardRows(),/authorized|disabled|revoked/i);
+    const enabled=(await gql(mutation,{username:guard.username,enabled:true},adminToken)).setGuardEnabled;
+    assert.equal(enabled.enabled,true);coverage.add('Mutation.setGuardEnabled');
   });
   await step('CSV export query and legacy mutation', async () => {
     const data = await gql('{exportResidentsCSV}', {}, adminToken); assert.ok(data.exportResidentsCSV.startsWith('email,')); coverage.add('Query.exportResidentsCSV');
@@ -201,7 +249,7 @@ async function main() {
     await gql('mutation($id:ID!){deleteParkingConfig(id:$id){id}}', { id: parking.id }, adminToken); coverage.add('Mutation.deleteParkingConfig');
   });
   await auth.signOut();
-  assert.equal(coverage.size, 23);
+  assert.equal(coverage.size, 27);
 }
 async function cleanup() {
   const errors = [];

@@ -1,3 +1,4 @@
+import GuardManagement from './GuardManagement';
 import { useState, useEffect } from 'react';
 import { listParkingConfigs, createParkingConfig, deleteParkingConfig, listReservations, listResidents, updateResident, deleteResident, cancelReservation } from '../lib/graphql';
 import { generateClient } from 'aws-amplify/api';
@@ -57,7 +58,7 @@ export default function AdminPanel({ user }: AdminPanelProps) {
   const [showAddTimeModal, setShowAddTimeModal] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [additionalHours, setAdditionalHours] = useState<number>(1);
-  const [activeTab, setActiveTab] = useState<'reservations' | 'parkings' | 'logs' | 'residents'>('reservations');
+  const [activeTab, setActiveTab] = useState<'reservations' | 'parkings' | 'logs' | 'residents' | 'guards'>('reservations');
   const [, setRefreshInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sortBy, setSortBy] = useState<'time-remaining' | 'plate' | 'start'>('time-remaining');
@@ -833,11 +834,12 @@ export default function AdminPanel({ user }: AdminPanelProps) {
         >
           🅿️ Parkings ({parkings.length})
         </button>
+        <button className={`tab ${activeTab === 'guards' ? 'tab-active' : ''}`} onClick={() => setActiveTab('guards')}>Guard Accounts</button>
       </div>
 
       {/* Tab Content */}
       <div className="tab-content">
-        {activeTab === 'reservations' ? (
+        {activeTab === 'guards' ? <GuardManagement /> : activeTab === 'reservations' ? (
           <div className="reservations-section">
             <div className="section-header">
               <h2>Active Reservations</h2>

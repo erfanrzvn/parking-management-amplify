@@ -1,7 +1,7 @@
 const { randomUUID } = require('node:crypto');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
-const { isAdmin, requireAdmin } = require('./access');
+const { isAdmin, isGuard, requireAdmin } = require('./access');
 const { normalize, scanAll } = require('./households');
 const { withReservationLock } = require('./reservationStore');
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } });
@@ -40,7 +40,26 @@ async function page(kind, args) {
 exports.handler = async event => {
   const field = event.info?.fieldName;
   const args = event.arguments || {};
-  if (field === 'createResidentWithCognito' || field === 'createResident') return require('./createResidentWithCognito').handler(event);
+  // Guard tokens are restricted here before dispatch, including public mutations.
+  if (isGuard(event) && field !== 'listGuardReservations') throw new Error('Unauthorized');
+  if (['createGuard', 'listGuards', 'setGuardEnabled'].includes(field)) return require('./guards').handler(event);
+  if (field === 'listGuardReservations') {
+    authenticated(event);
+    if (!isGuard(event) && !isAdmin(event)) throw new Error('Unauthorized');
+    if (isGuard(event)) await require('./guards').requireEnabled(event);
+    const now = Date.now();
+    const result = await page('RESERVATION', args);
+    const residents = await all('RESIDENT');
+    const items = result.items.filter(r => active(r, now) && Date.parse(r.startTime) <= now).map(r => {
+      const host = residents.find(p => p.id === r.residentId);
+      return { id: r.id, guestPlate: r.guestPlate, guestMobile: r.guestMobile, guestEmail: r.guestEmail,
+        startTime: r.startTime, endTime: r.endTime, createdAt: r.createdAt,
+        host: host ? { name: host.name, email: host.email, phone: host.phone, building: host.building,
+          floor: host.floor, unitNumber: host.unitNumber, plate: host.plate } : null };
+    });
+    return { items, nextToken: result.nextToken };
+  }
+  if (field === 'createResidentWithCognito'  || field === 'createResident') return require('./createResidentWithCognito').handler(event);
   if (field === 'updateResident') return require('./updateResident').handler(event);
   if (field === 'deleteResident') return require('./deleteResident').handler(event);
   if (field === 'importResidentsCSV') return require('./importResidentsCSV').handler(event);

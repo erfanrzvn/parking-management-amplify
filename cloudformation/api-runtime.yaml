@@ -22,6 +22,12 @@ Parameters:
   UserPoolId:
     Type: String
 Resources:
+  GuardGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: GUARD
+      Description: Read-only access to active parking bookings and emergency contact details
+      UserPoolId: !Ref UserPoolId
   HouseholdRegistry:
     Type: AWS::DynamoDB::Table
     DeletionPolicy: Retain
@@ -86,6 +92,11 @@ Resources:
                   - cognito-idp:AdminCreateUser
                   - cognito-idp:AdminAddUserToGroup
                   - cognito-idp:AdminDeleteUser
+                  - cognito-idp:ListUsersInGroup
+                  - cognito-idp:AdminListGroupsForUser
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminEnableUser
+                  - cognito-idp:AdminUserGlobalSignOut
                   - cognito-idp:AdminDisableUser
                   - cognito-idp:AdminUpdateUserAttributes
                 Resource: !Sub arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
