@@ -67,3 +67,10 @@ Detailed reports: ignored `build/guard-lambda-report.json`,
 `build/guard-appsync-report.json` and `build/responsive/report.json`.
 See RELEASE.md for account behavior and the distinction between active bookings
 and physical vehicle presence.
+
+The frontend was published successfully by Amplify job 121, commit `667f884`.
+The live browser smoke test then passed admin guard creation, Cognito first-login
+password change on mobile, read-only guard navigation and revocation of an
+already-signed-in guard. Its disposable accounts were removed without errors.
+Run `test/guard-browser.cjs --write-fixtures` with PLAYWRIGHT_MODULE configured
+to repeat this scoped production check. Report: `build/guard-browser-report.json`.
