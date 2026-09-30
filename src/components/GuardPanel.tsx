@@ -85,6 +85,13 @@ export default function GuardPanel() {
     r.guestPlate.toLowerCase().includes(search.trim().toLowerCase())
   );
   
+  // Get last 10 expired reservations
+  const expiredRows = entries
+    .filter(r => Date.parse(r.endTime) <= Date.now())
+    .sort((a, b) => Date.parse(b.endTime) - Date.parse(a.endTime))
+    .slice(0, 10)
+    .filter(r => r.guestPlate.toLowerCase().includes(search.trim().toLowerCase()));
+  
   const getTimeRemaining = (endTime: string) => {
     const end = new Date(endTime).getTime();
     const now = Date.now();
@@ -99,6 +106,20 @@ export default function GuardPanel() {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
+  };
+  
+  const getTimeAgo = (endTime: string) => {
+    const end = new Date(endTime).getTime();
+    const now = Date.now();
+    const diff = now - end;
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ago`;
+    }
+    return `${minutes}m ago`;
   };
   
   return (
@@ -460,6 +481,301 @@ export default function GuardPanel() {
           );
         })}
       </div>
+
+      {/* Expired Reservations Section */}
+      {expiredRows.length > 0 && (
+        <>
+          <div style={{ 
+            marginTop: '3rem', 
+            marginBottom: '1.5rem',
+            paddingTop: '2rem',
+            borderTop: '2px solid #334155'
+          }}>
+            <h2 style={{ 
+              fontSize: '24px', 
+              fontWeight: '700', 
+              color: '#f87171',
+              marginBottom: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              🚫 Expired Reservations
+            </h2>
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#94a3b8',
+              margin: 0
+            }}>
+              Recent expired bookings - vehicles must leave immediately
+            </p>
+          </div>
+
+          <div className="guard-bookings" style={{ display: 'grid', gap: '1.5rem' }}>
+            {expiredRows.map(r => {
+              const timeAgo = getTimeAgo(r.endTime);
+              
+              return (
+                <article 
+                  className="info-card" 
+                  key={r.id}
+                  style={{
+                    backgroundColor: '#1e293b',
+                    padding: '1.5rem',
+                    borderRadius: '12px',
+                    border: '2px solid #dc2626',
+                    boxShadow: '0 4px 6px rgba(220, 38, 38, 0.2)'
+                  }}
+                >
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: '1.5rem',
+                    paddingBottom: '1rem',
+                    borderBottom: '1px solid #334155'
+                  }}>
+                    <div>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.75rem',
+                        marginBottom: '0.5rem'
+                      }}>
+                        <h2 style={{ 
+                          fontSize: '24px', 
+                          fontWeight: '700', 
+                          color: '#f1f5f9',
+                          margin: 0,
+                          fontFamily: 'monospace'
+                        }}>
+                          🚗 {r.guestPlate}
+                        </h2>
+                        <span style={{
+                          backgroundColor: '#7f1d1d',
+                          color: '#fecaca',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em'
+                        }}>
+                          🚫 EXPIRED
+                        </span>
+                      </div>
+                      <p style={{ 
+                        fontSize: '13px', 
+                        color: '#f87171',
+                        margin: 0,
+                        fontWeight: '600'
+                      }}>
+                        Vehicle Must Leave
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        color: '#ef4444',
+                        marginBottom: '0.25rem'
+                      }}>
+                        {timeAgo}
+                      </div>
+                      <p style={{ 
+                        fontSize: '13px', 
+                        color: '#94a3b8',
+                        margin: 0
+                      }}>
+                        Expired
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="info-grid" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+                    gap: '1rem'
+                  }}>
+                    {/* Guest Information */}
+                    <div style={{ 
+                      backgroundColor: '#0f172a', 
+                      padding: '1rem', 
+                      borderRadius: '8px',
+                      border: '1px solid #334155'
+                    }}>
+                      <h3 style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600', 
+                        color: '#818cf8',
+                        marginBottom: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        👤 Guest Info
+                      </h3>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Phone</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                            {r.guestMobile || 'Not available'}
+                          </span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Email</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500', wordBreak: 'break-word' }}>
+                            {r.guestEmail || 'Not available'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Host Information */}
+                    <div style={{ 
+                      backgroundColor: '#0f172a', 
+                      padding: '1rem', 
+                      borderRadius: '8px',
+                      border: '1px solid #334155'
+                    }}>
+                      <h3 style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600', 
+                        color: '#34d399',
+                        marginBottom: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        🏠 Host Info
+                      </h3>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Name</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                            {r.host?.name || 'Not available'}
+                          </span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Phone</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                            {r.host?.phone || 'Not available'}
+                          </span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Email</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500', wordBreak: 'break-word' }}>
+                            {r.host?.email || 'Not available'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Location Information */}
+                    <div style={{ 
+                      backgroundColor: '#0f172a', 
+                      padding: '1rem', 
+                      borderRadius: '8px',
+                      border: '1px solid #334155'
+                    }}>
+                      <h3 style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600', 
+                        color: '#fbbf24',
+                        marginBottom: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        📍 Location
+                      </h3>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Building</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                            {r.host?.building || 'Not available'}
+                          </span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Floor</span>
+                            <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                              {r.host?.floor || '-'}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Unit</span>
+                            <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                              {r.host?.unitNumber || '-'}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Host Plate</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500', fontFamily: 'monospace' }}>
+                            {r.host?.plate || 'Not available'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timing Information */}
+                    <div style={{ 
+                      backgroundColor: '#0f172a', 
+                      padding: '1rem', 
+                      borderRadius: '8px',
+                      border: '1px solid #334155'
+                    }}>
+                      <h3 style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600', 
+                        color: '#f472b6',
+                        marginBottom: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        ⏰ Timing
+                      </h3>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Start Time</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                            {new Date(r.startTime).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>End Time</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                            {new Date(r.endTime).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Created</span>
+                          <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: '500' }}>
+                            {new Date(r.createdAt).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
