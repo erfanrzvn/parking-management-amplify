@@ -110,7 +110,7 @@ function App() {
             <h1>🅿️ Parking Management System</h1>
             <div className="header-actions">
               <span className="user-badge">
-                {userRole === 'admin' ? '👑 Admin' : userRole === 'guard' ? 'Guard · Read-only' : '🏠 Resident'}
+                {userRole === 'admin' ? '👑 Admin' : userRole === 'guard' ? '👮 Guard' : '🏠 Resident'}
               </span>
               <button onClick={handleSignOut} className="btn-signout">
                 Sign Out
