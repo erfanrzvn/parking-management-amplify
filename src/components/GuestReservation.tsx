@@ -369,15 +369,37 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
               
               <div className="form-group">
                 <label>
-                  <span className="label-icon">📅</span>
-                  Start Date & Time
+                  <span className="label-icon">🕐</span>
+                  Start Time
                 </label>
-                <div className="datetime-display disabled">
-                  <span className="datetime-icon">🕐</span>
-                  <span className="datetime-text">Starts immediately when you submit</span>
-                  <span className="datetime-badge">Now</span>
+                <div style={{
+                  padding: '0.875rem 1rem',
+                  backgroundColor: '#1e293b',
+                  border: '2px solid #475569',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  cursor: 'not-allowed'
+                }}>
+                  <span style={{ fontSize: '20px' }}>⚡</span>
+                  <span style={{ 
+                    fontSize: '15px', 
+                    fontWeight: '600',
+                    color: '#f1f5f9'
+                  }}>
+                    Now
+                  </span>
+                  <span style={{
+                    marginLeft: 'auto',
+                    fontSize: '12px',
+                    color: '#94a3b8',
+                    fontWeight: '500'
+                  }}>
+                    Starts immediately
+                  </span>
                 </div>
-                <small>🔒 Parking starts at server time when reservation is confirmed</small>
+                <small>Parking starts as soon as reservation is confirmed</small>
               </div>
 
               <div className="form-group">
@@ -416,7 +438,7 @@ export default function GuestReservation({ onLoginClick }: GuestReservationProps
                     />
                   </div>
                 </div>
-                <small>How long you need to park (maximum 24 hours)</small>
+                <small>⚡ Parking starts immediately • Maximum 24 hours</small>
               </div>
 
               <div className="duration-display">
